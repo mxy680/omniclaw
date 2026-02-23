@@ -1,214 +1,320 @@
 # omniclaw
 
-Gmail, Google Calendar, Drive, Docs, Slides, Sheets, and Canvas LMS integration for OpenClaw. Manage emails, calendar, files, documents, and coursework using natural language.
+80+ tools for [OpenClaw](https://openclaw.ai) that give your AI agent full access to Google Workspace, GitHub, Gemini AI, YouTube, and Canvas LMS. Manage emails, calendars, files, documents, spreadsheets, presentations, repos, issues, PRs, AI image/video generation, YouTube search, and university coursework — all through natural language.
 
-## Prerequisites
+## What's Included
 
-- [OpenClaw](https://openclaw.ai) installed
-- A Google account with Gmail
+| Service | Tools | Skills |
+|---------|-------|--------|
+| Gmail | 9 tools — inbox, search, read, send, reply, forward, manage | `gmail` |
+| Google Calendar | 7 tools — list, view, create, update, delete, RSVP | `calendar` |
+| Google Drive | 9 tools — browse, search, read, upload, organize, share, delete | `drive` |
+| Google Docs | 4 tools — create, read, append, find-and-replace | `docs` |
+| Google Sheets | 5 tools — create, read, write, append, clear | `sheets` |
+| Google Slides | 4 tools — create, read, add slides, find-and-replace | `slides` |
+| GitHub | 18 tools — repos, issues, PRs, code search, notifications | `github` |
+| Gemini AI | 5 tools — image gen, image edit, video gen, video analysis | `gemini` |
+| YouTube | 6 tools — search, video details, transcripts, channels, comments | `youtube` |
+| Canvas LMS | 10 tools — courses, assignments, grades, announcements, to-do | `canvas` |
 
-## Setup
+---
 
-### 1. Install the plugin
+## Quick Start
+
+### 1. Install omniclaw into OpenClaw
 
 ```bash
 openclaw plugins install --link /path/to/omniclaw
 ```
 
-### 2. Create a Google Cloud project
+Or if running from the OpenClaw monorepo as a built-in extension, place this repo under `extensions/omniclaw/` — the workspace auto-discovers it.
+
+### 2. Enable the skills you want
+
+```bash
+openclaw skills enable gmail calendar drive docs sheets slides github gemini youtube canvas
+```
+
+### 3. Set up credentials (detailed below)
+
+Each service has its own authentication. You only need to configure the ones you plan to use.
+
+---
+
+## Google Workspace Setup (Gmail, Calendar, Drive, Docs, Sheets, Slides, YouTube)
+
+All Google Workspace tools share a single OAuth2 flow. Set it up once to unlock Gmail, Calendar, Drive, Docs, Sheets, Slides, and authenticated YouTube access.
+
+### Step 1: Create a Google Cloud Project
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a new project (e.g. `omniclaw`)
-3. Go to **APIs & Services → Library** and enable the following APIs:
-   - **Gmail API**
-   - **Google Calendar API**
-   - **Google Drive API**
-   - **Google Docs API**
-   - **Google Slides API**
-   - **Google Sheets API**
+2. Click **Select a project** > **New Project**
+3. Name it (e.g. `omniclaw`) and click **Create**
 
-### 3. Create OAuth credentials
+### Step 2: Enable the Required APIs
 
-1. Go to **APIs & Services → Credentials → + Create Credentials → OAuth client ID**
-2. If prompted to configure the consent screen first:
-   - Choose **External**
-   - Fill in app name and your email, click through the rest
-3. Application type: **Desktop app**, name it anything
-4. Download the `client_secret.json`
+Go to **APIs & Services > Library** and enable each of these:
 
-### 4. Add yourself as a test user
+- **Gmail API**
+- **Google Calendar API**
+- **Google Drive API**
+- **Google Docs API**
+- **Google Sheets API**
+- **Google Slides API**
+- **YouTube Data API v3**
 
-1. Go to **APIs & Services → OAuth consent screen → Test users**
-2. Click **+ Add Users** and add your Gmail address
-3. Save
+### Step 3: Create OAuth Credentials
 
-> This step ensures you get a clean sign-in flow with no warnings.
+1. Go to **APIs & Services > Credentials**
+2. Click **+ Create Credentials > OAuth client ID**
+3. If prompted to configure the consent screen:
+   - Choose **External** (or Internal if using Google Workspace)
+   - Fill in app name and your email
+   - Under **Scopes**, you can skip this (scopes are requested at runtime)
+   - Click through to save
+4. Back on Credentials, select **Desktop app** as the application type
+5. Click **Create** and **Download JSON**
+6. Save the file somewhere permanent (e.g. `~/omniclaw-credentials/client_secret.json`)
 
-### 5. Configure the plugin
+### Step 4: Add Yourself as a Test User
+
+1. Go to **APIs & Services > OAuth consent screen > Test users**
+2. Click **+ Add Users** and enter your Gmail address
+3. Click **Save**
+
+> While your app is in "Testing" mode, only listed test users can authenticate. This avoids Google's verification process.
+
+### Step 5: Configure the Plugin
 
 ```bash
 openclaw config set plugins.entries.omniclaw.config.client_secret_path "/path/to/client_secret.json"
 ```
 
-### 6. Authenticate
+### Step 6: Authenticate
 
 Restart the OpenClaw gateway, then ask your agent:
 
-> "Set up Gmail" or call `gmail_auth_setup` directly
+> "Set up Gmail" (or call any `*_auth_setup` tool)
 
-A browser window will open. Sign in with your Google account and grant access. You only need to do this once.
+A browser window opens. Sign in with your Google account and grant the requested permissions. Tokens are saved locally at `~/.openclaw/omniclaw-tokens.json` — you only need to do this once.
 
-## Usage
+> **Tip:** Each service has its own auth tool (`gmail_auth_setup`, `calendar_auth_setup`, `drive_auth_setup`, etc.) but they all use the same OAuth flow. Authenticating through any one of them grants access to all Google services.
 
-Once authenticated, your agent can:
+---
 
-**Gmail**
-- **List inbox** — "Show me my recent emails"
-- **Search** — "Find emails from Alice with attachments"
-- **Read** — "Show me the full body of that email"
-- **Send** — "Send an email to bob@example.com about the meeting"
-- **Reply** — "Reply to that email saying I'll be there"
-- **Forward** — "Forward this to alice@example.com"
-- **Manage** — "Mark that as read" / "Archive it" / "Move it to trash"
+## GitHub Setup
 
-**Google Calendar**
-- **List events** — "What's on my calendar this week?"
-- **Create** — "Schedule a meeting with alice@example.com tomorrow at 2pm"
-- **Update** — "Move the 3pm meeting to 4pm"
-- **RSVP** — "Accept the invite to the product review"
-- **Delete** — "Cancel tomorrow's standup"
+GitHub tools use a Personal Access Token (PAT) — no OAuth flow required.
 
-**Google Slides**
-- **Create** — "Create a presentation called 'Q4 Review'"
-- **Read** — "What's on each slide of my pitch deck?"
-- **Edit** — "Add a slide titled 'Next Steps' with action items"
-- **Template** — "Replace all '{{company}}' placeholders with 'Acme Corp'"
+### Step 1: Create a Personal Access Token
 
-**Google Sheets**
-- **Create** — "Create a spreadsheet called 'Budget 2026'"
-- **Read** — "Read the data in Sheet1 columns A through D"
-- **Write** — "Write a header row: Name, Email, Score"
-- **Append** — "Add Alice's row to the sheet"
-- **Clear** — "Clear the data range A1:D10"
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **Generate new token (classic)** or **Fine-grained token**
+3. For classic tokens, select scopes:
+   - `repo` — full access to repositories
+   - `notifications` — read notifications
+4. Copy the token
 
-**Google Docs**
-- **Create** — "Create a doc called 'Meeting Notes' with today's agenda"
-- **Read** — "Read the project spec doc"
-- **Append** — "Add a summary section to the end of the doc"
-- **Edit** — "Replace all occurrences of '{{name}}' with 'Alice'"
+### Step 2: Configure
 
-**Google Drive**
-- **Browse** — "What files are in my Drive?"
-- **Search** — "Find all PDFs named 'report'"
-- **Read** — "Read the Q4 planning doc"
-- **Upload** — "Create a file called notes.txt with this content"
-- **Organize** — "Create a folder called Archive and move the old drafts there"
-- **Share** — "Share the doc with alice@example.com as editor"
-- **Delete** — "Trash the old draft"
+**Option A:** Set via config:
+```bash
+openclaw config set plugins.entries.omniclaw.config.github_token "ghp_your_token_here"
+```
 
-**Canvas LMS** (no Google account or API token needed — uses browser SSO)
-- **Courses** — "What courses am I enrolled in?"
-- **Assignments** — "What assignments are due this week in CS 101?"
-- **Grades** — "What's my current grade in Linear Algebra?"
-- **Announcements** — "Any new announcements from my professors?"
-- **To-do** — "What does Canvas say I need to do?"
+**Option B:** Let the agent prompt you. Ask your agent:
+> "Set up GitHub"
 
-## Tools
+It will call `github_auth_setup` and walk you through entering the token interactively.
 
-### Gmail
+---
+
+## Gemini AI Setup
+
+Gemini tools use a Google AI Studio API key for image generation, video generation, and video analysis.
+
+### Step 1: Get an API Key
+
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+2. Click **Create API key**
+3. Copy the key
+
+### Step 2: Configure
+
+**Option A:** Set via config:
+```bash
+openclaw config set plugins.entries.omniclaw.config.gemini_api_key "your_api_key_here"
+```
+
+**Option B:** Let the agent prompt you. Ask your agent:
+> "Set up Gemini"
+
+---
+
+## YouTube Setup
+
+YouTube has two modes:
+
+- **Transcripts** — work immediately with no setup. Just ask for any public video's transcript.
+- **Search, video details, comments, channel info** — require Google OAuth (same as Gmail setup above). If you already set up Google Workspace, YouTube authenticated tools are ready to use.
+
+---
+
+## Canvas LMS Setup
+
+Canvas uses browser-based SSO authentication via Playwright — no API tokens or Google credentials needed.
+
+### Step 1: Install Browser
+
+```bash
+npx playwright install chromium
+```
+
+### Step 2: Authenticate
+
+Ask your agent:
+> "Set up Canvas"
+
+It will call `canvas_auth_setup`, which opens a Chromium browser window to your university's Canvas login page. Sign in normally; the tool captures your session automatically.
+
+### Optional: Automatic Duo MFA
+
+If your university uses Duo two-factor authentication, you can automate the MFA step:
+
+1. Get your Duo TOTP secret (during Duo Mobile activation, choose "Use a third-party authenticator" and copy the secret from the `otpauth://` URI)
+2. Configure it:
+   ```bash
+   openclaw config set plugins.entries.omniclaw.config.duo_totp_secret "YOUR_SECRET"
+   ```
+
+The tool will auto-generate and fill the 6-digit Duo passcode during authentication. Without this, it falls back to waiting for manual MFA approval.
+
+---
+
+## All Tools Reference
+
+### Gmail (9 tools)
 
 | Tool | Description |
 |------|-------------|
-| `gmail_auth_setup` | Authenticate with Gmail and Calendar (run once) |
+| `gmail_auth_setup` | Authenticate with Google (run once) |
 | `gmail_accounts` | List all authenticated accounts and their emails |
 | `gmail_inbox` | List recent inbox messages |
 | `gmail_search` | Search with Gmail query syntax |
-| `gmail_get` | Fetch full body of a message by ID |
-| `gmail_send` | Send a new email |
+| `gmail_get` | Fetch full message body by ID |
+| `gmail_send` | Compose and send a new email |
 | `gmail_reply` | Reply to a message (keeps thread) |
 | `gmail_forward` | Forward a message to another recipient |
 | `gmail_modify` | Mark read/unread, archive, or trash a message |
 
-### Google Calendar
+### Google Calendar (7 tools)
 
 | Tool | Description |
 |------|-------------|
+| `calendar_auth_setup` | Authenticate with Google (run once) |
 | `calendar_list_calendars` | List all calendars (primary, shared, subscribed) |
 | `calendar_events` | List upcoming events with optional time range filter |
-| `calendar_get` | Fetch full details of an event by ID |
-| `calendar_create` | Create a new event with attendees |
+| `calendar_get` | Fetch full event details by ID |
+| `calendar_create` | Create a new event with attendees and reminders |
 | `calendar_update` | Update an existing event |
-| `calendar_delete` | Delete/cancel an event and notify attendees |
+| `calendar_delete` | Delete an event and notify attendees |
 | `calendar_respond` | RSVP to an event (accept/decline/tentative) |
 
-### Google Slides
+### Google Drive (9 tools)
 
 | Tool | Description |
 |------|-------------|
-| `slides_auth_setup` | Authenticate with Slides (run once) |
-| `slides_create` | Create a new presentation |
-| `slides_get` | Fetch all slide text content and speaker notes |
-| `slides_append_slide` | Append a new slide with title and body text |
-| `slides_replace_text` | Find and replace text across all slides |
+| `drive_auth_setup` | Authenticate with Google (run once) |
+| `drive_list` | List files and folders in a directory |
+| `drive_search` | Search files using Drive query syntax |
+| `drive_get` | Fetch full metadata for a file by ID |
+| `drive_read` | Read text content of a file (Docs, Sheets, text files) |
+| `drive_upload` | Create a new file or update an existing one |
+| `drive_create_folder` | Create a new folder |
+| `drive_move` | Move a file or folder to a different parent |
+| `drive_delete` | Trash or permanently delete a file |
+| `drive_share` | Share a file with a user (reader/commenter/writer) |
 
-### Google Sheets
+### Google Docs (4 tools)
 
 | Tool | Description |
 |------|-------------|
-| `sheets_auth_setup` | Authenticate with Sheets (run once) |
+| `docs_auth_setup` | Authenticate with Google (run once) |
+| `docs_create` | Create a new Google Doc with optional initial content |
+| `docs_get` | Fetch a document's title and full plain-text content |
+| `docs_append` | Append text to the end of a document |
+| `docs_replace_text` | Find and replace all occurrences of a string |
+
+### Google Sheets (5 tools)
+
+| Tool | Description |
+|------|-------------|
+| `sheets_auth_setup` | Authenticate with Google (run once) |
 | `sheets_create` | Create a new spreadsheet |
 | `sheets_get` | Read cell values from a range (A1 notation) |
 | `sheets_update` | Write values to a range |
 | `sheets_append` | Append rows after the last row with data |
 | `sheets_clear` | Clear values from a range |
 
-### Google Docs
+### Google Slides (4 tools)
 
 | Tool | Description |
 |------|-------------|
-| `docs_auth_setup` | Authenticate with Docs, Drive, Calendar, and Gmail (run once) |
-| `docs_create` | Create a new Google Doc with a title and optional content |
-| `docs_get` | Fetch a document's title and full plain-text content |
-| `docs_append` | Append text to the end of a document |
-| `docs_replace_text` | Find and replace all occurrences of a string in a document |
+| `slides_auth_setup` | Authenticate with Google (run once) |
+| `slides_create` | Create a new presentation |
+| `slides_get` | Fetch all slide text content and speaker notes |
+| `slides_append_slide` | Append a new slide with title and body text |
+| `slides_replace_text` | Find and replace text across all slides |
 
-### Google Drive
-
-| Tool | Description |
-|------|-------------|
-| `drive_auth_setup` | Authenticate with Drive, Calendar, and Gmail (run once) |
-| `drive_list` | List files and folders in a directory |
-| `drive_search` | Search files using Drive query syntax |
-| `drive_get` | Fetch full metadata for a file by ID |
-| `drive_read` | Read text content of a file (Docs, Sheets, Slides, plain text) |
-| `drive_upload` | Create a new file or update an existing one |
-| `drive_create_folder` | Create a new folder |
-| `drive_move` | Move a file or folder to a different parent |
-| `drive_delete` | Trash or permanently delete a file |
-| `drive_share` | Share a file with another user (reader/commenter/writer) |
-
-### Canvas LMS
-
-No Google credentials or API tokens required. Canvas uses browser-based SSO authentication.
-
-**Setup:**
-1. Install Playwright browsers: `npx playwright install chromium`
-2. Save your Canvas credentials once:
-   ```bash
-   openclaw config set plugins.entries.omniclaw.config.canvas_base_url "https://canvas.example.edu"
-   openclaw config set plugins.entries.omniclaw.config.canvas_username "your_username"
-   openclaw config set plugins.entries.omniclaw.config.canvas_password "your_password"
-   ```
-3. (Optional) Save your Duo TOTP secret to enable automatic Duo MFA:
-   ```bash
-   openclaw config set plugins.entries.omniclaw.config.duo_totp_secret "YOUR_SECRET"
-   ```
-   To get the secret: run `scripts/extract-duo-secret.ts` with a Duo activation URL, or when activating Duo Mobile choose "Use a third-party authenticator" and copy the secret from the `otpauth://` URI. The secret can be hex (from Duo's activation API) or base32 — both formats work.
-4. Call `canvas_auth_setup` with no arguments — a browser opens, the tool auto-generates and fills the Duo TOTP passcode if configured, and session cookies are captured automatically. Falls back to manual MFA if no TOTP secret is set.
+### YouTube (6 tools)
 
 | Tool | Description |
 |------|-------------|
-| `canvas_auth_setup` | Authenticate via browser SSO (run once per session) |
+| `youtube_auth_setup` | Authenticate with Google for search/details (run once) |
+| `youtube_get_transcript` | Get transcript of any public YouTube video (no auth needed) |
+| `youtube_search` | Search YouTube videos by query |
+| `youtube_video_details` | Get metadata, stats, and description for a video |
+| `youtube_channel_info` | Get channel details by handle or ID |
+| `youtube_video_comments` | Get top comments on a video |
+
+### GitHub (18 tools)
+
+| Tool | Description |
+|------|-------------|
+| `github_auth_setup` | Store your GitHub Personal Access Token |
+| `github_issues` | List issues for a repository |
+| `github_get_issue` | Get full details of a single issue |
+| `github_create_issue` | Create a new issue |
+| `github_update_issue` | Update an issue (title, body, state, labels, assignees) |
+| `github_add_issue_comment` | Add a comment to an issue |
+| `github_pulls` | List pull requests for a repository |
+| `github_get_pull` | Get full details of a pull request |
+| `github_create_pull` | Create a new pull request |
+| `github_merge_pull` | Merge a pull request |
+| `github_add_pull_review` | Add a review to a pull request |
+| `github_repos` | List repositories for a user or organization |
+| `github_get_repo` | Get full details of a repository |
+| `github_search_code` | Search code across GitHub |
+| `github_get_file` | Get contents of a file from a repository |
+| `github_branches` | List branches for a repository |
+| `github_notifications` | List your GitHub notifications |
+| `github_mark_notification_read` | Mark a notification as read |
+
+### Gemini AI (5 tools)
+
+| Tool | Description |
+|------|-------------|
+| `gemini_auth_setup` | Store your Gemini API key |
+| `gemini_generate_image` | Generate an image from a text prompt |
+| `gemini_edit_image` | Edit an existing image with a text prompt |
+| `gemini_generate_video` | Generate a short video from a text prompt |
+| `gemini_analyze_video` | Analyze/describe a video from a URL |
+
+### Canvas LMS (10 tools)
+
+| Tool | Description |
+|------|-------------|
+| `canvas_auth_setup` | Authenticate via browser SSO |
 | `canvas_profile` | Get your Canvas user profile |
 | `canvas_courses` | List enrolled courses |
 | `canvas_get_course` | Get details for a specific course |
@@ -219,18 +325,114 @@ No Google credentials or API tokens required. Canvas uses browser-based SSO auth
 | `canvas_submissions` | List submissions for an assignment |
 | `canvas_todo` | Get your Canvas to-do list |
 
-## Configuration
+---
 
-| Option | Required | Default | Description |
-|--------|----------|---------|-------------|
-| `client_secret_path` | Yes (Google) | — | Path to your `client_secret.json` |
-| `oauth_port` | No | `9753` | Local port for the OAuth callback |
-| `tokens_path` | No | `~/.openclaw/omniclaw-tokens.json` | Where Google tokens are stored |
-| `canvas_tokens_path` | No | `~/.openclaw/omniclaw-canvas-tokens.json` | Where Canvas tokens are stored |
-| `canvas_base_url` | No | — | Your Canvas instance URL (e.g. `https://canvas.example.edu`) |
-| `canvas_username` | No | — | Your university/SSO username for Canvas |
-| `canvas_password` | No | — | Your university/SSO password for Canvas |
-| `canvas_auto_mfa` | No | `true` | Auto-fill Duo MFA using TOTP (requires `duo_totp_secret`) |
-| `duo_totp_secret` | No | — | Duo TOTP secret (hex from activation API or base32) |
+## Configuration Reference
 
-> **Existing users:** The OAuth scope now includes Google Docs. Re-run any `*_auth_setup` tool once to grant the additional permission.
+All configuration is set via `openclaw config set plugins.entries.omniclaw.config.<key> <value>`.
+
+### Google Workspace
+
+| Key | Required | Default | Description |
+|-----|----------|---------|-------------|
+| `client_secret_path` | Yes | — | Absolute path to your `client_secret.json` from Google Cloud Console |
+| `oauth_port` | No | `9753` | Local port for the OAuth callback server |
+| `tokens_path` | No | `~/.openclaw/omniclaw-tokens.json` | Where OAuth tokens are stored |
+
+### GitHub
+
+| Key | Required | Default | Description |
+|-----|----------|---------|-------------|
+| `github_token` | No | — | GitHub Personal Access Token. Can also be set interactively via `github_auth_setup` |
+
+### Gemini AI
+
+| Key | Required | Default | Description |
+|-----|----------|---------|-------------|
+| `gemini_api_key` | No | — | Google AI Studio API key. Can also be set interactively via `gemini_auth_setup` |
+
+### Canvas LMS
+
+| Key | Required | Default | Description |
+|-----|----------|---------|-------------|
+| `canvas_tokens_path` | No | `~/.openclaw/omniclaw-canvas-tokens.json` | Where Canvas session tokens are stored |
+| `canvas_auto_mfa` | No | `true` | Auto-fill Duo MFA using TOTP secret |
+| `duo_totp_secret` | No | — | Duo TOTP secret (hex or base32) for automatic MFA |
+
+---
+
+## Usage Examples
+
+Once authenticated, just talk to your agent naturally:
+
+**Email**
+> "Show me my recent emails"
+> "Find emails from Alice about the project proposal"
+> "Reply saying I'll review it by Friday"
+> "Forward that to bob@example.com"
+
+**Calendar**
+> "What's on my calendar tomorrow?"
+> "Schedule a 30-minute meeting with alice@example.com next Tuesday at 2pm"
+> "Accept the invite to the design review"
+
+**Drive & Docs**
+> "What files are in my Drive?"
+> "Create a Google Doc called 'Meeting Notes' and add today's agenda"
+> "Read the project spec and summarize it"
+> "Share the doc with the team as editors"
+
+**Sheets**
+> "Create a spreadsheet called 'Budget Tracker'"
+> "Add a header row: Date, Category, Amount, Notes"
+> "Read the data in columns A through D"
+
+**Slides**
+> "Create a presentation called 'Q4 Review'"
+> "Add a slide titled 'Key Metrics' with our revenue numbers"
+> "Replace all '{{company}}' placeholders with 'Acme Corp'"
+
+**GitHub**
+> "Show me open issues in myorg/myrepo"
+> "Create an issue titled 'Fix login bug' with a description"
+> "List open PRs that need review"
+> "Merge PR #42"
+
+**Gemini AI**
+> "Generate an image of a sunset over mountains in watercolor style"
+> "Create a 5-second video of ocean waves"
+> "Analyze this video and describe what's happening"
+
+**YouTube**
+> "Get the transcript of this YouTube video: https://youtube.com/watch?v=..."
+> "Search YouTube for TypeScript tutorials"
+> "Show me the top comments on that video"
+
+**Canvas**
+> "What courses am I enrolled in?"
+> "What assignments are due this week in CS 101?"
+> "What's my current grade in Linear Algebra?"
+> "Any new announcements from my professors?"
+
+---
+
+## Development
+
+```bash
+pnpm install          # Install dependencies
+pnpm build            # TypeScript compilation
+pnpm test             # Run unit tests
+pnpm test:integration # Run integration tests (requires real credentials)
+```
+
+## Architecture
+
+- **Auth managers** (`src/auth/`) — handle OAuth2, token storage, and per-service authentication
+- **Tool factories** (`src/tools/`) — each tool is a factory function returning `{ name, label, description, parameters, execute }`
+- **Plugin registration** (`src/plugin.ts`) — the `register(api)` function wires everything together
+- **Skills** (`skills/`) — SKILL.md files that teach the agent how to combine tools for each service
+- **Multi-account** — every tool accepts an optional `account` parameter (defaults to `"default"`)
+
+## License
+
+MIT

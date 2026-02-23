@@ -130,3 +130,14 @@ export function createSheetsAuthTool(clientManager: OAuthClientManager, config: 
     config
   );
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createYouTubeAuthTool(clientManager: OAuthClientManager, config: PluginConfig): any {
+  return createAuthTool(
+    "youtube_auth_setup",
+    "YouTube Auth Setup",
+    "Authenticate omniclaw with YouTube via Google OAuth2. Opens a browser window for the Google sign-in flow. Must be called before using youtube_search, youtube_video_details, youtube_channel_info, or youtube_video_comments tools.",
+    clientManager,
+    config
+  );
+}

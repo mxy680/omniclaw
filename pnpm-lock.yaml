@@ -29,6 +29,9 @@ importers:
       playwright:
         specifier: ^1.50.0
         version: 1.58.2
+      youtube-transcript:
+        specifier: ^1.2.1
+        version: 1.2.1
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -1064,6 +1067,10 @@ packages:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
 
+  youtube-transcript@1.2.1:
+    resolution: {integrity: sha512-TvEGkBaajKw+B6y91ziLuBLsa5cawgowou+Bk0ciGpjELDfAzSzTGXaZmeSSkUeknCPpEr/WGApOHDwV7V+Y9Q==}
+    engines: {node: '>=18.0.0'}
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.27.3':
@@ -1988,3 +1995,5 @@ snapshots:
   wsl-utils@0.1.0:
     dependencies:
       is-wsl: 3.1.1
+
+  youtube-transcript@1.2.1: {}

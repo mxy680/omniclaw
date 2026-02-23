@@ -4,7 +4,7 @@ import { OAuthClientManager } from "./auth/oauth-client-manager";
 import { TokenStore } from "./auth/token-store";
 import { CanvasClientManager } from "./auth/canvas-client-manager";
 import { createGmailInboxTool, createGmailSearchTool } from "./tools/gmail-inbox";
-import { createGmailAuthTool, createCalendarAuthTool, createDriveAuthTool, createDocsAuthTool, createSlidesAuthTool, createSheetsAuthTool } from "./tools/gmail-auth-tool";
+import { createGmailAuthTool, createCalendarAuthTool, createDriveAuthTool, createDocsAuthTool, createSlidesAuthTool, createSheetsAuthTool, createYouTubeAuthTool } from "./tools/gmail-auth-tool";
 import { createGmailGetTool } from "./tools/gmail-get";
 import { createGmailSendTool, createGmailReplyTool, createGmailForwardTool } from "./tools/gmail-send";
 import { createGmailModifyTool } from "./tools/gmail-modify";
@@ -57,6 +57,9 @@ import { createCanvasAnnouncementsTool } from "./tools/canvas-announcements";
 import { createCanvasGradesTool } from "./tools/canvas-grades";
 import { createCanvasSubmissionsTool } from "./tools/canvas-submissions";
 import { createCanvasTodoTool } from "./tools/canvas-todo";
+import { createYouTubeTranscriptTool } from "./tools/youtube-transcript";
+import { createYouTubeSearchTool, createYouTubeVideoDetailsTool } from "./tools/youtube-search";
+import { createYouTubeChannelInfoTool, createYouTubeVideoCommentsTool } from "./tools/youtube-social";
 import type { PluginConfig } from "./types/plugin-config";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -129,6 +132,9 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createGeminiGenerateVideoTool(geminiManager), { optional: true });
   api.registerTool(createGeminiAnalyzeVideoTool(geminiManager), { optional: true });
 
+  // YouTube transcript — no OAuth required, works with any public video
+  api.registerTool(createYouTubeTranscriptTool(), { optional: true });
+
   if (!config.client_secret_path) {
     api.logger.warn(
       "[omniclaw] client_secret_path is not configured. Gmail tools will not be available. " +
@@ -196,4 +202,10 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createSheetsUpdateTool(clientManager), { optional: true });
   api.registerTool(createSheetsAppendTool(clientManager), { optional: true });
   api.registerTool(createSheetsClearTool(clientManager), { optional: true });
+
+  api.registerTool(createYouTubeAuthTool(clientManager, config), { optional: true });
+  api.registerTool(createYouTubeSearchTool(clientManager), { optional: true });
+  api.registerTool(createYouTubeVideoDetailsTool(clientManager), { optional: true });
+  api.registerTool(createYouTubeChannelInfoTool(clientManager), { optional: true });
+  api.registerTool(createYouTubeVideoCommentsTool(clientManager), { optional: true });
 }

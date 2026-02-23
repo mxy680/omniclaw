@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { parseVideoId } from "../src/tools/youtube-utils";
-import { createYouTubeSearchTool, createYouTubeVideoDetailsTool } from "../src/tools/youtube-search";
-import { createYouTubeTranscriptTool } from "../src/tools/youtube-transcript";
-import { createYouTubeChannelInfoTool, createYouTubeVideoCommentsTool } from "../src/tools/youtube-social";
+import {
+  createYouTubeSearchTool,
+  createYouTubeVideoDetailsTool,
+} from "../src/tools/youtube-search.js";
+import {
+  createYouTubeChannelInfoTool,
+  createYouTubeVideoCommentsTool,
+} from "../src/tools/youtube-social.js";
+import { createYouTubeTranscriptTool } from "../src/tools/youtube-transcript.js";
+import { parseVideoId } from "../src/tools/youtube-utils.js";
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -168,7 +174,9 @@ describe("createYouTubeVideoDetailsTool", () => {
     });
 
     const tool = createYouTubeVideoDetailsTool(makeManager() as any);
-    const result = await tool.execute("c", { video: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" });
+    const result = await tool.execute("c", {
+      video: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    });
 
     expect(result.details.videoId).toBe("dQw4w9WgXcQ");
     expect(result.details.title).toBe("Never Gonna Give You Up");
@@ -214,7 +222,10 @@ describe("createYouTubeTranscriptTool", () => {
     mocks.fetchTranscript.mockRejectedValue(new Error("Transcript is disabled"));
     const tool = createYouTubeTranscriptTool();
     const result = await tool.execute("c", { video: "dQw4w9WgXcQ" });
-    expect(result.details).toMatchObject({ error: "transcript_failed", message: "Transcript is disabled" });
+    expect(result.details).toMatchObject({
+      error: "transcript_failed",
+      message: "Transcript is disabled",
+    });
   });
 });
 
@@ -243,7 +254,11 @@ describe("createYouTubeChannelInfoTool", () => {
               country: "US",
               thumbnails: { high: { url: "https://example.com/thumb.jpg" } },
             },
-            statistics: { subscriberCount: "19000000", videoCount: "1500", viewCount: "4000000000" },
+            statistics: {
+              subscriberCount: "19000000",
+              videoCount: "1500",
+              viewCount: "4000000000",
+            },
           },
         ],
       },
@@ -255,16 +270,18 @@ describe("createYouTubeChannelInfoTool", () => {
     expect(result.details.title).toBe("MKBHD");
     expect(result.details.subscriberCount).toBe("19000000");
     expect(mocks.channelsList).toHaveBeenCalledWith(
-      expect.objectContaining({ forHandle: "@mkbhd" })
+      expect.objectContaining({ forHandle: "@mkbhd" }),
     );
   });
 
   it("uses channel ID when starts with UC", async () => {
-    mocks.channelsList.mockResolvedValue({ data: { items: [{ id: "UCtest", snippet: { title: "Test" }, statistics: {} }] } });
+    mocks.channelsList.mockResolvedValue({
+      data: { items: [{ id: "UCtest", snippet: { title: "Test" }, statistics: {} }] },
+    });
     const tool = createYouTubeChannelInfoTool(makeManager() as any);
     await tool.execute("c", { channel: "UCtest123456789" });
     expect(mocks.channelsList).toHaveBeenCalledWith(
-      expect.objectContaining({ id: ["UCtest123456789"] })
+      expect.objectContaining({ id: ["UCtest123456789"] }),
     );
   });
 

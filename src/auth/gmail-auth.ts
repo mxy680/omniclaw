@@ -1,5 +1,5 @@
-import { google } from "googleapis";
 import { readFileSync } from "fs";
+import { google } from "googleapis";
 
 type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
 

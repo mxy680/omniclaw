@@ -1,7 +1,7 @@
+import { Readable } from "stream";
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import { Readable } from "stream";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -29,19 +29,24 @@ export function createDriveUploadTool(clientManager: OAuthClientManager): any {
       name: Type.String({ description: "Name for the file (e.g. 'report.txt')." }),
       content: Type.String({ description: "Text content to write to the file." }),
       file_id: Type.Optional(
-        Type.String({ description: "ID of an existing file to update. If omitted, a new file is created." })
+        Type.String({
+          description: "ID of an existing file to update. If omitted, a new file is created.",
+        }),
       ),
       mime_type: Type.Optional(
         Type.String({
           description: "MIME type of the file. Defaults to 'text/plain'.",
           default: "text/plain",
-        })
+        }),
       ),
       parent_id: Type.Optional(
-        Type.String({ description: "ID of the parent folder. Defaults to the Drive root." })
+        Type.String({ description: "ID of the parent folder. Defaults to the Drive root." }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
@@ -53,7 +58,7 @@ export function createDriveUploadTool(clientManager: OAuthClientManager): any {
         mime_type?: string;
         parent_id?: string;
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {

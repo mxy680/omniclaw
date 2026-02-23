@@ -12,20 +12,19 @@
  *   RUN_WRITE_TESTS=1    enable create / get / update / respond / delete tests
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
 import { existsSync } from "fs";
-import { join } from "path";
 import { homedir } from "os";
-
-import { OAuthClientManager } from "../../src/auth/oauth-client-manager";
-import { TokenStore } from "../../src/auth/token-store";
-import { createCalendarListCalendarsTool } from "../../src/tools/calendar-list-calendars";
-import { createCalendarEventsTool } from "../../src/tools/calendar-events";
-import { createCalendarGetTool } from "../../src/tools/calendar-get";
-import { createCalendarCreateTool } from "../../src/tools/calendar-create";
-import { createCalendarUpdateTool } from "../../src/tools/calendar-update";
-import { createCalendarDeleteTool } from "../../src/tools/calendar-delete";
-import { createCalendarRespondTool } from "../../src/tools/calendar-respond";
+import { join } from "path";
+import { describe, it, expect, beforeAll } from "vitest";
+import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
+import { TokenStore } from "../../src/auth/token-store.js";
+import { createCalendarCreateTool } from "../../src/tools/calendar-create.js";
+import { createCalendarDeleteTool } from "../../src/tools/calendar-delete.js";
+import { createCalendarEventsTool } from "../../src/tools/calendar-events.js";
+import { createCalendarGetTool } from "../../src/tools/calendar-get.js";
+import { createCalendarListCalendarsTool } from "../../src/tools/calendar-list-calendars.js";
+import { createCalendarRespondTool } from "../../src/tools/calendar-respond.js";
+import { createCalendarUpdateTool } from "../../src/tools/calendar-update.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -34,21 +33,18 @@ const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
   "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com.json";
 
-const TOKENS_PATH =
-  process.env.TOKENS_PATH ??
-  join(homedir(), ".openclaw", "omniclaw-tokens.json");
+const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
 const ACCOUNT = process.env.GMAIL_ACCOUNT ?? "default";
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
-const credentialsExist =
-  existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
+const credentialsExist = existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
 
 if (!credentialsExist) {
   console.warn(
     "\n[integration] Skipping: credentials not found.\n" +
-    `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
-    `  TOKENS_PATH=${TOKENS_PATH}\n`
+      `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
+      `  TOKENS_PATH=${TOKENS_PATH}\n`,
   );
 }
 
@@ -60,7 +56,6 @@ let createdEventId: string; // set by calendar_create, reused by get/update/resp
 
 // ---------------------------------------------------------------------------
 describe.skipIf(!credentialsExist)("Google Calendar API integration", { timeout: 30_000 }, () => {
-
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
@@ -140,13 +135,12 @@ describe.skipIf(!credentialsExist)("Google Calendar API integration", { timeout:
   // Write tests — opt-in via RUN_WRITE_TESTS=1
   // -------------------------------------------------------------------------
   describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
-
     it("calendar_create — creates a test event and returns its ID", async () => {
       const selfEmail = await getSelfEmail();
       const tool = createCalendarCreateTool(clientManager);
 
       const start = new Date(Date.now() + 24 * 60 * 60 * 1000); // tomorrow
-      const end = new Date(start.getTime() + 60 * 60 * 1000);   // +1 hour
+      const end = new Date(start.getTime() + 60 * 60 * 1000); // +1 hour
 
       const result = await tool.execute("t", {
         account: ACCOUNT,

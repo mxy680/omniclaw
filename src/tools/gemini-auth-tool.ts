@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
-import type { GeminiClientManager } from "../auth/gemini-client-manager";
-import type { PluginConfig } from "../types/plugin-config";
+import type { GeminiClientManager } from "../auth/gemini-client-manager.js";
+import type { PluginConfig } from "../types/plugin-config.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -24,21 +24,17 @@ export function createGeminiAuthTool(manager: GeminiClientManager, config: Plugi
     parameters: Type.Object({
       api_key: Type.Optional(
         Type.String({
-          description:
-            "Gemini API key. If omitted, reads from plugin config gemini_api_key.",
-        })
+          description: "Gemini API key. If omitted, reads from plugin config gemini_api_key.",
+        }),
       ),
       account: Type.Optional(
         Type.String({
           description: "Name for this account (e.g. 'work', 'personal'). Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { api_key?: string; account?: string }
-    ) {
+    async execute(_toolCallId: string, params: { api_key?: string; account?: string }) {
       const account = params.account ?? "default";
       const apiKey = params.api_key ?? config.gemini_api_key;
 

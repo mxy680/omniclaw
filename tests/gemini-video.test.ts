@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createGeminiGenerateVideoTool } from "../src/tools/gemini-video-gen";
-import { createGeminiAnalyzeVideoTool } from "../src/tools/gemini-video-understand";
+import { createGeminiGenerateVideoTool } from "../src/tools/gemini-video-gen.js";
+import { createGeminiAnalyzeVideoTool } from "../src/tools/gemini-video-understand.js";
 
 vi.mock("fs", async () => {
   const actual = await vi.importActual<typeof import("fs")>("fs");
@@ -64,9 +64,7 @@ describe("createGeminiGenerateVideoTool", () => {
       done: true,
       name: "op-123",
       response: {
-        generatedVideos: [
-          { video: { uri: "https://example.com/video.mp4" } },
-        ],
+        generatedVideos: [{ video: { uri: "https://example.com/video.mp4" } }],
       },
     });
 
@@ -86,7 +84,7 @@ describe("createGeminiGenerateVideoTool", () => {
           aspectRatio: "16:9",
           numberOfVideos: 1,
         }),
-      })
+      }),
     );
     expect(result.details.status).toBe("completed");
     expect(result.details.videos).toHaveLength(1);
@@ -114,9 +112,7 @@ describe("createGeminiGenerateVideoTool", () => {
       done: true,
       name: "op-456",
       response: {
-        generatedVideos: [
-          { video: { uri: "https://example.com/video.mp4" } },
-        ],
+        generatedVideos: [{ video: { uri: "https://example.com/video.mp4" } }],
       },
     });
 
@@ -209,11 +205,13 @@ describe("createGeminiAnalyzeVideoTool", () => {
     });
 
     mocks.generateContent.mockResolvedValue({
-      candidates: [{
-        content: {
-          parts: [{ text: "This video shows a sunset over the ocean." }],
+      candidates: [
+        {
+          content: {
+            parts: [{ text: "This video shows a sunset over the ocean." }],
+          },
         },
-      }],
+      ],
     });
 
     const result = await tool.execute("c", {
@@ -225,7 +223,7 @@ describe("createGeminiAnalyzeVideoTool", () => {
       expect.objectContaining({
         file: "/tmp/video.mp4",
         config: { mimeType: "video/mp4" },
-      })
+      }),
     );
     expect(mocks.generateContent).toHaveBeenCalled();
     expect(result.details.analysis).toBe("This video shows a sunset over the ocean.");
@@ -252,11 +250,13 @@ describe("createGeminiAnalyzeVideoTool", () => {
     });
 
     mocks.generateContent.mockResolvedValue({
-      candidates: [{
-        content: {
-          parts: [{ text: "Analysis result" }],
+      candidates: [
+        {
+          content: {
+            parts: [{ text: "Analysis result" }],
+          },
         },
-      }],
+      ],
     });
 
     const resultPromise = tool.execute("c", {

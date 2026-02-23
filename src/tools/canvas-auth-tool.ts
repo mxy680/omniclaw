@@ -1,8 +1,8 @@
 import { Type } from "@sinclair/typebox";
 import { chromium } from "playwright";
-import type { CanvasClientManager, CanvasSession } from "../auth/canvas-client-manager";
-import type { PluginConfig } from "../types/plugin-config";
-import { generateDuoPasscode } from "../auth/duo-totp";
+import type { CanvasClientManager, CanvasSession } from "../auth/canvas-client-manager.js";
+import { generateDuoPasscode } from "../auth/duo-totp.js";
+import type { PluginConfig } from "../types/plugin-config.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -15,7 +15,10 @@ function jsonResult(payload: unknown): AgentToolResult {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createCanvasAuthTool(canvasManager: CanvasClientManager, config: PluginConfig): any {
+export function createCanvasAuthTool(
+  canvasManager: CanvasClientManager,
+  config: PluginConfig,
+): any {
   return {
     name: "canvas_auth_setup",
     label: "Canvas Auth Setup",
@@ -24,29 +27,30 @@ export function createCanvasAuthTool(canvasManager: CanvasClientManager, config:
     parameters: Type.Object({
       base_url: Type.Optional(
         Type.String({
-          description: "Override for the Canvas instance URL. Usually omitted — uses pre-configured value.",
-        })
+          description:
+            "Override for the Canvas instance URL. Usually omitted — uses pre-configured value.",
+        }),
       ),
       username: Type.Optional(
         Type.String({
           description: "Override for SSO username. Usually omitted — uses pre-configured value.",
-        })
+        }),
       ),
       password: Type.Optional(
         Type.String({
           description: "Override for SSO password. Usually omitted — uses pre-configured value.",
-        })
+        }),
       ),
       account: Type.Optional(
         Type.String({
           description: "Name for this account (e.g. 'work', 'school'). Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { base_url?: string; username?: string; password?: string; account?: string }
+      params: { base_url?: string; username?: string; password?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       const rawBaseUrl = params.base_url ?? config.canvas_base_url;
@@ -69,12 +73,18 @@ export function createCanvasAuthTool(canvasManager: CanvasClientManager, config:
       const autoMfa = config.canvas_auto_mfa !== false && !!config.duo_totp_secret;
 
       try {
-        const session = await runLoginFlow(base_url, resolvedUsername, resolvedPassword, autoMfa, config.duo_totp_secret);
+        const session = await runLoginFlow(
+          base_url,
+          resolvedUsername,
+          resolvedPassword,
+          autoMfa,
+          config.duo_totp_secret,
+        );
         canvasManager.setCredentials(account, session);
 
         // Fetch profile to confirm auth and return user info
         try {
-          const profile = await canvasManager.get(account, "users/self/profile") as {
+          const profile = (await canvasManager.get(account, "users/self/profile")) as {
             name?: string;
             login_id?: string;
           };
@@ -98,7 +108,7 @@ export function createCanvasAuthTool(canvasManager: CanvasClientManager, config:
         return jsonResult({
           status: "error",
           error: err instanceof Error ? err.message : String(err),
-          hint: "Show the user the exact error. Do NOT assume the cause — it could be wrong credentials, SSO form changes, MFA timeout, network issues, etc. If the user needs to update credentials, direct them to run: openclaw config set plugins.entries.omniclaw.config.canvas_password \"new_password\" — never ask them to type passwords in the chat.",
+          hint: 'Show the user the exact error. Do NOT assume the cause — it could be wrong credentials, SSO form changes, MFA timeout, network issues, etc. If the user needs to update credentials, direct them to run: openclaw config set plugins.entries.omniclaw.config.canvas_password "new_password" — never ask them to type passwords in the chat.',
         });
       }
     },
@@ -131,11 +141,11 @@ async function runLoginFlow(
       // Click the login/submit button — broad selectors for CAS, SAML, standard Canvas
       const submit = page.locator(
         'button[type="submit"], input[type="submit"], ' +
-        'button[name="submit"], input[name="submit"], ' +
-        'button:has-text("Login"), button:has-text("Log In"), ' +
-        'button:has-text("Sign In"), a:has-text("Login"), ' +
-        'input[value="Login"], input[value="LOG IN"], ' +
-        '.btn-submit, #submit, .login-btn'
+          'button[name="submit"], input[name="submit"], ' +
+          'button:has-text("Login"), button:has-text("Log In"), ' +
+          'button:has-text("Sign In"), a:has-text("Login"), ' +
+          'input[value="Login"], input[value="LOG IN"], ' +
+          ".btn-submit, #submit, .login-btn",
       );
       await submit.first().click();
       console.log("[canvas] Credentials submitted, waiting for Duo MFA...");
@@ -163,8 +173,13 @@ async function runLoginFlow(
         } catch {
           // Didn't redirect to Duo — check for legacy iframe
           console.log(`[canvas] No Duo redirect detected. URL: ${page.url()}`);
-          const duoIframe = page.locator('iframe#duo_iframe, iframe[src*="duosecurity"], iframe[src*="duo.com"]');
-          isLegacyIframe = await duoIframe.first().isVisible({ timeout: 5000 }).catch(() => false);
+          const duoIframe = page.locator(
+            'iframe#duo_iframe, iframe[src*="duosecurity"], iframe[src*="duo.com"]',
+          );
+          isLegacyIframe = await duoIframe
+            .first()
+            .isVisible({ timeout: 5000 })
+            .catch(() => false);
         }
 
         if (isUniversalPrompt) {
@@ -173,8 +188,7 @@ async function runLoginFlow(
 
           // The Universal Prompt auto-sends a push. Click "Other options" to get to passcode entry.
           const otherOptions = page.locator(
-            'a:has-text("Other options"), ' +
-            'button:has-text("Other options")'
+            'a:has-text("Other options"), ' + 'button:has-text("Other options")',
           );
           await otherOptions.first().waitFor({ state: "visible", timeout: 10000 });
           await otherOptions.first().click();
@@ -183,11 +197,11 @@ async function runLoginFlow(
           // Select "Duo Mobile passcode" option
           const passcodeOption = page.locator(
             'a:has-text("Duo Mobile passcode"), ' +
-            'a:has-text("Enter a Passcode"), ' +
-            'a:has-text("Passcode"), ' +
-            'button:has-text("Duo Mobile passcode"), ' +
-            'button:has-text("Enter a Passcode"), ' +
-            'button:has-text("Passcode")'
+              'a:has-text("Enter a Passcode"), ' +
+              'a:has-text("Passcode"), ' +
+              'button:has-text("Duo Mobile passcode"), ' +
+              'button:has-text("Enter a Passcode"), ' +
+              'button:has-text("Passcode")',
           );
           await passcodeOption.first().waitFor({ state: "visible", timeout: 5000 });
           await passcodeOption.first().click();
@@ -195,9 +209,7 @@ async function runLoginFlow(
 
           // Wait for the passcode input to appear
           const passcodeInput = page.locator(
-            'input[name="passcode-input"], ' +
-            'input[name="passcode"], ' +
-            'input.passcode-input'
+            'input[name="passcode-input"], ' + 'input[name="passcode"], ' + "input.passcode-input",
           );
           await passcodeInput.first().waitFor({ state: "visible", timeout: 5000 });
 
@@ -209,25 +221,24 @@ async function runLoginFlow(
           // Click verify/submit
           const verifyBtn = page.locator(
             'button:has-text("Verify"), button:has-text("Submit"), ' +
-            'button:has-text("Log In"), button[type="submit"], ' +
-            'input[type="submit"]'
+              'button:has-text("Log In"), button[type="submit"], ' +
+              'input[type="submit"]',
           );
           await verifyBtn.first().click();
           console.log("[canvas] Duo passcode submitted.");
           duoHandled = true;
-
         } else if (isLegacyIframe) {
           // --- Legacy Duo iframe prompt ---
           console.log("[canvas] Detected legacy Duo iframe prompt.");
           const duoFrame = page.frameLocator(
-            'iframe#duo_iframe, iframe[src*="duosecurity"], iframe[src*="duo.com"]'
+            'iframe#duo_iframe, iframe[src*="duosecurity"], iframe[src*="duo.com"]',
           );
 
           const passcodeBtn = duoFrame.locator(
             'button:has-text("Enter a Passcode"), ' +
-            'button:has-text("Passcode"), ' +
-            'a:has-text("Enter a Passcode"), ' +
-            'a:has-text("Passcode")'
+              'button:has-text("Passcode"), ' +
+              'a:has-text("Enter a Passcode"), ' +
+              'a:has-text("Passcode")',
           );
 
           if (await passcodeBtn.first().isVisible({ timeout: 5000 })) {
@@ -238,14 +249,14 @@ async function runLoginFlow(
             console.log("[canvas] Generated Duo TOTP passcode.");
 
             const passcodeInput = duoFrame.locator(
-              'input[name="passcode"], input.passcode-input, input[type="text"]'
+              'input[name="passcode"], input.passcode-input, input[type="text"]',
             );
             await passcodeInput.first().fill(code);
 
             const verifyBtn = duoFrame.locator(
               'button:has-text("Verify"), button:has-text("Submit"), ' +
-              'button:has-text("Log In"), button[type="submit"], ' +
-              'input[type="submit"]'
+                'button:has-text("Log In"), button[type="submit"], ' +
+                'input[type="submit"]',
             );
             await verifyBtn.first().click();
             console.log("[canvas] Duo passcode submitted.");
@@ -290,10 +301,10 @@ async function runLoginFlow(
         try {
           const trustBtn = page.locator(
             'button:has-text("Yes, this is my device"), ' +
-            'button:has-text("Trust"), ' +
-            'button:has-text("Yes"), ' +
-            'button#trust-browser-button, ' +
-            'input[value="Yes, this is my device"]'
+              'button:has-text("Trust"), ' +
+              'button:has-text("Yes"), ' +
+              "button#trust-browser-button, " +
+              'input[value="Yes, this is my device"]',
           );
           if (await trustBtn.first().isVisible({ timeout: 500 })) {
             await trustBtn.first().click();

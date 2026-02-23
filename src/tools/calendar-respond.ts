@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -27,23 +27,30 @@ export function createCalendarRespondTool(clientManager: OAuthClientManager): an
     parameters: Type.Object({
       event_id: Type.String({ description: "The Google Calendar event ID to respond to." }),
       response: Type.Union(
-        [
-          Type.Literal("accepted"),
-          Type.Literal("declined"),
-          Type.Literal("tentative"),
-        ],
-        { description: "Your RSVP response: 'accepted', 'declined', or 'tentative'." }
+        [Type.Literal("accepted"), Type.Literal("declined"), Type.Literal("tentative")],
+        { description: "Your RSVP response: 'accepted', 'declined', or 'tentative'." },
       ),
       calendar_id: Type.Optional(
-        Type.String({ description: "Calendar ID the event belongs to. Defaults to 'primary'.", default: "primary" })
+        Type.String({
+          description: "Calendar ID the event belongs to. Defaults to 'primary'.",
+          default: "primary",
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { event_id: string; response: "accepted" | "declined" | "tentative"; calendar_id?: string; account?: string }
+      params: {
+        event_id: string;
+        response: "accepted" | "declined" | "tentative";
+        calendar_id?: string;
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -70,7 +77,7 @@ export function createCalendarRespondTool(clientManager: OAuthClientManager): an
       }
 
       const updatedAttendees = attendees.map((a) =>
-        a.self ? { ...a, responseStatus: params.response } : a
+        a.self ? { ...a, responseStatus: params.response } : a,
       );
 
       await calendar.events.patch({

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -29,21 +29,24 @@ export function createDriveListTool(clientManager: OAuthClientManager): any {
         Type.String({
           description: "ID of the folder to list. Defaults to the Drive root.",
           default: "root",
-        })
+        }),
       ),
       max_results: Type.Optional(
         Type.Number({
           description: "Maximum number of files to return. Defaults to 20.",
           default: 20,
-        })
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { folder_id?: string; max_results?: number; account?: string }
+      params: { folder_id?: string; max_results?: number; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {

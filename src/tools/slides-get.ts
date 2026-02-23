@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google, slides_v1 } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -45,9 +45,14 @@ export function createSlidesGetTool(clientManager: OAuthClientManager): any {
     description:
       "Fetch a Google Slides presentation by its ID. Returns the title, slide count, and the text content and speaker notes of each slide.",
     parameters: Type.Object({
-      presentation_id: Type.String({ description: "The Google Slides presentation ID (from its URL)." }),
+      presentation_id: Type.String({
+        description: "The Google Slides presentation ID (from its URL).",
+      }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { presentation_id: string; account?: string }) {
@@ -65,9 +70,7 @@ export function createSlidesGetTool(clientManager: OAuthClientManager): any {
 
       const pres = res.data;
       const slideData = (pres.slides ?? []).map((slide, i) => {
-        const texts = (slide.pageElements ?? [])
-          .map(extractShapeText)
-          .filter(Boolean);
+        const texts = (slide.pageElements ?? []).map(extractShapeText).filter(Boolean);
         return {
           index: i + 1,
           objectId: slide.objectId ?? "",

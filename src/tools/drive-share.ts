@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -28,21 +28,20 @@ export function createDriveShareTool(clientManager: OAuthClientManager): any {
       file_id: Type.String({ description: "ID of the file or folder to share." }),
       email: Type.String({ description: "Email address of the person to share with." }),
       role: Type.Union(
-        [
-          Type.Literal("reader"),
-          Type.Literal("commenter"),
-          Type.Literal("writer"),
-        ],
-        { description: "Permission level: 'reader', 'commenter', or 'writer'." }
+        [Type.Literal("reader"), Type.Literal("commenter"), Type.Literal("writer")],
+        { description: "Permission level: 'reader', 'commenter', or 'writer'." },
       ),
       notify: Type.Optional(
         Type.Boolean({
           description: "Send an email notification to the recipient. Defaults to true.",
           default: true,
-        })
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
@@ -53,7 +52,7 @@ export function createDriveShareTool(clientManager: OAuthClientManager): any {
         role: "reader" | "commenter" | "writer";
         notify?: boolean;
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {

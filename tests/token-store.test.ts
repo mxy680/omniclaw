@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { writeFileSync, existsSync, rmSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
 import { randomUUID } from "crypto";
-import { TokenStore } from "../src/auth/token-store";
+import { writeFileSync, existsSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { TokenStore } from "../src/auth/token-store.js";
 
 function tempPath() {
   return join(tmpdir(), `omniclaw-test-${randomUUID()}.json`);

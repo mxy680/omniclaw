@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -22,20 +22,22 @@ export function createDocsCreateTool(clientManager: OAuthClientManager): any {
   return {
     name: "docs_create",
     label: "Docs Create",
-    description:
-      "Create a new Google Doc with a given title and optional initial text content.",
+    description: "Create a new Google Doc with a given title and optional initial text content.",
     parameters: Type.Object({
       title: Type.String({ description: "Title of the new document." }),
       content: Type.Optional(
-        Type.String({ description: "Initial text content to insert into the document." })
+        Type.String({ description: "Initial text content to insert into the document." }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { title: string; content?: string; account?: string }
+      params: { title: string; content?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {

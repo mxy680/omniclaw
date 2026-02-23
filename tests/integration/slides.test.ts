@@ -3,25 +3,23 @@
  * Run with: RUN_WRITE_TESTS=1 CLIENT_SECRET_PATH="..." pnpm vitest run tests/integration/slides.test.ts
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
 import { existsSync } from "fs";
-import { join } from "path";
 import { homedir } from "os";
-
-import { OAuthClientManager } from "../../src/auth/oauth-client-manager";
-import { TokenStore } from "../../src/auth/token-store";
-import { createSlidesCreateTool } from "../../src/tools/slides-create";
-import { createSlidesGetTool } from "../../src/tools/slides-get";
-import { createSlidesAppendSlideTool } from "../../src/tools/slides-append-slide";
-import { createSlidesReplaceTextTool } from "../../src/tools/slides-replace-text";
-import { createDriveDeleteTool } from "../../src/tools/drive-delete";
+import { join } from "path";
+import { describe, it, expect, beforeAll } from "vitest";
+import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
+import { TokenStore } from "../../src/auth/token-store.js";
+import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
+import { createSlidesAppendSlideTool } from "../../src/tools/slides-append-slide.js";
+import { createSlidesCreateTool } from "../../src/tools/slides-create.js";
+import { createSlidesGetTool } from "../../src/tools/slides-get.js";
+import { createSlidesReplaceTextTool } from "../../src/tools/slides-replace-text.js";
 
 const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
   "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com(1).json";
 
-const TOKENS_PATH =
-  process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
+const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
 const ACCOUNT = process.env.GMAIL_ACCOUNT ?? "default";
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
@@ -36,14 +34,12 @@ let clientManager: OAuthClientManager;
 let createdPresentationId: string;
 
 describe.skipIf(!credentialsExist)("Google Slides API integration", { timeout: 30_000 }, () => {
-
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
   });
 
   describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
-
     it("slides_create — creates a presentation", async () => {
       const tool = createSlidesCreateTool(clientManager);
       const result = await tool.execute("t", {
@@ -99,8 +95,8 @@ describe.skipIf(!credentialsExist)("Google Slides API integration", { timeout: 3
         presentation_id: createdPresentationId,
       });
 
-      const hasTestSlide = result.details.slides.some(
-        (s: { texts: string[] }) => s.texts.some((t) => t.includes("Test Slide Title"))
+      const hasTestSlide = result.details.slides.some((s: { texts: string[] }) =>
+        s.texts.some((t) => t.includes("Test Slide Title")),
       );
       expect(hasTestSlide).toBe(true);
     });

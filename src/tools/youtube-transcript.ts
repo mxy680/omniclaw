@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { parseVideoId } from "./youtube-utils";
+import { parseVideoId } from "./youtube-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -25,18 +25,19 @@ export function createYouTubeTranscriptTool(): any {
       }),
       lang: Type.Optional(
         Type.String({
-          description: "Language code for the transcript (e.g. 'en', 'es', 'fr'). Defaults to 'en'.",
+          description:
+            "Language code for the transcript (e.g. 'en', 'es', 'fr'). Defaults to 'en'.",
           default: "en",
-        })
+        }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { video: string; lang?: string }
-    ) {
+    async execute(_toolCallId: string, params: { video: string; lang?: string }) {
       const videoId = parseVideoId(params.video);
       if (!videoId) {
-        return jsonResult({ error: "invalid_video", message: "Could not parse a video ID from the input." });
+        return jsonResult({
+          error: "invalid_video",
+          message: "Could not parse a video ID from the input.",
+        });
       }
 
       try {

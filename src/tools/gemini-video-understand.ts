@@ -1,7 +1,7 @@
-import { Type } from "@sinclair/typebox";
 import { existsSync, statSync } from "fs";
 import { extname } from "path";
-import type { GeminiClientManager } from "../auth/gemini-client-manager";
+import { Type } from "@sinclair/typebox";
+import type { GeminiClientManager } from "../auth/gemini-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -33,15 +33,19 @@ export function createGeminiAnalyzeVideoTool(manager: GeminiClientManager): any 
         Type.String({
           description: "Model to use. Default: gemini-2.5-flash.",
           default: "gemini-2.5-flash",
-        })
+        }),
       ),
       media_resolution: Type.Optional(
         Type.String({
-          description: "Video processing resolution: 'low', 'medium', or 'high'. Default: 'medium'.",
-        })
+          description:
+            "Video processing resolution: 'low', 'medium', or 'high'. Default: 'medium'.",
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Gemini account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Gemini account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
@@ -52,7 +56,7 @@ export function createGeminiAnalyzeVideoTool(manager: GeminiClientManager): any 
         model?: string;
         media_resolution?: string;
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!manager.hasKey(account)) {
@@ -60,7 +64,10 @@ export function createGeminiAnalyzeVideoTool(manager: GeminiClientManager): any 
       }
 
       if (!existsSync(params.video_path)) {
-        return jsonResult({ error: "file_not_found", message: `Video file not found: ${params.video_path}` });
+        return jsonResult({
+          error: "file_not_found",
+          message: `Video file not found: ${params.video_path}`,
+        });
       }
 
       const model = params.model ?? "gemini-2.5-flash";
@@ -129,10 +136,11 @@ export function createGeminiAnalyzeVideoTool(manager: GeminiClientManager): any 
           config,
         });
 
-        const analysis = response.candidates?.[0]?.content?.parts
-          ?.map((p) => p.text)
-          .filter(Boolean)
-          .join("\n") ?? "";
+        const analysis =
+          response.candidates?.[0]?.content?.parts
+            ?.map((p) => p.text)
+            .filter(Boolean)
+            .join("\n") ?? "";
 
         return jsonResult({
           analysis,

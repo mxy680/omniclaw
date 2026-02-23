@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Credentials } from "google-auth-library";
-import { createGmailModifyTool } from "../src/tools/gmail-modify";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createGmailModifyTool } from "../src/tools/gmail-modify.js";
 
 // ---------------------------------------------------------------------------
 // Mock googleapis
@@ -20,7 +20,12 @@ vi.mock("googleapis", () => ({
         },
       },
     }),
-    auth: { OAuth2: class { setCredentials = vi.fn(); on = vi.fn(); } },
+    auth: {
+      OAuth2: class {
+        setCredentials = vi.fn();
+        on = vi.fn();
+      },
+    },
   },
 }));
 

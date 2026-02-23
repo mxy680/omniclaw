@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { CanvasClientManager } from "../auth/canvas-client-manager";
+import type { CanvasClientManager } from "../auth/canvas-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -30,12 +30,12 @@ export function createCanvasSubmissionsTool(canvasManager: CanvasClientManager):
         Type.String({
           description: "Canvas account name. Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { course_id: string; assignment_id: string; account?: string }
+      params: { course_id: string; assignment_id: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!canvasManager.hasCredentials(account)) {
@@ -45,7 +45,7 @@ export function createCanvasSubmissionsTool(canvasManager: CanvasClientManager):
         const submissions = await canvasManager.getPaginated(
           account,
           `courses/${params.course_id}/assignments/${params.assignment_id}/submissions`,
-          { "include[]": ["submission_comments", "rubric_assessment"] }
+          { "include[]": ["submission_comments", "rubric_assessment"] },
         );
         return jsonResult(submissions);
       } catch (err) {

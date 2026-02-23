@@ -3,26 +3,24 @@
  * Run with: RUN_WRITE_TESTS=1 CLIENT_SECRET_PATH="..." pnpm vitest run tests/integration/sheets.test.ts
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
 import { existsSync } from "fs";
-import { join } from "path";
 import { homedir } from "os";
-
-import { OAuthClientManager } from "../../src/auth/oauth-client-manager";
-import { TokenStore } from "../../src/auth/token-store";
-import { createSheetsCreateTool } from "../../src/tools/sheets-create";
-import { createSheetsGetTool } from "../../src/tools/sheets-get";
-import { createSheetsUpdateTool } from "../../src/tools/sheets-update";
-import { createSheetsAppendTool } from "../../src/tools/sheets-append";
-import { createSheetsClearTool } from "../../src/tools/sheets-clear";
-import { createDriveDeleteTool } from "../../src/tools/drive-delete";
+import { join } from "path";
+import { describe, it, expect, beforeAll } from "vitest";
+import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
+import { TokenStore } from "../../src/auth/token-store.js";
+import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
+import { createSheetsAppendTool } from "../../src/tools/sheets-append.js";
+import { createSheetsClearTool } from "../../src/tools/sheets-clear.js";
+import { createSheetsCreateTool } from "../../src/tools/sheets-create.js";
+import { createSheetsGetTool } from "../../src/tools/sheets-get.js";
+import { createSheetsUpdateTool } from "../../src/tools/sheets-update.js";
 
 const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
   "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com(1).json";
 
-const TOKENS_PATH =
-  process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
+const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
 const ACCOUNT = process.env.GMAIL_ACCOUNT ?? "default";
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
@@ -37,14 +35,12 @@ let clientManager: OAuthClientManager;
 let createdSpreadsheetId: string;
 
 describe.skipIf(!credentialsExist)("Google Sheets API integration", { timeout: 30_000 }, () => {
-
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
   });
 
   describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
-
     it("sheets_create — creates a spreadsheet", async () => {
       const tool = createSheetsCreateTool(clientManager);
       const result = await tool.execute("t", {

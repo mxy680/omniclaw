@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -34,7 +34,10 @@ export function createDriveReadTool(clientManager: OAuthClientManager): any {
     parameters: Type.Object({
       file_id: Type.String({ description: "The Google Drive file ID." }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { file_id: string; account?: string }) {
@@ -62,7 +65,7 @@ export function createDriveReadTool(clientManager: OAuthClientManager): any {
         // Google Workspace file — export as text
         const res = await drive.files.export(
           { fileId: params.file_id, mimeType: exportMime },
-          { responseType: "text" }
+          { responseType: "text" },
         );
         content = res.data as string;
         exportedAs = exportMime;
@@ -74,7 +77,7 @@ export function createDriveReadTool(clientManager: OAuthClientManager): any {
         // Plain text file — download directly
         const res = await drive.files.get(
           { fileId: params.file_id, alt: "media" },
-          { responseType: "text" }
+          { responseType: "text" },
         );
         content = res.data as string;
         exportedAs = mimeType;

@@ -1,7 +1,7 @@
-import { Type } from "@sinclair/typebox";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { extname, join } from "path";
-import type { GeminiClientManager } from "../auth/gemini-client-manager";
+import { Type } from "@sinclair/typebox";
+import type { GeminiClientManager } from "../auth/gemini-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -34,30 +34,41 @@ export function createGeminiGenerateVideoTool(manager: GeminiClientManager): any
       "Generation is asynchronous — the tool polls until completion or timeout.",
     parameters: Type.Object({
       prompt: Type.String({ description: "Text prompt describing the video to generate." }),
-      save_directory: Type.String({ description: "Directory path where generated videos will be saved." }),
+      save_directory: Type.String({
+        description: "Directory path where generated videos will be saved.",
+      }),
       model: Type.Optional(
         Type.String({
-          description: "Model to use. Options: veo-3.1-generate-preview (default), veo-3.1-fast-generate-preview.",
+          description:
+            "Model to use. Options: veo-3.1-generate-preview (default), veo-3.1-fast-generate-preview.",
           default: "veo-3.1-generate-preview",
-        })
+        }),
       ),
       input_image_path: Type.Optional(
-        Type.String({ description: "Optional path to an input image for image-to-video generation." })
+        Type.String({
+          description: "Optional path to an input image for image-to-video generation.",
+        }),
       ),
       aspect_ratio: Type.Optional(
-        Type.String({ description: "Aspect ratio (e.g. '16:9', '9:16'). Default '16:9'." })
+        Type.String({ description: "Aspect ratio (e.g. '16:9', '9:16'). Default '16:9'." }),
       ),
       duration_seconds: Type.Optional(
-        Type.Number({ description: "Video duration in seconds (e.g. 5, 8)." })
+        Type.Number({ description: "Video duration in seconds (e.g. 5, 8)." }),
       ),
       number_of_videos: Type.Optional(
-        Type.Number({ description: "Number of videos to generate. Default 1.", default: 1 })
+        Type.Number({ description: "Number of videos to generate. Default 1.", default: 1 }),
       ),
       timeout_seconds: Type.Optional(
-        Type.Number({ description: "Maximum time to wait for generation in seconds. Default 300.", default: 300 })
+        Type.Number({
+          description: "Maximum time to wait for generation in seconds. Default 300.",
+          default: 300,
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Gemini account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Gemini account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
@@ -72,7 +83,7 @@ export function createGeminiGenerateVideoTool(manager: GeminiClientManager): any
         number_of_videos?: number;
         timeout_seconds?: number;
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!manager.hasKey(account)) {
@@ -80,7 +91,10 @@ export function createGeminiGenerateVideoTool(manager: GeminiClientManager): any
       }
 
       if (params.input_image_path && !existsSync(params.input_image_path)) {
-        return jsonResult({ error: "file_not_found", message: `Input image not found: ${params.input_image_path}` });
+        return jsonResult({
+          error: "file_not_found",
+          message: `Input image not found: ${params.input_image_path}`,
+        });
       }
 
       const model = params.model ?? "veo-3.1-generate-preview";

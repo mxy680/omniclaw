@@ -1,7 +1,9 @@
 {
-  "name": "omniclaw",
-  "version": "0.1.0",
-  "main": "dist/index.js",
+  "name": "@openclaw/omniclaw",
+  "version": "2026.2.23",
+  "private": true,
+  "description": "Google Workspace, GitHub, Gemini AI, Canvas LMS, and YouTube tools for OpenClaw",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -11,12 +13,12 @@
   },
   "openclaw": {
     "extensions": [
-      "./dist/index.js"
+      "./index.ts"
     ]
   },
   "dependencies": {
     "@google/genai": "^1.42.0",
-    "@sinclair/typebox": "^0.34.48",
+    "@sinclair/typebox": "0.34.48",
     "google-auth-library": "^10.5.0",
     "googleapis": "^144.0.0",
     "open": "^10.1.0",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "openclaw": "workspace:*",
     "tsx": "^4.21.0",
     "typescript": "^5.4.0",
     "vitest": "^4.0.18"

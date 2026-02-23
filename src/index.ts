@@ -1,4 +1,4 @@
-import { register } from "./plugin";
+import { register } from "./plugin.js";
 
 const omniclawPlugin = {
   id: "omniclaw",

@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { CanvasClientManager } from "../auth/canvas-client-manager";
+import type { CanvasClientManager } from "../auth/canvas-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -26,20 +26,18 @@ export function createCanvasAnnouncementsTool(canvasManager: CanvasClientManager
     parameters: Type.Object({
       course_ids: Type.Optional(
         Type.Array(Type.Number(), {
-          description: "List of course IDs to fetch announcements for. Fetches all active courses if omitted.",
-        })
+          description:
+            "List of course IDs to fetch announcements for. Fetches all active courses if omitted.",
+        }),
       ),
       account: Type.Optional(
         Type.String({
           description: "Canvas account name. Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { course_ids?: number[]; account?: string }
-    ) {
+    async execute(_toolCallId: string, params: { course_ids?: number[]; account?: string }) {
       const account = params.account ?? "default";
       if (!canvasManager.hasCredentials(account)) {
         return jsonResult(CANVAS_AUTH_REQUIRED);
@@ -49,9 +47,9 @@ export function createCanvasAnnouncementsTool(canvasManager: CanvasClientManager
 
         if (!courseIds || courseIds.length === 0) {
           // Fetch all active courses to get their IDs
-          const courses = await canvasManager.getPaginated(account, "courses", {
+          const courses = (await canvasManager.getPaginated(account, "courses", {
             enrollment_state: "active",
-          }) as Array<{ id: number }>;
+          })) as Array<{ id: number }>;
           courseIds = courses.map((c) => c.id);
         }
 
@@ -60,11 +58,9 @@ export function createCanvasAnnouncementsTool(canvasManager: CanvasClientManager
         }
 
         const contextCodes = courseIds.map((id) => `course_${id}`);
-        const announcements = await canvasManager.getPaginated(
-          account,
-          "announcements",
-          { "context_codes[]": contextCodes }
-        );
+        const announcements = await canvasManager.getPaginated(account, "announcements", {
+          "context_codes[]": contextCodes,
+        });
         return jsonResult(announcements);
       } catch (err) {
         return jsonResult({ error: err instanceof Error ? err.message : String(err) });

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
 
@@ -44,12 +44,15 @@ export function createGmailSendTool(clientManager: OAuthClientManager): any {
       subject: Type.String({ description: "Email subject line." }),
       body: Type.String({ description: "Plain-text email body." }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { to: string; subject: string; body: string; account?: string }
+      params: { to: string; subject: string; body: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -68,7 +71,7 @@ export function createGmailSendTool(clientManager: OAuthClientManager): any {
           "Content-Type": "text/plain; charset=utf-8",
           "MIME-Version": "1.0",
         },
-        params.body
+        params.body,
       );
 
       const res = await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
@@ -89,7 +92,10 @@ export function createGmailReplyTool(clientManager: OAuthClientManager): any {
       id: Type.String({ description: "The Gmail message ID to reply to." }),
       body: Type.String({ description: "Plain-text reply body." }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { id: string; body: string; account?: string }) {
@@ -119,9 +125,7 @@ export function createGmailReplyTool(clientManager: OAuthClientManager): any {
       const threadId = orig.data.threadId ?? undefined;
 
       const replySubject = origSubject.startsWith("Re:") ? origSubject : `Re: ${origSubject}`;
-      const references = origReferences
-        ? `${origReferences} ${origMessageId}`
-        : origMessageId;
+      const references = origReferences ? `${origReferences} ${origMessageId}` : origMessageId;
 
       const from = await getSenderEmail(client);
 
@@ -135,7 +139,7 @@ export function createGmailReplyTool(clientManager: OAuthClientManager): any {
           "Content-Type": "text/plain; charset=utf-8",
           "MIME-Version": "1.0",
         },
-        params.body
+        params.body,
       );
 
       const res = await gmail.users.messages.send({
@@ -175,20 +179,26 @@ export function createGmailForwardTool(clientManager: OAuthClientManager): any {
   return {
     name: "gmail_forward",
     label: "Gmail Forward",
-    description: "Forward an existing Gmail message to another recipient, optionally adding a note.",
+    description:
+      "Forward an existing Gmail message to another recipient, optionally adding a note.",
     parameters: Type.Object({
       id: Type.String({ description: "The Gmail message ID to forward." }),
       to: Type.String({ description: "Recipient email address to forward to." }),
       body: Type.Optional(
-        Type.String({ description: "Optional introductory note to prepend before the forwarded message." })
+        Type.String({
+          description: "Optional introductory note to prepend before the forwarded message.",
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { id: string; to: string; body?: string; account?: string }
+      params: { id: string; to: string; body?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -244,7 +254,7 @@ export function createGmailForwardTool(clientManager: OAuthClientManager): any {
           "Content-Type": "text/plain; charset=utf-8",
           "MIME-Version": "1.0",
         },
-        quotedBody
+        quotedBody,
       );
 
       const res = await gmail.users.messages.send({ userId: "me", requestBody: { raw } });

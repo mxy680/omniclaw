@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -22,18 +22,20 @@ export function createDocsAppendTool(clientManager: OAuthClientManager): any {
   return {
     name: "docs_append",
     label: "Docs Append",
-    description:
-      "Append text to the end of an existing Google Doc.",
+    description: "Append text to the end of an existing Google Doc.",
     parameters: Type.Object({
       document_id: Type.String({ description: "The Google Doc document ID." }),
       text: Type.String({ description: "Text to append to the end of the document." }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { document_id: string; text: string; account?: string }
+      params: { document_id: string; text: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {

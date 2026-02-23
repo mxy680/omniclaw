@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { CanvasClientManager } from "../auth/canvas-client-manager";
+import type { CanvasClientManager } from "../auth/canvas-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -28,7 +28,7 @@ export function createCanvasTodoTool(canvasManager: CanvasClientManager): any {
         Type.String({
           description: "Canvas account name. Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { account?: string }) {

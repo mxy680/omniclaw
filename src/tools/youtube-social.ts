@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
-import { parseVideoId } from "./youtube-utils";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
+import { parseVideoId } from "./youtube-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -31,13 +31,10 @@ export function createYouTubeChannelInfoTool(clientManager: OAuthClientManager):
           "Channel ID (e.g. 'UCXuqSBlHAE6Xw-yeJA0Tunw') or handle (e.g. '@LinusTechTips').",
       }),
       account: Type.Optional(
-        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { channel: string; account?: string }
-    ) {
+    async execute(_toolCallId: string, params: { channel: string; account?: string }) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
         return jsonResult(AUTH_REQUIRED);
@@ -68,7 +65,10 @@ export function createYouTubeChannelInfoTool(clientManager: OAuthClientManager):
 
         const item = res.data.items?.[0];
         if (!item) {
-          return jsonResult({ error: "not_found", message: `No channel found for: ${params.channel}` });
+          return jsonResult({
+            error: "not_found",
+            message: `No channel found for: ${params.channel}`,
+          });
         }
 
         return jsonResult({
@@ -80,7 +80,8 @@ export function createYouTubeChannelInfoTool(clientManager: OAuthClientManager):
           subscriberCount: item.statistics?.subscriberCount ?? "0",
           videoCount: item.statistics?.videoCount ?? "0",
           viewCount: item.statistics?.viewCount ?? "0",
-          thumbnail: item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.default?.url ?? "",
+          thumbnail:
+            item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.default?.url ?? "",
           country: item.snippet?.country ?? "",
         });
       } catch (err) {
@@ -109,21 +110,21 @@ export function createYouTubeVideoCommentsTool(clientManager: OAuthClientManager
         Type.Number({
           description: "Maximum number of comments (1–100). Defaults to 20.",
           default: 20,
-        })
+        }),
       ),
       order: Type.Optional(
         Type.String({
           description: "Sort order: 'relevance' (default) or 'time'.",
           default: "relevance",
-        })
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { video: string; max_results?: number; order?: string; account?: string }
+      params: { video: string; max_results?: number; order?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -132,7 +133,10 @@ export function createYouTubeVideoCommentsTool(clientManager: OAuthClientManager
 
       const videoId = parseVideoId(params.video);
       if (!videoId) {
-        return jsonResult({ error: "invalid_video", message: "Could not parse a video ID from the input." });
+        return jsonResult({
+          error: "invalid_video",
+          message: "Could not parse a video ID from the input.",
+        });
       }
 
       const client = clientManager.getClient(account);
@@ -165,7 +169,10 @@ export function createYouTubeVideoCommentsTool(clientManager: OAuthClientManager
         const message = err instanceof Error ? err.message : String(err);
         // Comments may be disabled on the video
         if (message.includes("commentsDisabled") || message.includes("403")) {
-          return jsonResult({ error: "comments_disabled", message: "Comments are disabled on this video." });
+          return jsonResult({
+            error: "comments_disabled",
+            message: "Comments are disabled on this video.",
+          });
         }
         return jsonResult({
           error: "comments_failed",

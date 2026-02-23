@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
-import { parseVideoId } from "./youtube-utils";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
+import { parseVideoId } from "./youtube-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -31,22 +31,21 @@ export function createYouTubeSearchTool(clientManager: OAuthClientManager): any 
         Type.Number({
           description: "Maximum number of results (1–50). Defaults to 10.",
           default: 10,
-        })
+        }),
       ),
       order: Type.Optional(
         Type.String({
-          description:
-            "Sort order: 'relevance' (default), 'date', 'viewCount', 'rating'.",
+          description: "Sort order: 'relevance' (default), 'date', 'viewCount', 'rating'.",
           default: "relevance",
-        })
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { query: string; max_results?: number; order?: string; account?: string }
+      params: { query: string; max_results?: number; order?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -72,7 +71,8 @@ export function createYouTubeSearchTool(clientManager: OAuthClientManager): any 
           channelId: item.snippet?.channelId ?? "",
           description: item.snippet?.description ?? "",
           publishedAt: item.snippet?.publishedAt ?? "",
-          thumbnail: item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.default?.url ?? "",
+          thumbnail:
+            item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.default?.url ?? "",
         }));
 
         return jsonResult({ query: params.query, results: videos });
@@ -95,16 +95,14 @@ export function createYouTubeVideoDetailsTool(clientManager: OAuthClientManager)
       "Get detailed metadata for a YouTube video: title, description, duration, view/like/comment counts, tags, channel info, and more. Accepts a video ID or full YouTube URL.",
     parameters: Type.Object({
       video: Type.String({
-        description: "YouTube video ID or URL (e.g. 'dQw4w9WgXcQ' or 'https://www.youtube.com/watch?v=dQw4w9WgXcQ').",
+        description:
+          "YouTube video ID or URL (e.g. 'dQw4w9WgXcQ' or 'https://www.youtube.com/watch?v=dQw4w9WgXcQ').",
       }),
       account: Type.Optional(
-        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { video: string; account?: string }
-    ) {
+    async execute(_toolCallId: string, params: { video: string; account?: string }) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
         return jsonResult(AUTH_REQUIRED);
@@ -112,7 +110,10 @@ export function createYouTubeVideoDetailsTool(clientManager: OAuthClientManager)
 
       const videoId = parseVideoId(params.video);
       if (!videoId) {
-        return jsonResult({ error: "invalid_video", message: "Could not parse a video ID from the input." });
+        return jsonResult({
+          error: "invalid_video",
+          message: "Could not parse a video ID from the input.",
+        });
       }
 
       const client = clientManager.getClient(account);
@@ -142,7 +143,8 @@ export function createYouTubeVideoDetailsTool(clientManager: OAuthClientManager)
           viewCount: item.statistics?.viewCount ?? "0",
           likeCount: item.statistics?.likeCount ?? "0",
           commentCount: item.statistics?.commentCount ?? "0",
-          thumbnail: item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.default?.url ?? "",
+          thumbnail:
+            item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.default?.url ?? "",
         });
       } catch (err) {
         return jsonResult({

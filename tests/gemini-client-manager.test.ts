@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { existsSync, unlinkSync, mkdirSync } from "fs";
-import { join } from "path";
 import { tmpdir } from "os";
-import { GeminiClientManager } from "../src/auth/gemini-client-manager";
+import { join } from "path";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { GeminiClientManager } from "../src/auth/gemini-client-manager.js";
 
 vi.mock("@google/genai", () => ({
   GoogleGenAI: class {
@@ -83,7 +83,7 @@ describe("GeminiClientManager", () => {
 
   it("getClient throws for unknown account", () => {
     expect(() => manager.getClient("unknown")).toThrow(
-      "No Gemini API key for account: unknown. Call gemini_auth_setup first."
+      "No Gemini API key for account: unknown. Call gemini_auth_setup first.",
     );
   });
 });

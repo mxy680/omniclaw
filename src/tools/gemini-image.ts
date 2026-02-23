@@ -1,7 +1,7 @@
-import { Type } from "@sinclair/typebox";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { extname, join } from "path";
-import type { GeminiClientManager } from "../auth/gemini-client-manager";
+import { Type } from "@sinclair/typebox";
+import type { GeminiClientManager } from "../auth/gemini-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -44,22 +44,30 @@ export function createGeminiGenerateImageTool(manager: GeminiClientManager): any
       "Use gemini-2.5-flash-preview-image-generation for creative/mixed output, or imagen-4/imagen-4-ultra/imagen-4-fast for high-quality image-only output.",
     parameters: Type.Object({
       prompt: Type.String({ description: "Text prompt describing the image to generate." }),
-      save_directory: Type.String({ description: "Directory path where generated images will be saved." }),
+      save_directory: Type.String({
+        description: "Directory path where generated images will be saved.",
+      }),
       model: Type.Optional(
         Type.String({
           description:
             "Model to use. Options: gemini-2.5-flash-preview-image-generation (default), imagen-4, imagen-4-ultra, imagen-4-fast.",
           default: "gemini-2.5-flash-preview-image-generation",
-        })
+        }),
       ),
       number_of_images: Type.Optional(
-        Type.Number({ description: "Number of images to generate (Imagen models only). Default 1.", default: 1 })
+        Type.Number({
+          description: "Number of images to generate (Imagen models only). Default 1.",
+          default: 1,
+        }),
       ),
       aspect_ratio: Type.Optional(
-        Type.String({ description: "Aspect ratio (e.g. '16:9', '1:1', '9:16'). Default '1:1'." })
+        Type.String({ description: "Aspect ratio (e.g. '16:9', '1:1', '9:16'). Default '1:1'." }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Gemini account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Gemini account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
@@ -71,7 +79,7 @@ export function createGeminiGenerateImageTool(manager: GeminiClientManager): any
         number_of_images?: number;
         aspect_ratio?: string;
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!manager.hasKey(account)) {
@@ -163,15 +171,20 @@ export function createGeminiEditImageTool(manager: GeminiClientManager): any {
     parameters: Type.Object({
       prompt: Type.String({ description: "Text instruction describing how to edit the image." }),
       input_image_path: Type.String({ description: "Path to the input image file to edit." }),
-      save_directory: Type.String({ description: "Directory path where edited images will be saved." }),
+      save_directory: Type.String({
+        description: "Directory path where edited images will be saved.",
+      }),
       model: Type.Optional(
         Type.String({
           description: "Model to use. Default: gemini-2.5-flash-preview-image-generation.",
           default: "gemini-2.5-flash-preview-image-generation",
-        })
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Gemini account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Gemini account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
@@ -182,7 +195,7 @@ export function createGeminiEditImageTool(manager: GeminiClientManager): any {
         save_directory: string;
         model?: string;
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!manager.hasKey(account)) {
@@ -190,7 +203,10 @@ export function createGeminiEditImageTool(manager: GeminiClientManager): any {
       }
 
       if (!existsSync(params.input_image_path)) {
-        return jsonResult({ error: "file_not_found", message: `Input image not found: ${params.input_image_path}` });
+        return jsonResult({
+          error: "file_not_found",
+          message: `Input image not found: ${params.input_image_path}`,
+        });
       }
 
       const model = params.model ?? "gemini-2.5-flash-preview-image-generation";

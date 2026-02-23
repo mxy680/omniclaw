@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClientManager } from "../auth/github-client-manager";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -21,29 +21,49 @@ export function createGitHubIssuesTool(ghManager: GitHubClientManager): any {
   return {
     name: "github_issues",
     label: "GitHub Issues",
-    description: "List issues for a GitHub repository. Returns issue number, title, state, labels, and assignees.",
+    description:
+      "List issues for a GitHub repository. Returns issue number, title, state, labels, and assignees.",
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner (user or org)." }),
       repo: Type.String({ description: "Repository name." }),
       state: Type.Optional(
-        Type.String({ description: "Filter by state: 'open', 'closed', 'all'. Defaults to 'open'.", default: "open" })
+        Type.String({
+          description: "Filter by state: 'open', 'closed', 'all'. Defaults to 'open'.",
+          default: "open",
+        }),
       ),
       labels: Type.Optional(
-        Type.String({ description: "Comma-separated list of label names to filter by." })
+        Type.String({ description: "Comma-separated list of label names to filter by." }),
       ),
       assignee: Type.Optional(
-        Type.String({ description: "Filter by assignee username. Use '*' for any, 'none' for unassigned." })
+        Type.String({
+          description: "Filter by assignee username. Use '*' for any, 'none' for unassigned.",
+        }),
       ),
       per_page: Type.Optional(
-        Type.String({ description: "Results per page (max 100). Defaults to '30'.", default: "30" })
+        Type.String({
+          description: "Results per page (max 100). Defaults to '30'.",
+          default: "30",
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; state?: string; labels?: string; assignee?: string; per_page?: string; account?: string }
+      params: {
+        owner: string;
+        repo: string;
+        state?: string;
+        labels?: string;
+        assignee?: string;
+        per_page?: string;
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -53,7 +73,11 @@ export function createGitHubIssuesTool(ghManager: GitHubClientManager): any {
         if (params.labels) qp.labels = params.labels;
         if (params.assignee) qp.assignee = params.assignee;
         if (params.per_page) qp.per_page = params.per_page;
-        const issues = await ghManager.get(account, `repos/${params.owner}/${params.repo}/issues`, qp);
+        const issues = await ghManager.get(
+          account,
+          `repos/${params.owner}/${params.repo}/issues`,
+          qp,
+        );
         return jsonResult(issues);
       } catch (err) {
         return jsonResult({ error: err instanceof Error ? err.message : String(err) });
@@ -73,12 +97,15 @@ export function createGitHubGetIssueTool(ghManager: GitHubClientManager): any {
       repo: Type.String({ description: "Repository name." }),
       issue_number: Type.String({ description: "The issue number." }),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; issue_number: string; account?: string }
+      params: { owner: string; repo: string; issue_number: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -110,12 +137,23 @@ export function createGitHubCreateIssueTool(ghManager: GitHubClientManager): any
       labels: Type.Optional(Type.Array(Type.String(), { description: "Labels to apply." })),
       assignees: Type.Optional(Type.Array(Type.String(), { description: "Usernames to assign." })),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; title: string; body?: string; labels?: string[]; assignees?: string[]; account?: string }
+      params: {
+        owner: string;
+        repo: string;
+        title: string;
+        body?: string;
+        labels?: string[];
+        assignees?: string[];
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -124,7 +162,11 @@ export function createGitHubCreateIssueTool(ghManager: GitHubClientManager): any
         if (params.body !== undefined) payload.body = params.body;
         if (params.labels) payload.labels = params.labels;
         if (params.assignees) payload.assignees = params.assignees;
-        const issue = await ghManager.post(account, `repos/${params.owner}/${params.repo}/issues`, payload);
+        const issue = await ghManager.post(
+          account,
+          `repos/${params.owner}/${params.repo}/issues`,
+          payload,
+        );
         return jsonResult(issue);
       } catch (err) {
         return jsonResult({ error: err instanceof Error ? err.message : String(err) });
@@ -147,18 +189,29 @@ export function createGitHubUpdateIssueTool(ghManager: GitHubClientManager): any
       body: Type.Optional(Type.String({ description: "New body (Markdown)." })),
       state: Type.Optional(Type.String({ description: "New state: 'open' or 'closed'." })),
       labels: Type.Optional(Type.Array(Type.String(), { description: "Replace all labels." })),
-      assignees: Type.Optional(Type.Array(Type.String(), { description: "Replace all assignees." })),
+      assignees: Type.Optional(
+        Type.Array(Type.String(), { description: "Replace all assignees." }),
+      ),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
       params: {
-        owner: string; repo: string; issue_number: string;
-        title?: string; body?: string; state?: string; labels?: string[]; assignees?: string[];
+        owner: string;
+        repo: string;
+        issue_number: string;
+        title?: string;
+        body?: string;
+        state?: string;
+        labels?: string[];
+        assignees?: string[];
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -172,7 +225,7 @@ export function createGitHubUpdateIssueTool(ghManager: GitHubClientManager): any
         const issue = await ghManager.patch(
           account,
           `repos/${params.owner}/${params.repo}/issues/${params.issue_number}`,
-          payload
+          payload,
         );
         return jsonResult(issue);
       } catch (err) {
@@ -194,12 +247,15 @@ export function createGitHubAddIssueCommentTool(ghManager: GitHubClientManager):
       issue_number: Type.String({ description: "The issue number." }),
       body: Type.String({ description: "Comment body (Markdown)." }),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; issue_number: string; body: string; account?: string }
+      params: { owner: string; repo: string; issue_number: string; body: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -207,7 +263,7 @@ export function createGitHubAddIssueCommentTool(ghManager: GitHubClientManager):
         const comment = await ghManager.post(
           account,
           `repos/${params.owner}/${params.repo}/issues/${params.issue_number}/comments`,
-          { body: params.body }
+          { body: params.body },
         );
         return jsonResult(comment);
       } catch (err) {

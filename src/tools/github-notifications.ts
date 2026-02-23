@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClientManager } from "../auth/github-client-manager";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -24,21 +24,35 @@ export function createGitHubNotificationsTool(ghManager: GitHubClientManager): a
     description: "List your GitHub notifications.",
     parameters: Type.Object({
       all: Type.Optional(
-        Type.String({ description: "If 'true', show all notifications including read ones. Defaults to 'false'.", default: "false" })
+        Type.String({
+          description:
+            "If 'true', show all notifications including read ones. Defaults to 'false'.",
+          default: "false",
+        }),
       ),
       participating: Type.Optional(
-        Type.String({ description: "If 'true', only show notifications you're directly participating in. Defaults to 'false'.", default: "false" })
+        Type.String({
+          description:
+            "If 'true', only show notifications you're directly participating in. Defaults to 'false'.",
+          default: "false",
+        }),
       ),
       per_page: Type.Optional(
-        Type.String({ description: "Results per page (max 100). Defaults to '30'.", default: "30" })
+        Type.String({
+          description: "Results per page (max 100). Defaults to '30'.",
+          default: "30",
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { all?: string; participating?: string; per_page?: string; account?: string }
+      params: { all?: string; participating?: string; per_page?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -65,18 +79,22 @@ export function createGitHubMarkNotificationReadTool(ghManager: GitHubClientMana
     parameters: Type.Object({
       thread_id: Type.String({ description: "The notification thread ID." }),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { thread_id: string; account?: string }
-    ) {
+    async execute(_toolCallId: string, params: { thread_id: string; account?: string }) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
       try {
         await ghManager.patch(account, `notifications/threads/${params.thread_id}`);
-        return jsonResult({ status: "ok", thread_id: params.thread_id, message: "Notification marked as read." });
+        return jsonResult({
+          status: "ok",
+          thread_id: params.thread_id,
+          message: "Notification marked as read.",
+        });
       } catch (err) {
         return jsonResult({ error: err instanceof Error ? err.message : String(err) });
       }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createGeminiAuthTool } from "../src/tools/gemini-auth-tool";
+import { createGeminiAuthTool } from "../src/tools/gemini-auth-tool.js";
 
 const mocks = vi.hoisted(() => ({
   modelsList: vi.fn(),
@@ -38,9 +38,12 @@ describe("createGeminiAuthTool", () => {
 
   it("reads key from config fallback", async () => {
     const manager = makeManager();
-    const tool = createGeminiAuthTool(manager as any, {
-      gemini_api_key: "config-key-123",
-    } as any);
+    const tool = createGeminiAuthTool(
+      manager as any,
+      {
+        gemini_api_key: "config-key-123",
+      } as any,
+    );
 
     mocks.modelsList.mockResolvedValue({ page: [], pageLength: 5 });
 
@@ -51,9 +54,12 @@ describe("createGeminiAuthTool", () => {
 
   it("uses explicit api_key over config", async () => {
     const manager = makeManager();
-    const tool = createGeminiAuthTool(manager as any, {
-      gemini_api_key: "config-key",
-    } as any);
+    const tool = createGeminiAuthTool(
+      manager as any,
+      {
+        gemini_api_key: "config-key",
+      } as any,
+    );
 
     mocks.modelsList.mockResolvedValue({ page: [], pageLength: 3 });
 

@@ -58,16 +58,23 @@ export class GitHubClientManager {
 
   private resolveToken(account: string): string {
     const token = this.getToken(account);
-    if (!token) throw new Error("No GitHub token for account: " + account + ". Call github_auth_setup first.");
+    if (!token)
+      throw new Error(
+        "No GitHub token for account: " + account + ". Call github_auth_setup first.",
+      );
     return token;
   }
 
   private handleError(res: Response): never {
     if (res.status === 401) {
-      throw new Error("GitHub token is invalid or expired. Call github_auth_setup with a new token.");
+      throw new Error(
+        "GitHub token is invalid or expired. Call github_auth_setup with a new token.",
+      );
     }
     if (res.status === 403) {
-      throw new Error("GitHub API forbidden — possible rate limit or insufficient token permissions.");
+      throw new Error(
+        "GitHub API forbidden — possible rate limit or insufficient token permissions.",
+      );
     }
     if (res.status === 404) {
       throw new Error("GitHub resource not found (404). Check the owner, repo, or resource ID.");
@@ -91,7 +98,11 @@ export class GitHubClientManager {
     return url.toString();
   }
 
-  async get(account: string, path: string, params?: Record<string, string | string[]>): Promise<unknown> {
+  async get(
+    account: string,
+    path: string,
+    params?: Record<string, string | string[]>,
+  ): Promise<unknown> {
     const token = this.resolveToken(account);
     const url = this.buildUrl(path, params);
 
@@ -159,7 +170,7 @@ export class GitHubClientManager {
     account: string,
     path: string,
     params?: Record<string, string | string[]>,
-    maxPages = 10
+    maxPages = 10,
   ): Promise<unknown[]> {
     const token = this.resolveToken(account);
     const headers = this.buildHeaders(token);

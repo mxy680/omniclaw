@@ -73,9 +73,12 @@ export class CanvasClientManager {
 
   private buildHeaders(session: CanvasSession): Record<string, string> {
     const allCookies = session.all_cookies;
-    const cookieStr = Object.keys(allCookies).length > 0
-      ? Object.entries(allCookies).map(([k, v]) => `${k}=${v}`).join("; ")
-      : `canvas_session=${session.canvas_session}`;
+    const cookieStr =
+      Object.keys(allCookies).length > 0
+        ? Object.entries(allCookies)
+            .map(([k, v]) => `${k}=${v}`)
+            .join("; ")
+        : `canvas_session=${session.canvas_session}`;
 
     const headers: Record<string, string> = {
       Cookie: cookieStr,
@@ -91,7 +94,11 @@ export class CanvasClientManager {
     return headers;
   }
 
-  async get(account: string, path: string, params?: Record<string, string | string[]>): Promise<unknown> {
+  async get(
+    account: string,
+    path: string,
+    params?: Record<string, string | string[]>,
+  ): Promise<unknown> {
     const session = this.getCredentials(account);
     if (!session) throw new Error("No credentials for account: " + account);
 
@@ -129,7 +136,7 @@ export class CanvasClientManager {
     account: string,
     path: string,
     params?: Record<string, string | string[]>,
-    maxPages = 10
+    maxPages = 10,
   ): Promise<unknown[]> {
     const session = this.getCredentials(account);
     if (!session) throw new Error("No credentials for account: " + account);
@@ -167,7 +174,7 @@ export class CanvasClientManager {
         throw new Error(`Canvas API error: ${res.status} ${res.statusText}`);
       }
 
-      const data = await res.json() as unknown[];
+      const data = (await res.json()) as unknown[];
       results.push(...data);
 
       // Follow Link: rel="next" header

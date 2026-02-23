@@ -24,10 +24,10 @@
  *   pnpm vitest run tests/integration/duo-totp.test.ts
  */
 
-import { describe, it, expect, afterEach, vi } from "vitest";
-import { join } from "path";
 import { tmpdir } from "os";
-import { generateDuoPasscode } from "../../src/auth/duo-totp";
+import { join } from "path";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { generateDuoPasscode } from "../../src/auth/duo-totp.js";
 
 // ---------------------------------------------------------------------------
 // RFC 4226 Appendix D test secret: ASCII "12345678901234567890"
@@ -64,7 +64,7 @@ describe("Duo TOTP — RFC 4226/6238 test vectors", () => {
     ({ counter, expectedCode }) => {
       vi.useFakeTimers({ now: counter * 30_000 });
       expect(generateDuoPasscode(RFC_SECRET)).toBe(expectedCode);
-    }
+    },
   );
 
   it("produces all 10 vectors when time advances by 30-second steps", () => {
@@ -170,7 +170,7 @@ const liveCredentialsProvided =
 if (!liveCredentialsProvided) {
   console.warn(
     "\n[integration] Skipping live Canvas TOTP auth test: set CANVAS_BASE_URL, " +
-    "CANVAS_USERNAME, CANVAS_PASSWORD, and DUO_TOTP_SECRET to enable.\n"
+      "CANVAS_USERNAME, CANVAS_PASSWORD, and DUO_TOTP_SECRET to enable.\n",
   );
 }
 
@@ -179,8 +179,8 @@ describe.skipIf(!liveCredentialsProvided)(
   { timeout: 120_000 },
   () => {
     it("authenticates via canvas_auth_setup with TOTP auto-fill", async () => {
-      const { CanvasClientManager } = await import("../../src/auth/canvas-client-manager");
-      const { createCanvasAuthTool } = await import("../../src/tools/canvas-auth-tool");
+      const { CanvasClientManager } = await import("../../src/auth/canvas-client-manager.js");
+      const { createCanvasAuthTool } = await import("../../src/tools/canvas-auth-tool.js");
 
       const tokensPath = join(tmpdir(), `omniclaw-canvas-totp-test-${Date.now()}.json`);
       const canvasManager = new CanvasClientManager(tokensPath);
@@ -203,5 +203,5 @@ describe.skipIf(!liveCredentialsProvided)(
       expect(payload.account).toBe("default");
       expect(payload.name).toBeDefined();
     });
-  }
+  },
 );

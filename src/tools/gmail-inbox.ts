@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -29,7 +29,7 @@ async function fetchMessages(
   clientManager: OAuthClientManager,
   account: string,
   maxResults: number,
-  query?: string
+  query?: string,
 ): Promise<MessageSummary[] | typeof AUTH_REQUIRED> {
   if (!clientManager.listAccounts().includes(account)) {
     return AUTH_REQUIRED;
@@ -66,7 +66,7 @@ async function fetchMessages(
         date: get("Date"),
         snippet: detail.data.snippet ?? "",
       };
-    })
+    }),
   );
 
   return summaries;
@@ -81,10 +81,16 @@ export function createGmailInboxTool(clientManager: OAuthClientManager): any {
       "List recent Gmail inbox messages. Returns up to max_results emails with id, subject, from, date, and snippet. Use gmail_auth_setup first if not authenticated.",
     parameters: Type.Object({
       max_results: Type.Optional(
-        Type.Number({ description: "Maximum number of messages to return. Defaults to 20.", default: 20 })
+        Type.Number({
+          description: "Maximum number of messages to return. Defaults to 20.",
+          default: 20,
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { max_results?: number; account?: string }) {
@@ -104,15 +110,26 @@ export function createGmailSearchTool(clientManager: OAuthClientManager): any {
     description:
       "Search Gmail messages using Gmail query syntax (e.g. 'from:alice after:2025/01/01 has:attachment'). Returns matching messages with id, subject, from, date, snippet.",
     parameters: Type.Object({
-      query: Type.String({ description: "Gmail search query (e.g. 'from:alice has:attachment is:unread')." }),
+      query: Type.String({
+        description: "Gmail search query (e.g. 'from:alice has:attachment is:unread').",
+      }),
       max_results: Type.Optional(
-        Type.Number({ description: "Maximum number of messages to return. Defaults to 20.", default: 20 })
+        Type.Number({
+          description: "Maximum number of messages to return. Defaults to 20.",
+          default: 20,
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
-    async execute(_toolCallId: string, params: { query: string; max_results?: number; account?: string }) {
+    async execute(
+      _toolCallId: string,
+      params: { query: string; max_results?: number; account?: string },
+    ) {
       const account = params.account ?? "default";
       const maxResults = params.max_results ?? 20;
       const result = await fetchMessages(clientManager, account, maxResults, params.query);

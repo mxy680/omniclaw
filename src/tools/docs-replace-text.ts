@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -32,10 +32,13 @@ export function createDocsReplaceTextTool(clientManager: OAuthClientManager): an
         Type.Boolean({
           description: "Whether the search is case-sensitive. Defaults to false.",
           default: false,
-        })
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
@@ -46,7 +49,7 @@ export function createDocsReplaceTextTool(clientManager: OAuthClientManager): an
         replace: string;
         match_case?: boolean;
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -73,8 +76,7 @@ export function createDocsReplaceTextTool(clientManager: OAuthClientManager): an
         },
       });
 
-      const occurrences =
-        res.data.replies?.[0]?.replaceAllText?.occurrencesChanged ?? 0;
+      const occurrences = res.data.replies?.[0]?.replaceAllText?.occurrencesChanged ?? 0;
 
       return jsonResult({
         success: true,

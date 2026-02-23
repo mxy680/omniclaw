@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -27,7 +27,10 @@ export function createDriveGetTool(clientManager: OAuthClientManager): any {
     parameters: Type.Object({
       file_id: Type.String({ description: "The Google Drive file ID." }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { file_id: string; account?: string }) {
@@ -41,7 +44,8 @@ export function createDriveGetTool(clientManager: OAuthClientManager): any {
 
       const res = await drive.files.get({
         fileId: params.file_id,
-        fields: "id,name,mimeType,size,modifiedTime,createdTime,parents,webViewLink,webContentLink,owners,shared,trashed,description",
+        fields:
+          "id,name,mimeType,size,modifiedTime,createdTime,parents,webViewLink,webContentLink,owners,shared,trashed,description",
       });
 
       const f = res.data;
@@ -55,7 +59,10 @@ export function createDriveGetTool(clientManager: OAuthClientManager): any {
         parents: f.parents ?? [],
         webViewLink: f.webViewLink ?? "",
         webContentLink: f.webContentLink ?? "",
-        owners: (f.owners ?? []).map((o) => ({ email: o.emailAddress ?? "", name: o.displayName ?? "" })),
+        owners: (f.owners ?? []).map((o) => ({
+          email: o.emailAddress ?? "",
+          name: o.displayName ?? "",
+        })),
         shared: f.shared ?? false,
         trashed: f.trashed ?? false,
         description: f.description ?? "",

@@ -12,22 +12,21 @@
  *   RUN_WRITE_TESTS=1    enable upload / create folder / move / share / delete tests
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
 import { existsSync } from "fs";
-import { join } from "path";
 import { homedir } from "os";
-
-import { OAuthClientManager } from "../../src/auth/oauth-client-manager";
-import { TokenStore } from "../../src/auth/token-store";
-import { createDriveListTool } from "../../src/tools/drive-list";
-import { createDriveSearchTool } from "../../src/tools/drive-search";
-import { createDriveGetTool } from "../../src/tools/drive-get";
-import { createDriveReadTool } from "../../src/tools/drive-read";
-import { createDriveUploadTool } from "../../src/tools/drive-upload";
-import { createDriveCreateFolderTool } from "../../src/tools/drive-create-folder";
-import { createDriveMoveTool } from "../../src/tools/drive-move";
-import { createDriveDeleteTool } from "../../src/tools/drive-delete";
-import { createDriveShareTool } from "../../src/tools/drive-share";
+import { join } from "path";
+import { describe, it, expect, beforeAll } from "vitest";
+import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
+import { TokenStore } from "../../src/auth/token-store.js";
+import { createDriveCreateFolderTool } from "../../src/tools/drive-create-folder.js";
+import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
+import { createDriveGetTool } from "../../src/tools/drive-get.js";
+import { createDriveListTool } from "../../src/tools/drive-list.js";
+import { createDriveMoveTool } from "../../src/tools/drive-move.js";
+import { createDriveReadTool } from "../../src/tools/drive-read.js";
+import { createDriveSearchTool } from "../../src/tools/drive-search.js";
+import { createDriveShareTool } from "../../src/tools/drive-share.js";
+import { createDriveUploadTool } from "../../src/tools/drive-upload.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -36,21 +35,18 @@ const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
   "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com.json";
 
-const TOKENS_PATH =
-  process.env.TOKENS_PATH ??
-  join(homedir(), ".openclaw", "omniclaw-tokens.json");
+const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
 const ACCOUNT = process.env.GMAIL_ACCOUNT ?? "default";
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
-const credentialsExist =
-  existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
+const credentialsExist = existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
 
 if (!credentialsExist) {
   console.warn(
     "\n[integration] Skipping: credentials not found.\n" +
-    `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
-    `  TOKENS_PATH=${TOKENS_PATH}\n`
+      `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
+      `  TOKENS_PATH=${TOKENS_PATH}\n`,
   );
 }
 
@@ -58,12 +54,11 @@ if (!credentialsExist) {
 // Shared state
 // ---------------------------------------------------------------------------
 let clientManager: OAuthClientManager;
-let uploadedFileId: string;   // set by drive_upload, reused by get/read/move/delete
-let createdFolderId: string;  // set by drive_create_folder, reused by move/delete
+let uploadedFileId: string; // set by drive_upload, reused by get/read/move/delete
+let createdFolderId: string; // set by drive_create_folder, reused by move/delete
 
 // ---------------------------------------------------------------------------
 describe.skipIf(!credentialsExist)("Google Drive API integration", { timeout: 30_000 }, () => {
-
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
@@ -132,7 +127,6 @@ describe.skipIf(!credentialsExist)("Google Drive API integration", { timeout: 30
   // Write tests — opt-in via RUN_WRITE_TESTS=1
   // -------------------------------------------------------------------------
   describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
-
     it("drive_upload — creates a plain-text file and returns its ID", async () => {
       const tool = createDriveUploadTool(clientManager);
       const result = await tool.execute("t", {

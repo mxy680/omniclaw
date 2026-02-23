@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -33,7 +33,7 @@ export function createGmailAccountsTool(clientManager: OAuthClientManager): any 
           } catch {
             return { account, email: null };
           }
-        })
+        }),
       );
 
       return jsonResult({ accounts });

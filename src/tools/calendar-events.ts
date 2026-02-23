@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -26,24 +26,44 @@ export function createCalendarEventsTool(clientManager: OAuthClientManager): any
       "List upcoming Google Calendar events. Defaults to the primary calendar and upcoming events from now. Optionally filter by time range or limit results.",
     parameters: Type.Object({
       calendar_id: Type.Optional(
-        Type.String({ description: "Calendar ID to query. Defaults to 'primary'.", default: "primary" })
+        Type.String({
+          description: "Calendar ID to query. Defaults to 'primary'.",
+          default: "primary",
+        }),
       ),
       max_results: Type.Optional(
-        Type.Number({ description: "Maximum number of events to return. Defaults to 20.", default: 20 })
+        Type.Number({
+          description: "Maximum number of events to return. Defaults to 20.",
+          default: 20,
+        }),
       ),
       time_min: Type.Optional(
-        Type.String({ description: "Lower bound (inclusive) for event start time, as an ISO 8601 datetime. Defaults to now." })
+        Type.String({
+          description:
+            "Lower bound (inclusive) for event start time, as an ISO 8601 datetime. Defaults to now.",
+        }),
       ),
       time_max: Type.Optional(
-        Type.String({ description: "Upper bound (exclusive) for event end time, as an ISO 8601 datetime." })
+        Type.String({
+          description: "Upper bound (exclusive) for event end time, as an ISO 8601 datetime.",
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { calendar_id?: string; max_results?: number; time_min?: string; time_max?: string; account?: string }
+      params: {
+        calendar_id?: string;
+        max_results?: number;
+        time_min?: string;
+        time_max?: string;
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {

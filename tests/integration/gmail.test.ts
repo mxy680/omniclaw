@@ -11,18 +11,21 @@
  *   TEST_RECIPIENT       email to send test messages to (default: authenticated user's own address)
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
 import { existsSync } from "fs";
-import { join } from "path";
 import { homedir } from "os";
-
-import { OAuthClientManager } from "../../src/auth/oauth-client-manager";
-import { TokenStore } from "../../src/auth/token-store";
-import { createGmailInboxTool, createGmailSearchTool } from "../../src/tools/gmail-inbox";
-import { createGmailGetTool } from "../../src/tools/gmail-get";
-import { createGmailSendTool, createGmailReplyTool, createGmailForwardTool } from "../../src/tools/gmail-send";
-import { createGmailModifyTool } from "../../src/tools/gmail-modify";
-import { createGmailAccountsTool } from "../../src/tools/gmail-accounts";
+import { join } from "path";
+import { describe, it, expect, beforeAll } from "vitest";
+import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
+import { TokenStore } from "../../src/auth/token-store.js";
+import { createGmailAccountsTool } from "../../src/tools/gmail-accounts.js";
+import { createGmailGetTool } from "../../src/tools/gmail-get.js";
+import { createGmailInboxTool, createGmailSearchTool } from "../../src/tools/gmail-inbox.js";
+import { createGmailModifyTool } from "../../src/tools/gmail-modify.js";
+import {
+  createGmailSendTool,
+  createGmailReplyTool,
+  createGmailForwardTool,
+} from "../../src/tools/gmail-send.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -31,21 +34,18 @@ const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
   "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com.json";
 
-const TOKENS_PATH =
-  process.env.TOKENS_PATH ??
-  join(homedir(), ".openclaw", "omniclaw-tokens.json");
+const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
 const ACCOUNT = process.env.GMAIL_ACCOUNT ?? "default";
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
-const credentialsExist =
-  existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
+const credentialsExist = existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
 
 if (!credentialsExist) {
   console.warn(
     "\n[integration] Skipping: credentials not found.\n" +
-    `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
-    `  TOKENS_PATH=${TOKENS_PATH}\n`
+      `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
+      `  TOKENS_PATH=${TOKENS_PATH}\n`,
   );
 }
 
@@ -57,7 +57,6 @@ let firstMessageId: string; // grabbed from inbox, reused in get/reply/forward t
 
 // ---------------------------------------------------------------------------
 describe.skipIf(!credentialsExist)("Gmail API integration", { timeout: 30_000 }, () => {
-
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
@@ -74,7 +73,7 @@ describe.skipIf(!credentialsExist)("Gmail API integration", { timeout: 30_000 },
       expect(result.details.accounts).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ account: ACCOUNT, email: expect.any(String) }),
-        ])
+        ]),
       );
     });
   });
@@ -164,7 +163,7 @@ describe.skipIf(!credentialsExist)("Gmail API integration", { timeout: 30_000 },
     it("returns an error object for a non-existent message ID", async () => {
       const tool = createGmailGetTool(clientManager);
       await expect(
-        tool.execute("t", { account: ACCOUNT, id: "000000000000dead" })
+        tool.execute("t", { account: ACCOUNT, id: "000000000000dead" }),
       ).rejects.toThrow();
     });
   });

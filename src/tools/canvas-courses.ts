@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { CanvasClientManager } from "../auth/canvas-client-manager";
+import type { CanvasClientManager } from "../auth/canvas-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -29,19 +29,16 @@ export function createCanvasCoursesTool(canvasManager: CanvasClientManager): any
           description:
             "Filter by enrollment state: 'active', 'invited_or_pending', 'completed'. Defaults to 'active'.",
           default: "active",
-        })
+        }),
       ),
       account: Type.Optional(
         Type.String({
           description: "Canvas account name. Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { enrollment_state?: string; account?: string }
-    ) {
+    async execute(_toolCallId: string, params: { enrollment_state?: string; account?: string }) {
       const account = params.account ?? "default";
       if (!canvasManager.hasCredentials(account)) {
         return jsonResult(CANVAS_AUTH_REQUIRED);
@@ -72,7 +69,7 @@ export function createCanvasGetCourseTool(canvasManager: CanvasClientManager): a
         Type.String({
           description: "Canvas account name. Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { course_id: string; account?: string }) {

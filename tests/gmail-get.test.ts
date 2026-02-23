@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Credentials } from "google-auth-library";
-import { createGmailGetTool } from "../src/tools/gmail-get";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createGmailGetTool } from "../src/tools/gmail-get.js";
 
 // ---------------------------------------------------------------------------
 // Mock googleapis
@@ -12,7 +12,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock("googleapis", () => ({
   google: {
     gmail: () => ({ users: { messages: { get: mocks.messagesGet } } }),
-    auth: { OAuth2: class { setCredentials = vi.fn(); on = vi.fn(); } },
+    auth: {
+      OAuth2: class {
+        setCredentials = vi.fn();
+        on = vi.fn();
+      },
+    },
   },
 }));
 
@@ -127,9 +132,7 @@ describe("createGmailGetTool", () => {
             {
               mimeType: "multipart/alternative",
               body: { data: null },
-              parts: [
-                { mimeType: "text/plain", body: { data: b64("Nested plain") }, parts: null },
-              ],
+              parts: [{ mimeType: "text/plain", body: { data: b64("Nested plain") }, parts: null }],
             },
           ],
         },

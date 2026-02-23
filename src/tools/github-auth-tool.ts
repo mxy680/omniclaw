@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClientManager } from "../auth/github-client-manager";
-import type { PluginConfig } from "../types/plugin-config";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
+import type { PluginConfig } from "../types/plugin-config.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -26,19 +26,16 @@ export function createGitHubAuthTool(ghManager: GitHubClientManager, config: Plu
         Type.String({
           description:
             "GitHub Personal Access Token. If omitted, reads from plugin config github_token.",
-        })
+        }),
       ),
       account: Type.Optional(
         Type.String({
           description: "Name for this account (e.g. 'work', 'personal'). Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { token?: string; account?: string }
-    ) {
+    async execute(_toolCallId: string, params: { token?: string; account?: string }) {
       const account = params.account ?? "default";
       const token = params.token ?? config.github_token;
 
@@ -64,7 +61,8 @@ export function createGitHubAuthTool(ghManager: GitHubClientManager, config: Plu
         if (res.status === 401) {
           return jsonResult({
             status: "error",
-            error: "Token is invalid or expired. Generate a new one at https://github.com/settings/tokens",
+            error:
+              "Token is invalid or expired. Generate a new one at https://github.com/settings/tokens",
           });
         }
         if (!res.ok) {

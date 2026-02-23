@@ -57,7 +57,7 @@ export class GeminiClientManager {
     const apiKey = this.getKey(account);
     if (!apiKey) {
       throw new Error(
-        "No Gemini API key for account: " + account + ". Call gemini_auth_setup first."
+        "No Gemini API key for account: " + account + ". Call gemini_auth_setup first.",
       );
     }
 

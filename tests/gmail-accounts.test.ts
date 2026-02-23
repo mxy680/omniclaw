@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createGmailAccountsTool } from "../src/tools/gmail-accounts";
+import { createGmailAccountsTool } from "../src/tools/gmail-accounts.js";
 
 // ---------------------------------------------------------------------------
 // Mock googleapis
@@ -15,7 +15,12 @@ vi.mock("googleapis", () => ({
         getProfile: mocks.getProfile,
       },
     }),
-    auth: { OAuth2: class { setCredentials = vi.fn(); on = vi.fn(); } },
+    auth: {
+      OAuth2: class {
+        setCredentials = vi.fn();
+        on = vi.fn();
+      },
+    },
   },
 }));
 
@@ -56,7 +61,7 @@ describe("createGmailAccountsTool", () => {
       expect.arrayContaining([
         { account: "work", email: "work@example.com" },
         { account: "personal", email: "personal@example.com" },
-      ])
+      ]),
     );
   });
 

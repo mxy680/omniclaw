@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -29,17 +29,19 @@ export function createSheetsUpdateTool(clientManager: OAuthClientManager): any {
       range: Type.String({
         description: "A1 notation range to write to, e.g. 'Sheet1!A1'.",
       }),
-      values: Type.Array(
-        Type.Array(Type.String(), { description: "A row of cell values." }),
-        { description: "2D array of values: outer array is rows, inner array is columns." }
-      ),
+      values: Type.Array(Type.Array(Type.String(), { description: "A row of cell values." }), {
+        description: "2D array of values: outer array is rows, inner array is columns.",
+      }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { spreadsheet_id: string; range: string; values: string[][]; account?: string }
+      params: { spreadsheet_id: string; range: string; values: string[][]; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {

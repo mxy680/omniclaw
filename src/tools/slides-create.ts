@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -22,12 +22,14 @@ export function createSlidesCreateTool(clientManager: OAuthClientManager): any {
   return {
     name: "slides_create",
     label: "Slides Create",
-    description:
-      "Create a new Google Slides presentation with a given title.",
+    description: "Create a new Google Slides presentation with a given title.",
     parameters: Type.Object({
       title: Type.String({ description: "Title of the new presentation." }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { title: string; account?: string }) {

@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClientManager } from "../auth/github-client-manager";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -26,24 +26,39 @@ export function createGitHubPullsTool(ghManager: GitHubClientManager): any {
       owner: Type.String({ description: "Repository owner (user or org)." }),
       repo: Type.String({ description: "Repository name." }),
       state: Type.Optional(
-        Type.String({ description: "Filter by state: 'open', 'closed', 'all'. Defaults to 'open'.", default: "open" })
+        Type.String({
+          description: "Filter by state: 'open', 'closed', 'all'. Defaults to 'open'.",
+          default: "open",
+        }),
       ),
       head: Type.Optional(
-        Type.String({ description: "Filter by head branch (format: 'user:branch')." })
+        Type.String({ description: "Filter by head branch (format: 'user:branch')." }),
       ),
-      base: Type.Optional(
-        Type.String({ description: "Filter by base branch name." })
-      ),
+      base: Type.Optional(Type.String({ description: "Filter by base branch name." })),
       per_page: Type.Optional(
-        Type.String({ description: "Results per page (max 100). Defaults to '30'.", default: "30" })
+        Type.String({
+          description: "Results per page (max 100). Defaults to '30'.",
+          default: "30",
+        }),
       ),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; state?: string; head?: string; base?: string; per_page?: string; account?: string }
+      params: {
+        owner: string;
+        repo: string;
+        state?: string;
+        head?: string;
+        base?: string;
+        per_page?: string;
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -53,7 +68,11 @@ export function createGitHubPullsTool(ghManager: GitHubClientManager): any {
         if (params.head) qp.head = params.head;
         if (params.base) qp.base = params.base;
         if (params.per_page) qp.per_page = params.per_page;
-        const pulls = await ghManager.get(account, `repos/${params.owner}/${params.repo}/pulls`, qp);
+        const pulls = await ghManager.get(
+          account,
+          `repos/${params.owner}/${params.repo}/pulls`,
+          qp,
+        );
         return jsonResult(pulls);
       } catch (err) {
         return jsonResult({ error: err instanceof Error ? err.message : String(err) });
@@ -67,18 +86,22 @@ export function createGitHubGetPullTool(ghManager: GitHubClientManager): any {
   return {
     name: "github_get_pull",
     label: "GitHub Get Pull Request",
-    description: "Get details for a specific pull request, including diff stats and review summary.",
+    description:
+      "Get details for a specific pull request, including diff stats and review summary.",
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner (user or org)." }),
       repo: Type.String({ description: "Repository name." }),
       pull_number: Type.String({ description: "The pull request number." }),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; pull_number: string; account?: string }
+      params: { owner: string; repo: string; pull_number: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -106,16 +129,29 @@ export function createGitHubCreatePullTool(ghManager: GitHubClientManager): any 
       owner: Type.String({ description: "Repository owner (user or org)." }),
       repo: Type.String({ description: "Repository name." }),
       title: Type.String({ description: "PR title." }),
-      head: Type.String({ description: "The branch that contains the changes (e.g. 'feature-branch')." }),
+      head: Type.String({
+        description: "The branch that contains the changes (e.g. 'feature-branch').",
+      }),
       base: Type.String({ description: "The branch you want to merge into (e.g. 'main')." }),
       body: Type.Optional(Type.String({ description: "PR description (Markdown)." })),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; title: string; head: string; base: string; body?: string; account?: string }
+      params: {
+        owner: string;
+        repo: string;
+        title: string;
+        head: string;
+        base: string;
+        body?: string;
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -126,7 +162,11 @@ export function createGitHubCreatePullTool(ghManager: GitHubClientManager): any 
           base: params.base,
         };
         if (params.body !== undefined) payload.body = params.body;
-        const pull = await ghManager.post(account, `repos/${params.owner}/${params.repo}/pulls`, payload);
+        const pull = await ghManager.post(
+          account,
+          `repos/${params.owner}/${params.repo}/pulls`,
+          payload,
+        );
         return jsonResult(pull);
       } catch (err) {
         return jsonResult({ error: err instanceof Error ? err.message : String(err) });
@@ -146,21 +186,31 @@ export function createGitHubMergePullTool(ghManager: GitHubClientManager): any {
       repo: Type.String({ description: "Repository name." }),
       pull_number: Type.String({ description: "The pull request number." }),
       merge_method: Type.Optional(
-        Type.String({ description: "Merge method: 'merge', 'squash', or 'rebase'. Defaults to 'merge'.", default: "merge" })
+        Type.String({
+          description: "Merge method: 'merge', 'squash', or 'rebase'. Defaults to 'merge'.",
+          default: "merge",
+        }),
       ),
       commit_title: Type.Optional(Type.String({ description: "Custom merge commit title." })),
       commit_message: Type.Optional(Type.String({ description: "Custom merge commit message." })),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
       params: {
-        owner: string; repo: string; pull_number: string;
-        merge_method?: string; commit_title?: string; commit_message?: string;
+        owner: string;
+        repo: string;
+        pull_number: string;
+        merge_method?: string;
+        commit_title?: string;
+        commit_message?: string;
         account?: string;
-      }
+      },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -172,7 +222,7 @@ export function createGitHubMergePullTool(ghManager: GitHubClientManager): any {
         const result = await ghManager.put(
           account,
           `repos/${params.owner}/${params.repo}/pulls/${params.pull_number}/merge`,
-          payload
+          payload,
         );
         return jsonResult(result);
       } catch (err) {
@@ -192,15 +242,29 @@ export function createGitHubAddPullReviewTool(ghManager: GitHubClientManager): a
       owner: Type.String({ description: "Repository owner (user or org)." }),
       repo: Type.String({ description: "Repository name." }),
       pull_number: Type.String({ description: "The pull request number." }),
-      event: Type.String({ description: "Review action: 'APPROVE', 'COMMENT', or 'REQUEST_CHANGES'." }),
-      body: Type.Optional(Type.String({ description: "Review body (required for COMMENT and REQUEST_CHANGES)." })),
+      event: Type.String({
+        description: "Review action: 'APPROVE', 'COMMENT', or 'REQUEST_CHANGES'.",
+      }),
+      body: Type.Optional(
+        Type.String({ description: "Review body (required for COMMENT and REQUEST_CHANGES)." }),
+      ),
       account: Type.Optional(
-        Type.String({ description: "GitHub account name. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "GitHub account name. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; pull_number: string; event: string; body?: string; account?: string }
+      params: {
+        owner: string;
+        repo: string;
+        pull_number: string;
+        event: string;
+        body?: string;
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -210,7 +274,7 @@ export function createGitHubAddPullReviewTool(ghManager: GitHubClientManager): a
         const review = await ghManager.post(
           account,
           `repos/${params.owner}/${params.repo}/pulls/${params.pull_number}/reviews`,
-          payload
+          payload,
         );
         return jsonResult(review);
       } catch (err) {

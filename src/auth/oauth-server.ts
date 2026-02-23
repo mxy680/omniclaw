@@ -1,8 +1,8 @@
 import * as http from "http";
 import { URL } from "url";
-import { google } from "googleapis";
-import { getAuthUrl } from "./gmail-auth";
 import type { Credentials } from "google-auth-library";
+import { google } from "googleapis";
+import { getAuthUrl } from "./gmail-auth.js";
 
 type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
 
@@ -27,7 +27,7 @@ const ERROR_HTML = (msg: string) => `<!DOCTYPE html>
 export async function waitForOAuthCallback(
   client: OAuth2Client,
   port: number,
-  onUrl: (url: string) => void
+  onUrl: (url: string) => void,
 ): Promise<Credentials> {
   return new Promise((resolve, reject) => {
     const server = http.createServer(async (req, res) => {

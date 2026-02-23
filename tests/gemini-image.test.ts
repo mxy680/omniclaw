@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createGeminiGenerateImageTool, createGeminiEditImageTool } from "../src/tools/gemini-image";
+import {
+  createGeminiGenerateImageTool,
+  createGeminiEditImageTool,
+} from "../src/tools/gemini-image.js";
 
 vi.mock("fs", async () => {
   const actual = await vi.importActual<typeof import("fs")>("fs");
@@ -42,14 +45,18 @@ describe("createGeminiGenerateImageTool", () => {
     const tool = createGeminiGenerateImageTool(makeManager() as any);
 
     mocks.generateContent.mockResolvedValue({
-      candidates: [{
-        content: {
-          parts: [
-            { inlineData: { mimeType: "image/png", data: Buffer.from("img").toString("base64") } },
-            { text: "Here is your image" },
-          ],
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                inlineData: { mimeType: "image/png", data: Buffer.from("img").toString("base64") },
+              },
+              { text: "Here is your image" },
+            ],
+          },
         },
-      }],
+      ],
     });
 
     const result = await tool.execute("c", {
@@ -102,7 +109,7 @@ describe("createGeminiGenerateImageTool", () => {
     expect(mocks.generateImages).toHaveBeenCalledWith(
       expect.objectContaining({
         config: expect.objectContaining({ aspectRatio: "16:9" }),
-      })
+      }),
     );
   });
 
@@ -142,13 +149,20 @@ describe("createGeminiEditImageTool", () => {
     vi.mocked(existsSync).mockReturnValue(true);
 
     mocks.generateContent.mockResolvedValue({
-      candidates: [{
-        content: {
-          parts: [
-            { inlineData: { mimeType: "image/png", data: Buffer.from("edited").toString("base64") } },
-          ],
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                inlineData: {
+                  mimeType: "image/png",
+                  data: Buffer.from("edited").toString("base64"),
+                },
+              },
+            ],
+          },
         },
-      }],
+      ],
     });
 
     const result = await tool.execute("c", {
@@ -169,7 +183,7 @@ describe("createGeminiEditImageTool", () => {
             ]),
           }),
         ],
-      })
+      }),
     );
     expect(result.details.images).toHaveLength(1);
   });

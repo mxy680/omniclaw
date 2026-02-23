@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Credentials } from "google-auth-library";
-import { createGmailInboxTool, createGmailSearchTool } from "../src/tools/gmail-inbox";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createGmailInboxTool, createGmailSearchTool } from "../src/tools/gmail-inbox.js";
 
 // ---------------------------------------------------------------------------
 // Mock googleapis
@@ -20,7 +20,12 @@ vi.mock("googleapis", () => ({
         },
       },
     }),
-    auth: { OAuth2: class { setCredentials = vi.fn(); on = vi.fn(); } },
+    auth: {
+      OAuth2: class {
+        setCredentials = vi.fn();
+        on = vi.fn();
+      },
+    },
   },
 }));
 
@@ -83,8 +88,12 @@ describe("createGmailInboxTool", () => {
       data: { messages: [{ id: "a1" }, { id: "b2" }] },
     });
     mocks.messagesGet
-      .mockResolvedValueOnce(mockGetResponse("a1", "Subject A", "alice@example.com", "Mon, 22 Feb 2026", "Snippet A"))
-      .mockResolvedValueOnce(mockGetResponse("b2", "Subject B", "bob@example.com", "Tue, 23 Feb 2026", "Snippet B"));
+      .mockResolvedValueOnce(
+        mockGetResponse("a1", "Subject A", "alice@example.com", "Mon, 22 Feb 2026", "Snippet A"),
+      )
+      .mockResolvedValueOnce(
+        mockGetResponse("b2", "Subject B", "bob@example.com", "Tue, 23 Feb 2026", "Snippet B"),
+      );
 
     const result = await tool.execute("c", { max_results: 2 });
     expect(result.details).toHaveLength(2);
@@ -104,9 +113,7 @@ describe("createGmailInboxTool", () => {
 
     await tool.execute("c", { max_results: 5 });
 
-    expect(mocks.messagesList).toHaveBeenCalledWith(
-      expect.objectContaining({ maxResults: 5 })
-    );
+    expect(mocks.messagesList).toHaveBeenCalledWith(expect.objectContaining({ maxResults: 5 }));
   });
 });
 
@@ -129,7 +136,7 @@ describe("createGmailSearchTool", () => {
     await tool.execute("c", { query: "from:alice has:attachment" });
 
     expect(mocks.messagesList).toHaveBeenCalledWith(
-      expect.objectContaining({ q: "from:alice has:attachment" })
+      expect.objectContaining({ q: "from:alice has:attachment" }),
     );
   });
 });

@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { CanvasClientManager } from "../auth/canvas-client-manager";
+import type { CanvasClientManager } from "../auth/canvas-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -27,21 +27,20 @@ export function createCanvasAssignmentsTool(canvasManager: CanvasClientManager):
       course_id: Type.String({ description: "The Canvas course ID." }),
       order_by: Type.Optional(
         Type.String({
-          description:
-            "Sort order: 'position', 'name', or 'due_at'. Defaults to 'due_at'.",
+          description: "Sort order: 'position', 'name', or 'due_at'. Defaults to 'due_at'.",
           default: "due_at",
-        })
+        }),
       ),
       account: Type.Optional(
         Type.String({
           description: "Canvas account name. Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { course_id: string; order_by?: string; account?: string }
+      params: { course_id: string; order_by?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!canvasManager.hasCredentials(account)) {
@@ -55,7 +54,7 @@ export function createCanvasAssignmentsTool(canvasManager: CanvasClientManager):
           {
             order_by: orderBy,
             "include[]": "submission",
-          }
+          },
         );
         return jsonResult(assignments);
       } catch (err) {
@@ -78,12 +77,12 @@ export function createCanvasGetAssignmentTool(canvasManager: CanvasClientManager
         Type.String({
           description: "Canvas account name. Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { course_id: string; assignment_id: string; account?: string }
+      params: { course_id: string; assignment_id: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!canvasManager.hasCredentials(account)) {
@@ -93,7 +92,7 @@ export function createCanvasGetAssignmentTool(canvasManager: CanvasClientManager
         const assignment = await canvasManager.get(
           account,
           `courses/${params.course_id}/assignments/${params.assignment_id}`,
-          { "include[]": "submission" }
+          { "include[]": "submission" },
         );
         return jsonResult(assignment);
       } catch (err) {

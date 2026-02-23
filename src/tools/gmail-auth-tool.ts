@@ -1,8 +1,8 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import { waitForOAuthCallback } from "../auth/oauth-server";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
-import type { PluginConfig } from "../types/plugin-config";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
+import { waitForOAuthCallback } from "../auth/oauth-server.js";
+import type { PluginConfig } from "../types/plugin-config.js";
 
 function jsonResult(payload: unknown) {
   return {
@@ -16,8 +16,8 @@ function createAuthTool(
   label: string,
   description: string,
   clientManager: OAuthClientManager,
-  config: PluginConfig
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: PluginConfig,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   return {
     name,
@@ -28,7 +28,7 @@ function createAuthTool(
         Type.String({
           description: "Name for this account (e.g. 'work', 'personal'). Defaults to 'default'.",
           default: "default",
-        })
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { account?: string }) {
@@ -72,18 +72,21 @@ export function createGmailAuthTool(clientManager: OAuthClientManager, config: P
     "Gmail Auth Setup",
     "Authenticate omniclaw with Gmail via Google OAuth2. Opens a browser window for the Google sign-in flow. Must be called before using any gmail_* or calendar_* tools.",
     clientManager,
-    config
+    config,
   );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createCalendarAuthTool(clientManager: OAuthClientManager, config: PluginConfig): any {
+export function createCalendarAuthTool(
+  clientManager: OAuthClientManager,
+  config: PluginConfig,
+): any {
   return createAuthTool(
     "calendar_auth_setup",
     "Calendar Auth Setup",
     "Authenticate omniclaw with Google Calendar via Google OAuth2. Opens a browser window for the Google sign-in flow. Must be called before using any calendar_* tools. Also grants Gmail access.",
     clientManager,
-    config
+    config,
   );
 }
 
@@ -94,7 +97,7 @@ export function createDriveAuthTool(clientManager: OAuthClientManager, config: P
     "Drive Auth Setup",
     "Authenticate omniclaw with Google Drive via Google OAuth2. Opens a browser window for the Google sign-in flow. Must be called before using any drive_* tools. Also grants Gmail and Calendar access.",
     clientManager,
-    config
+    config,
   );
 }
 
@@ -105,7 +108,7 @@ export function createDocsAuthTool(clientManager: OAuthClientManager, config: Pl
     "Docs Auth Setup",
     "Authenticate omniclaw with Google Docs via Google OAuth2. Opens a browser window for the Google sign-in flow. Must be called before using any docs_* tools. Also grants Gmail, Calendar, and Drive access.",
     clientManager,
-    config
+    config,
   );
 }
 
@@ -116,7 +119,7 @@ export function createSlidesAuthTool(clientManager: OAuthClientManager, config: 
     "Slides Auth Setup",
     "Authenticate omniclaw with Google Slides via Google OAuth2. Opens a browser window for the Google sign-in flow. Must be called before using any slides_* tools. Also grants Gmail, Calendar, Drive, and Docs access.",
     clientManager,
-    config
+    config,
   );
 }
 
@@ -127,17 +130,20 @@ export function createSheetsAuthTool(clientManager: OAuthClientManager, config: 
     "Sheets Auth Setup",
     "Authenticate omniclaw with Google Sheets via Google OAuth2. Opens a browser window for the Google sign-in flow. Must be called before using any sheets_* tools. Also grants Gmail, Calendar, Drive, Docs, and Slides access.",
     clientManager,
-    config
+    config,
   );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createYouTubeAuthTool(clientManager: OAuthClientManager, config: PluginConfig): any {
+export function createYouTubeAuthTool(
+  clientManager: OAuthClientManager,
+  config: PluginConfig,
+): any {
   return createAuthTool(
     "youtube_auth_setup",
     "YouTube Auth Setup",
     "Authenticate omniclaw with YouTube via Google OAuth2. Opens a browser window for the Google sign-in flow. Must be called before using youtube_search, youtube_video_details, youtube_channel_info, or youtube_video_comments tools.",
     clientManager,
-    config
+    config,
   );
 }

@@ -1,72 +1,111 @@
 import * as os from "os";
 import * as path from "path";
-import { OAuthClientManager } from "./auth/oauth-client-manager";
-import { TokenStore } from "./auth/token-store";
-import { CanvasClientManager } from "./auth/canvas-client-manager";
-import { createGmailInboxTool, createGmailSearchTool } from "./tools/gmail-inbox";
-import { createGmailAuthTool, createCalendarAuthTool, createDriveAuthTool, createDocsAuthTool, createSlidesAuthTool, createSheetsAuthTool, createYouTubeAuthTool } from "./tools/gmail-auth-tool";
-import { createGmailGetTool } from "./tools/gmail-get";
-import { createGmailSendTool, createGmailReplyTool, createGmailForwardTool } from "./tools/gmail-send";
-import { createGmailModifyTool } from "./tools/gmail-modify";
-import { createGmailAccountsTool } from "./tools/gmail-accounts";
-import { createCalendarListCalendarsTool } from "./tools/calendar-list-calendars";
-import { createCalendarEventsTool } from "./tools/calendar-events";
-import { createCalendarGetTool } from "./tools/calendar-get";
-import { createCalendarCreateTool } from "./tools/calendar-create";
-import { createCalendarUpdateTool } from "./tools/calendar-update";
-import { createCalendarDeleteTool } from "./tools/calendar-delete";
-import { createCalendarRespondTool } from "./tools/calendar-respond";
-import { createDriveListTool } from "./tools/drive-list";
-import { createDriveSearchTool } from "./tools/drive-search";
-import { createDriveGetTool } from "./tools/drive-get";
-import { createDriveReadTool } from "./tools/drive-read";
-import { createDriveUploadTool } from "./tools/drive-upload";
-import { createDriveCreateFolderTool } from "./tools/drive-create-folder";
-import { createDriveMoveTool } from "./tools/drive-move";
-import { createDriveDeleteTool } from "./tools/drive-delete";
-import { createDriveShareTool } from "./tools/drive-share";
-import { createDocsCreateTool } from "./tools/docs-create";
-import { createDocsGetTool } from "./tools/docs-get";
-import { createDocsAppendTool } from "./tools/docs-append";
-import { createDocsReplaceTextTool } from "./tools/docs-replace-text";
-import { createSlidesCreateTool } from "./tools/slides-create";
-import { createSlidesGetTool } from "./tools/slides-get";
-import { createSlidesAppendSlideTool } from "./tools/slides-append-slide";
-import { createSlidesReplaceTextTool } from "./tools/slides-replace-text";
-import { createSheetsCreateTool } from "./tools/sheets-create";
-import { createSheetsGetTool } from "./tools/sheets-get";
-import { createSheetsUpdateTool } from "./tools/sheets-update";
-import { createSheetsAppendTool } from "./tools/sheets-append";
-import { createSheetsClearTool } from "./tools/sheets-clear";
-import { GitHubClientManager } from "./auth/github-client-manager";
-import { GeminiClientManager } from "./auth/gemini-client-manager";
-import { createGeminiAuthTool } from "./tools/gemini-auth-tool";
-import { createGeminiGenerateImageTool, createGeminiEditImageTool } from "./tools/gemini-image";
-import { createGeminiGenerateVideoTool } from "./tools/gemini-video-gen";
-import { createGeminiAnalyzeVideoTool } from "./tools/gemini-video-understand";
-import { createGitHubAuthTool } from "./tools/github-auth-tool";
-import { createGitHubIssuesTool, createGitHubGetIssueTool, createGitHubCreateIssueTool, createGitHubUpdateIssueTool, createGitHubAddIssueCommentTool } from "./tools/github-issues";
-import { createGitHubPullsTool, createGitHubGetPullTool, createGitHubCreatePullTool, createGitHubMergePullTool, createGitHubAddPullReviewTool } from "./tools/github-pulls";
-import { createGitHubReposTool, createGitHubGetRepoTool, createGitHubSearchCodeTool, createGitHubGetFileTool, createGitHubBranchesTool } from "./tools/github-repos";
-import { createGitHubNotificationsTool, createGitHubMarkNotificationReadTool } from "./tools/github-notifications";
-import { createCanvasAuthTool } from "./tools/canvas-auth-tool";
-import { createCanvasProfileTool } from "./tools/canvas-profile";
-import { createCanvasCoursesTool, createCanvasGetCourseTool } from "./tools/canvas-courses";
-import { createCanvasAssignmentsTool, createCanvasGetAssignmentTool } from "./tools/canvas-assignments";
-import { createCanvasAnnouncementsTool } from "./tools/canvas-announcements";
-import { createCanvasGradesTool } from "./tools/canvas-grades";
-import { createCanvasSubmissionsTool } from "./tools/canvas-submissions";
-import { createCanvasTodoTool } from "./tools/canvas-todo";
-import { createYouTubeTranscriptTool } from "./tools/youtube-transcript";
-import { createYouTubeSearchTool, createYouTubeVideoDetailsTool } from "./tools/youtube-search";
-import { createYouTubeChannelInfoTool, createYouTubeVideoCommentsTool } from "./tools/youtube-social";
-import type { PluginConfig } from "./types/plugin-config";
-
+// Resolved via openclaw/plugin-sdk when loaded as a monorepo extension
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OpenClawPluginApi = any;
+import { CanvasClientManager } from "./auth/canvas-client-manager.js";
+import { GeminiClientManager } from "./auth/gemini-client-manager.js";
+import { GitHubClientManager } from "./auth/github-client-manager.js";
+import { OAuthClientManager } from "./auth/oauth-client-manager.js";
+import { TokenStore } from "./auth/token-store.js";
+import { createCalendarCreateTool } from "./tools/calendar-create.js";
+import { createCalendarDeleteTool } from "./tools/calendar-delete.js";
+import { createCalendarEventsTool } from "./tools/calendar-events.js";
+import { createCalendarGetTool } from "./tools/calendar-get.js";
+import { createCalendarListCalendarsTool } from "./tools/calendar-list-calendars.js";
+import { createCalendarRespondTool } from "./tools/calendar-respond.js";
+import { createCalendarUpdateTool } from "./tools/calendar-update.js";
+import { createCanvasAnnouncementsTool } from "./tools/canvas-announcements.js";
+import {
+  createCanvasAssignmentsTool,
+  createCanvasGetAssignmentTool,
+} from "./tools/canvas-assignments.js";
+import { createCanvasAuthTool } from "./tools/canvas-auth-tool.js";
+import { createCanvasCoursesTool, createCanvasGetCourseTool } from "./tools/canvas-courses.js";
+import { createCanvasGradesTool } from "./tools/canvas-grades.js";
+import { createCanvasProfileTool } from "./tools/canvas-profile.js";
+import { createCanvasSubmissionsTool } from "./tools/canvas-submissions.js";
+import { createCanvasTodoTool } from "./tools/canvas-todo.js";
+import { createDocsAppendTool } from "./tools/docs-append.js";
+import { createDocsCreateTool } from "./tools/docs-create.js";
+import { createDocsGetTool } from "./tools/docs-get.js";
+import { createDocsReplaceTextTool } from "./tools/docs-replace-text.js";
+import { createDriveCreateFolderTool } from "./tools/drive-create-folder.js";
+import { createDriveDeleteTool } from "./tools/drive-delete.js";
+import { createDriveGetTool } from "./tools/drive-get.js";
+import { createDriveListTool } from "./tools/drive-list.js";
+import { createDriveMoveTool } from "./tools/drive-move.js";
+import { createDriveReadTool } from "./tools/drive-read.js";
+import { createDriveSearchTool } from "./tools/drive-search.js";
+import { createDriveShareTool } from "./tools/drive-share.js";
+import { createDriveUploadTool } from "./tools/drive-upload.js";
+import { createGeminiAuthTool } from "./tools/gemini-auth-tool.js";
+import { createGeminiGenerateImageTool, createGeminiEditImageTool } from "./tools/gemini-image.js";
+import { createGeminiGenerateVideoTool } from "./tools/gemini-video-gen.js";
+import { createGeminiAnalyzeVideoTool } from "./tools/gemini-video-understand.js";
+import { createGitHubAuthTool } from "./tools/github-auth-tool.js";
+import {
+  createGitHubIssuesTool,
+  createGitHubGetIssueTool,
+  createGitHubCreateIssueTool,
+  createGitHubUpdateIssueTool,
+  createGitHubAddIssueCommentTool,
+} from "./tools/github-issues.js";
+import {
+  createGitHubNotificationsTool,
+  createGitHubMarkNotificationReadTool,
+} from "./tools/github-notifications.js";
+import {
+  createGitHubPullsTool,
+  createGitHubGetPullTool,
+  createGitHubCreatePullTool,
+  createGitHubMergePullTool,
+  createGitHubAddPullReviewTool,
+} from "./tools/github-pulls.js";
+import {
+  createGitHubReposTool,
+  createGitHubGetRepoTool,
+  createGitHubSearchCodeTool,
+  createGitHubGetFileTool,
+  createGitHubBranchesTool,
+} from "./tools/github-repos.js";
+import { createGmailAccountsTool } from "./tools/gmail-accounts.js";
+import {
+  createGmailAuthTool,
+  createCalendarAuthTool,
+  createDriveAuthTool,
+  createDocsAuthTool,
+  createSlidesAuthTool,
+  createSheetsAuthTool,
+  createYouTubeAuthTool,
+} from "./tools/gmail-auth-tool.js";
+import { createGmailGetTool } from "./tools/gmail-get.js";
+import { createGmailInboxTool, createGmailSearchTool } from "./tools/gmail-inbox.js";
+import { createGmailModifyTool } from "./tools/gmail-modify.js";
+import {
+  createGmailSendTool,
+  createGmailReplyTool,
+  createGmailForwardTool,
+} from "./tools/gmail-send.js";
+import { createSheetsAppendTool } from "./tools/sheets-append.js";
+import { createSheetsClearTool } from "./tools/sheets-clear.js";
+import { createSheetsCreateTool } from "./tools/sheets-create.js";
+import { createSheetsGetTool } from "./tools/sheets-get.js";
+import { createSheetsUpdateTool } from "./tools/sheets-update.js";
+import { createSlidesAppendSlideTool } from "./tools/slides-append-slide.js";
+import { createSlidesCreateTool } from "./tools/slides-create.js";
+import { createSlidesGetTool } from "./tools/slides-get.js";
+import { createSlidesReplaceTextTool } from "./tools/slides-replace-text.js";
+import { createYouTubeSearchTool, createYouTubeVideoDetailsTool } from "./tools/youtube-search.js";
+import {
+  createYouTubeChannelInfoTool,
+  createYouTubeVideoCommentsTool,
+} from "./tools/youtube-social.js";
+import { createYouTubeTranscriptTool } from "./tools/youtube-transcript.js";
+import type { PluginConfig } from "./types/plugin-config.js";
 
 export function register(api: OpenClawPluginApi): void {
-  const config = (api.pluginConfig ?? {}) as PluginConfig;
+  const config = (api.pluginConfig ?? {}) as unknown as PluginConfig;
 
   // Derive Canvas tokens path alongside Google tokens
   const defaultTokensDir = path.join(os.homedir(), ".openclaw");
@@ -74,7 +113,7 @@ export function register(api: OpenClawPluginApi): void {
     config.canvas_tokens_path ??
     path.join(
       config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
-      "omniclaw-canvas-tokens.json"
+      "omniclaw-canvas-tokens.json",
     );
 
   const canvasManager = new CanvasClientManager(canvasTokensPath);
@@ -92,10 +131,9 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createCanvasTodoTool(canvasManager), { optional: true });
 
   // GitHub tools — register unconditionally, no Google credentials required
-  const githubTokensPath =
-    config.tokens_path
-      ? path.join(path.dirname(config.tokens_path), "omniclaw-github-tokens.json")
-      : path.join(defaultTokensDir, "omniclaw-github-tokens.json");
+  const githubTokensPath = config.tokens_path
+    ? path.join(path.dirname(config.tokens_path), "omniclaw-github-tokens.json")
+    : path.join(defaultTokensDir, "omniclaw-github-tokens.json");
 
   const githubManager = new GitHubClientManager(githubTokensPath);
 
@@ -119,10 +157,9 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createGitHubMarkNotificationReadTool(githubManager), { optional: true });
 
   // Gemini tools — register unconditionally, no Google OAuth credentials required
-  const geminiKeysPath =
-    config.tokens_path
-      ? path.join(path.dirname(config.tokens_path), "omniclaw-gemini-keys.json")
-      : path.join(defaultTokensDir, "omniclaw-gemini-keys.json");
+  const geminiKeysPath = config.tokens_path
+    ? path.join(path.dirname(config.tokens_path), "omniclaw-gemini-keys.json")
+    : path.join(defaultTokensDir, "omniclaw-gemini-keys.json");
 
   const geminiManager = new GeminiClientManager(geminiKeysPath);
 
@@ -138,20 +175,19 @@ export function register(api: OpenClawPluginApi): void {
   if (!config.client_secret_path) {
     api.logger.warn(
       "[omniclaw] client_secret_path is not configured. Gmail tools will not be available. " +
-        "Set it via: openclaw plugins config omniclaw"
+        "Set it via: openclaw plugins config omniclaw",
     );
     return;
   }
 
   const tokensPath =
-    config.tokens_path ??
-    path.join(os.homedir(), ".openclaw", "omniclaw-tokens.json");
+    config.tokens_path ?? path.join(os.homedir(), ".openclaw", "omniclaw-tokens.json");
 
   const tokenStore = new TokenStore(tokensPath);
   const clientManager = new OAuthClientManager(
     config.client_secret_path,
     config.oauth_port ?? 9753,
-    tokenStore
+    tokenStore,
   );
 
   api.registerTool(createGmailInboxTool(clientManager), { optional: true });

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -22,12 +22,14 @@ export function createSheetsCreateTool(clientManager: OAuthClientManager): any {
   return {
     name: "sheets_create",
     label: "Sheets Create",
-    description:
-      "Create a new Google Sheets spreadsheet with a given title.",
+    description: "Create a new Google Sheets spreadsheet with a given title.",
     parameters: Type.Object({
       title: Type.String({ description: "Title of the new spreadsheet." }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { title: string; account?: string }) {
@@ -46,9 +48,7 @@ export function createSheetsCreateTool(clientManager: OAuthClientManager): any {
       });
 
       const id = res.data.spreadsheetId ?? "";
-      const sheetNames = (res.data.sheets ?? []).map(
-        (s) => s.properties?.title ?? "Sheet1"
-      );
+      const sheetNames = (res.data.sheets ?? []).map((s) => s.properties?.title ?? "Sheet1");
 
       return jsonResult({
         success: true,

@@ -14,18 +14,23 @@
  *   CANVAS_COURSE_ID=<id> pnpm vitest run tests/integration/canvas.test.ts
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
 import * as os from "os";
 import * as path from "path";
-
-import { CanvasClientManager } from "../../src/auth/canvas-client-manager";
-import { createCanvasProfileTool } from "../../src/tools/canvas-profile";
-import { createCanvasCoursesTool, createCanvasGetCourseTool } from "../../src/tools/canvas-courses";
-import { createCanvasAssignmentsTool, createCanvasGetAssignmentTool } from "../../src/tools/canvas-assignments";
-import { createCanvasAnnouncementsTool } from "../../src/tools/canvas-announcements";
-import { createCanvasGradesTool } from "../../src/tools/canvas-grades";
-import { createCanvasSubmissionsTool } from "../../src/tools/canvas-submissions";
-import { createCanvasTodoTool } from "../../src/tools/canvas-todo";
+import { describe, it, expect, beforeAll } from "vitest";
+import { CanvasClientManager } from "../../src/auth/canvas-client-manager.js";
+import { createCanvasAnnouncementsTool } from "../../src/tools/canvas-announcements.js";
+import {
+  createCanvasAssignmentsTool,
+  createCanvasGetAssignmentTool,
+} from "../../src/tools/canvas-assignments.js";
+import {
+  createCanvasCoursesTool,
+  createCanvasGetCourseTool,
+} from "../../src/tools/canvas-courses.js";
+import { createCanvasGradesTool } from "../../src/tools/canvas-grades.js";
+import { createCanvasProfileTool } from "../../src/tools/canvas-profile.js";
+import { createCanvasSubmissionsTool } from "../../src/tools/canvas-submissions.js";
+import { createCanvasTodoTool } from "../../src/tools/canvas-todo.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -39,7 +44,7 @@ const credentialsProvided = BASE_URL !== "" && SESSION_COOKIE !== "";
 
 if (!credentialsProvided) {
   console.warn(
-    "\n[integration] Skipping Canvas tests: CANVAS_BASE_URL and CANVAS_SESSION_COOKIE env vars not set.\n"
+    "\n[integration] Skipping Canvas tests: CANVAS_BASE_URL and CANVAS_SESSION_COOKIE env vars not set.\n",
   );
 }
 
@@ -197,7 +202,7 @@ describe.skipIf(!credentialsProvided)("Canvas LMS API integration", { timeout: 3
   // -------------------------------------------------------------------------
   it("returns auth_required sentinel when no credentials stored", async () => {
     const emptyManager = new CanvasClientManager(
-      path.join(os.tmpdir(), `omniclaw-canvas-empty-${Date.now()}.json`)
+      path.join(os.tmpdir(), `omniclaw-canvas-empty-${Date.now()}.json`),
     );
     const tool = createCanvasProfileTool(emptyManager);
     const result = await tool.execute("t11", { account: "nonexistent" });

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -36,15 +36,22 @@ export function createGmailModifyTool(clientManager: OAuthClientManager): any {
         {
           description:
             "Action to perform: 'mark_read', 'mark_unread', 'archive' (remove from inbox), or 'trash'.",
-        }
+        },
       ),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { id: string; action: "mark_read" | "mark_unread" | "archive" | "trash"; account?: string }
+      params: {
+        id: string;
+        action: "mark_read" | "mark_unread" | "archive" | "trash";
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
 

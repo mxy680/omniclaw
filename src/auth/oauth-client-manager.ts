@@ -1,6 +1,6 @@
 import { google } from "googleapis";
-import { createOAuthClient } from "./gmail-auth";
-import { TokenStore } from "./token-store";
+import { createOAuthClient } from "./gmail-auth.js";
+import { TokenStore } from "./token-store.js";
 
 type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
 
@@ -10,7 +10,7 @@ export class OAuthClientManager {
   constructor(
     private clientSecretPath: string,
     private redirectPort: number,
-    private tokenStore: TokenStore
+    private tokenStore: TokenStore,
   ) {}
 
   getClient(account: string): OAuth2Client {
@@ -38,7 +38,7 @@ export class OAuthClientManager {
 
   setCredentials(
     account: string,
-    tokens: Parameters<OAuth2Client["setCredentials"]>[0]
+    tokens: Parameters<OAuth2Client["setCredentials"]>[0],
   ): OAuth2Client {
     const client = createOAuthClient(this.clientSecretPath, this.redirectPort);
     client.setCredentials(tokens);

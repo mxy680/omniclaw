@@ -12,18 +12,17 @@
  *   RUN_WRITE_TESTS=1    enable create / get / append / replace / delete tests
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
 import { existsSync } from "fs";
-import { join } from "path";
 import { homedir } from "os";
-
-import { OAuthClientManager } from "../../src/auth/oauth-client-manager";
-import { TokenStore } from "../../src/auth/token-store";
-import { createDocsCreateTool } from "../../src/tools/docs-create";
-import { createDocsGetTool } from "../../src/tools/docs-get";
-import { createDocsAppendTool } from "../../src/tools/docs-append";
-import { createDocsReplaceTextTool } from "../../src/tools/docs-replace-text";
-import { createDriveDeleteTool } from "../../src/tools/drive-delete";
+import { join } from "path";
+import { describe, it, expect, beforeAll } from "vitest";
+import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
+import { TokenStore } from "../../src/auth/token-store.js";
+import { createDocsAppendTool } from "../../src/tools/docs-append.js";
+import { createDocsCreateTool } from "../../src/tools/docs-create.js";
+import { createDocsGetTool } from "../../src/tools/docs-get.js";
+import { createDocsReplaceTextTool } from "../../src/tools/docs-replace-text.js";
+import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -32,21 +31,18 @@ const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
   "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com(1).json";
 
-const TOKENS_PATH =
-  process.env.TOKENS_PATH ??
-  join(homedir(), ".openclaw", "omniclaw-tokens.json");
+const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
 const ACCOUNT = process.env.GMAIL_ACCOUNT ?? "default";
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
-const credentialsExist =
-  existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
+const credentialsExist = existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
 
 if (!credentialsExist) {
   console.warn(
     "\n[integration] Skipping: credentials not found.\n" +
-    `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
-    `  TOKENS_PATH=${TOKENS_PATH}\n`
+      `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
+      `  TOKENS_PATH=${TOKENS_PATH}\n`,
   );
 }
 
@@ -58,7 +54,6 @@ let createdDocId: string;
 
 // ---------------------------------------------------------------------------
 describe.skipIf(!credentialsExist)("Google Docs API integration", { timeout: 30_000 }, () => {
-
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
@@ -68,7 +63,6 @@ describe.skipIf(!credentialsExist)("Google Docs API integration", { timeout: 30_
   // Write tests — opt-in via RUN_WRITE_TESTS=1
   // -------------------------------------------------------------------------
   describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
-
     it("docs_create — creates a doc with initial content", async () => {
       const tool = createDocsCreateTool(clientManager);
       const result = await tool.execute("t", {

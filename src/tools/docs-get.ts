@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { google, docs_v1 } from "googleapis";
-import type { OAuthClientManager } from "../auth/oauth-client-manager";
+import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -58,7 +58,10 @@ export function createDocsGetTool(clientManager: OAuthClientManager): any {
     parameters: Type.Object({
       document_id: Type.String({ description: "The Google Doc document ID (from its URL)." }),
       account: Type.Optional(
-        Type.String({ description: "Account name to use. Defaults to 'default'.", default: "default" })
+        Type.String({
+          description: "Account name to use. Defaults to 'default'.",
+          default: "default",
+        }),
       ),
     }),
     async execute(_toolCallId: string, params: { document_id: string; account?: string }) {

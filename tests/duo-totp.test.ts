@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { generateDuoPasscode } from "../src/auth/duo-totp";
+import { generateDuoPasscode } from "../src/auth/duo-totp.js";
 
 // ---------------------------------------------------------------------------
 // RFC 4226 Appendix D test secret: ASCII "12345678901234567890"

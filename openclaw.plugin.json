@@ -32,6 +32,10 @@
       "duo_totp_secret": {
         "type": "string",
         "description": "TOTP secret from Duo Mobile activation (hex or base32). Used to generate 6-digit passcodes for automatic Duo MFA."
+      },
+      "github_token": {
+        "type": "string",
+        "description": "GitHub Personal Access Token (PAT) for authenticating with the GitHub API."
       }
     },
     "required": []

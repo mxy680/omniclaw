@@ -8,4 +8,5 @@ export interface PluginConfig {
   canvas_password?: string;
   canvas_auto_mfa?: boolean;
   duo_totp_secret?: string;
+  github_token?: string;
 }

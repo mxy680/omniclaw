@@ -38,6 +38,12 @@ import { createSheetsGetTool } from "./tools/sheets-get";
 import { createSheetsUpdateTool } from "./tools/sheets-update";
 import { createSheetsAppendTool } from "./tools/sheets-append";
 import { createSheetsClearTool } from "./tools/sheets-clear";
+import { GitHubClientManager } from "./auth/github-client-manager";
+import { createGitHubAuthTool } from "./tools/github-auth-tool";
+import { createGitHubIssuesTool, createGitHubGetIssueTool, createGitHubCreateIssueTool, createGitHubUpdateIssueTool, createGitHubAddIssueCommentTool } from "./tools/github-issues";
+import { createGitHubPullsTool, createGitHubGetPullTool, createGitHubCreatePullTool, createGitHubMergePullTool, createGitHubAddPullReviewTool } from "./tools/github-pulls";
+import { createGitHubReposTool, createGitHubGetRepoTool, createGitHubSearchCodeTool, createGitHubGetFileTool, createGitHubBranchesTool } from "./tools/github-repos";
+import { createGitHubNotificationsTool, createGitHubMarkNotificationReadTool } from "./tools/github-notifications";
 import { createCanvasAuthTool } from "./tools/canvas-auth-tool";
 import { createCanvasProfileTool } from "./tools/canvas-profile";
 import { createCanvasCoursesTool, createCanvasGetCourseTool } from "./tools/canvas-courses";
@@ -76,6 +82,33 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createCanvasGradesTool(canvasManager), { optional: true });
   api.registerTool(createCanvasSubmissionsTool(canvasManager), { optional: true });
   api.registerTool(createCanvasTodoTool(canvasManager), { optional: true });
+
+  // GitHub tools — register unconditionally, no Google credentials required
+  const githubTokensPath =
+    config.tokens_path
+      ? path.join(path.dirname(config.tokens_path), "omniclaw-github-tokens.json")
+      : path.join(defaultTokensDir, "omniclaw-github-tokens.json");
+
+  const githubManager = new GitHubClientManager(githubTokensPath);
+
+  api.registerTool(createGitHubAuthTool(githubManager, config), { optional: true });
+  api.registerTool(createGitHubIssuesTool(githubManager), { optional: true });
+  api.registerTool(createGitHubGetIssueTool(githubManager), { optional: true });
+  api.registerTool(createGitHubCreateIssueTool(githubManager), { optional: true });
+  api.registerTool(createGitHubUpdateIssueTool(githubManager), { optional: true });
+  api.registerTool(createGitHubAddIssueCommentTool(githubManager), { optional: true });
+  api.registerTool(createGitHubPullsTool(githubManager), { optional: true });
+  api.registerTool(createGitHubGetPullTool(githubManager), { optional: true });
+  api.registerTool(createGitHubCreatePullTool(githubManager), { optional: true });
+  api.registerTool(createGitHubMergePullTool(githubManager), { optional: true });
+  api.registerTool(createGitHubAddPullReviewTool(githubManager), { optional: true });
+  api.registerTool(createGitHubReposTool(githubManager), { optional: true });
+  api.registerTool(createGitHubGetRepoTool(githubManager), { optional: true });
+  api.registerTool(createGitHubSearchCodeTool(githubManager), { optional: true });
+  api.registerTool(createGitHubGetFileTool(githubManager), { optional: true });
+  api.registerTool(createGitHubBranchesTool(githubManager), { optional: true });
+  api.registerTool(createGitHubNotificationsTool(githubManager), { optional: true });
+  api.registerTool(createGitHubMarkNotificationReadTool(githubManager), { optional: true });
 
   if (!config.client_secret_path) {
     api.logger.warn(

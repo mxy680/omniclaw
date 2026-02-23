@@ -1,0 +1,47 @@
+{
+  "id": "omniclaw",
+  "name": "omniclaw",
+  "version": "0.1.0",
+  "description": "Gmail integration for OpenClaw via Google OAuth2",
+  "skills": ["skills"],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "client_secret_path": {
+        "type": "string",
+        "description": "Absolute path to your client_secret.json from Google Cloud Console."
+      },
+      "oauth_port": {
+        "type": "number",
+        "description": "Local port for the OAuth callback server.",
+        "default": 9753
+      },
+      "tokens_path": {
+        "type": "string",
+        "description": "Path to store OAuth tokens. Defaults to ~/.openclaw/omniclaw-tokens.json."
+      },
+      "canvas_tokens_path": {
+        "type": "string",
+        "description": "Path to store Canvas API tokens. Defaults to ~/.openclaw/omniclaw-canvas-tokens.json."
+      },
+      "canvas_auto_mfa": {
+        "type": "boolean",
+        "description": "Automatically fill Duo MFA passcode using a TOTP secret. Requires duo_totp_secret to be configured. Defaults to true.",
+        "default": true
+      },
+      "duo_totp_secret": {
+        "type": "string",
+        "description": "TOTP secret from Duo Mobile activation (hex or base32). Used to generate 6-digit passcodes for automatic Duo MFA."
+      }
+    },
+    "required": []
+  },
+  "uiHints": {
+    "client_secret_path": {
+      "label": "Google client_secret.json path"
+    },
+    "oauth_port": {
+      "label": "OAuth Callback Port"
+    }
+  }
+}

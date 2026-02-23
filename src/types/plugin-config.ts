@@ -10,4 +10,7 @@ export interface PluginConfig {
   duo_totp_secret?: string;
   github_token?: string;
   gemini_api_key?: string;
+  linkedin_tokens_path?: string;
+  linkedin_username?: string;
+  linkedin_password?: string;
 }

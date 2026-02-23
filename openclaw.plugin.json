@@ -40,6 +40,18 @@
       "gemini_api_key": {
         "type": "string",
         "description": "Google Gemini API key. Get one at https://aistudio.google.com/apikey"
+      },
+      "linkedin_tokens_path": {
+        "type": "string",
+        "description": "Path to store LinkedIn session tokens. Defaults to ~/.openclaw/omniclaw-linkedin-tokens.json."
+      },
+      "linkedin_username": {
+        "type": "string",
+        "description": "LinkedIn email or username for automatic login."
+      },
+      "linkedin_password": {
+        "type": "string",
+        "description": "LinkedIn password for automatic login."
       }
     },
     "required": []

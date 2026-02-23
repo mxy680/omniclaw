@@ -6,6 +6,7 @@ type OpenClawPluginApi = any;
 import { CanvasClientManager } from "./auth/canvas-client-manager.js";
 import { GeminiClientManager } from "./auth/gemini-client-manager.js";
 import { GitHubClientManager } from "./auth/github-client-manager.js";
+import { LinkedInClientManager } from "./auth/linkedin-client-manager.js";
 import { OAuthClientManager } from "./auth/oauth-client-manager.js";
 import { TokenStore } from "./auth/token-store.js";
 import { createCalendarCreateTool } from "./tools/calendar-create.js";
@@ -44,6 +45,19 @@ import { createGeminiGenerateImageTool, createGeminiEditImageTool } from "./tool
 import { createGeminiGenerateVideoTool } from "./tools/gemini-video-gen.js";
 import { createGeminiAnalyzeVideoTool } from "./tools/gemini-video-understand.js";
 import { createGitHubAuthTool } from "./tools/github-auth-tool.js";
+import { createLinkedInAuthTool } from "./tools/linkedin-auth-tool.js";
+import { createLinkedInCompanyTool } from "./tools/linkedin-company.js";
+import { createLinkedInConnectionsTool } from "./tools/linkedin-connections.js";
+import { createLinkedInFeedTool } from "./tools/linkedin-feed.js";
+import { createLinkedInPendingInvitationsTool } from "./tools/linkedin-invitations.js";
+import { createLinkedInJobDetailsTool } from "./tools/linkedin-job-details.js";
+import { createLinkedInConversationsTool, createLinkedInMessagesTool } from "./tools/linkedin-messages.js";
+import { createLinkedInNotificationsTool } from "./tools/linkedin-notifications.js";
+import { createLinkedInPostCommentsTool } from "./tools/linkedin-post-comments.js";
+import { createLinkedInProfileTool as createLinkedInMyProfileTool, createLinkedInGetProfileTool } from "./tools/linkedin-profile.js";
+import { createLinkedInProfileViewsTool } from "./tools/linkedin-profile-views.js";
+import { createLinkedInSavedJobsTool } from "./tools/linkedin-saved-jobs.js";
+import { createLinkedInSearchTool, createLinkedInSearchJobsTool } from "./tools/linkedin-search.js";
 import {
   createGitHubIssuesTool,
   createGitHubGetIssueTool,
@@ -168,6 +182,33 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createGeminiEditImageTool(geminiManager), { optional: true });
   api.registerTool(createGeminiGenerateVideoTool(geminiManager), { optional: true });
   api.registerTool(createGeminiAnalyzeVideoTool(geminiManager), { optional: true });
+
+  // LinkedIn tools — register unconditionally, no Google credentials required
+  const linkedinTokensPath =
+    config.linkedin_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-linkedin-tokens.json",
+    );
+
+  const linkedinManager = new LinkedInClientManager(linkedinTokensPath);
+
+  api.registerTool(createLinkedInAuthTool(linkedinManager, config), { optional: true });
+  api.registerTool(createLinkedInMyProfileTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInGetProfileTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInFeedTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInConnectionsTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInConversationsTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInMessagesTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInNotificationsTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInSearchTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInSearchJobsTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInPendingInvitationsTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInCompanyTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInJobDetailsTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInPostCommentsTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInProfileViewsTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInSavedJobsTool(linkedinManager), { optional: true });
 
   // YouTube transcript — no OAuth required, works with any public video
   api.registerTool(createYouTubeTranscriptTool(), { optional: true });

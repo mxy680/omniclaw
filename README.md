@@ -1,6 +1,6 @@
 # omniclaw
 
-80+ tools for [OpenClaw](https://openclaw.ai) that give your AI agent full access to Google Workspace, GitHub, Gemini AI, YouTube, and Canvas LMS. Manage emails, calendars, files, documents, spreadsheets, presentations, repos, issues, PRs, AI image/video generation, YouTube search, and university coursework — all through natural language.
+96+ tools for [OpenClaw](https://openclaw.ai) that give your AI agent full access to Google Workspace, GitHub, Gemini AI, YouTube, Canvas LMS, and LinkedIn. Manage emails, calendars, files, documents, spreadsheets, presentations, repos, issues, PRs, AI image/video generation, YouTube search, university coursework, and LinkedIn profiles — all through natural language.
 
 ## What's Included
 
@@ -16,6 +16,7 @@
 | Gemini AI | 5 tools — image gen, image edit, video gen, video analysis | `gemini` |
 | YouTube | 6 tools — search, video details, transcripts, channels, comments | `youtube` |
 | Canvas LMS | 10 tools — courses, assignments, grades, announcements, to-do | `canvas` |
+| LinkedIn | 16 tools — profiles, feed, connections, messages, notifications, search, jobs, companies | `linkedin` |
 
 ---
 
@@ -29,13 +30,7 @@ openclaw plugins install --link /path/to/omniclaw
 
 Or if running from the OpenClaw monorepo as a built-in extension, place this repo under `extensions/omniclaw/` — the workspace auto-discovers it.
 
-### 2. Enable the skills you want
-
-```bash
-openclaw skills enable gmail calendar drive docs sheets slides github gemini youtube canvas
-```
-
-### 3. Set up credentials (detailed below)
+### 2. Set up credentials (detailed below)
 
 Each service has its own authentication. You only need to configure the ones you plan to use.
 
@@ -191,6 +186,34 @@ The tool will auto-generate and fill the 6-digit Duo passcode during authenticat
 
 ---
 
+## LinkedIn Setup
+
+LinkedIn uses browser-based authentication via Playwright — no API token needed. LinkedIn blocks non-browser HTTP clients, so all API calls are made through a real browser context.
+
+### Step 1: Install Browser
+
+```bash
+npx playwright install chromium
+```
+
+### Step 2: Configure Credentials (Optional)
+
+Save your LinkedIn credentials so authentication is automatic:
+
+```bash
+openclaw config set plugins.entries.omniclaw.config.linkedin_username "your_email@example.com"
+openclaw config set plugins.entries.omniclaw.config.linkedin_password "your_password"
+```
+
+### Step 3: Authenticate
+
+Ask your agent:
+> "Set up LinkedIn"
+
+It will call `linkedin_auth_setup`, which opens a Chromium browser to LinkedIn's login page. If credentials are configured, they are auto-filled. Complete any MFA or captcha challenges manually — the tool waits up to 5 minutes.
+
+---
+
 ## All Tools Reference
 
 ### Gmail (9 tools)
@@ -325,6 +348,27 @@ The tool will auto-generate and fill the 6-digit Duo passcode during authenticat
 | `canvas_submissions` | List submissions for an assignment |
 | `canvas_todo` | Get your Canvas to-do list |
 
+### LinkedIn (16 tools)
+
+| Tool | Description |
+|------|-------------|
+| `linkedin_auth_setup` | Authenticate via browser login |
+| `linkedin_profile` | Get your own LinkedIn profile |
+| `linkedin_get_profile` | Get any user's full profile by public ID |
+| `linkedin_feed` | Get posts from your feed |
+| `linkedin_connections` | List your connections |
+| `linkedin_conversations` | List message conversations |
+| `linkedin_messages` | Get messages from a conversation |
+| `linkedin_notifications` | List your notifications |
+| `linkedin_search` | Search for people or companies |
+| `linkedin_search_jobs` | Search for job listings |
+| `linkedin_pending_invitations` | View incoming connection requests |
+| `linkedin_company` | Get detailed company/organization info |
+| `linkedin_job_details` | Get full details of a job posting |
+| `linkedin_post_comments` | Read comments on a feed post |
+| `linkedin_profile_views` | See who viewed your profile |
+| `linkedin_saved_jobs` | List your saved/bookmarked jobs |
+
 ---
 
 ## Configuration Reference
@@ -358,6 +402,14 @@ All configuration is set via `openclaw config set plugins.entries.omniclaw.confi
 | `canvas_tokens_path` | No | `~/.openclaw/omniclaw-canvas-tokens.json` | Where Canvas session tokens are stored |
 | `canvas_auto_mfa` | No | `true` | Auto-fill Duo MFA using TOTP secret |
 | `duo_totp_secret` | No | — | Duo TOTP secret (hex or base32) for automatic MFA |
+
+### LinkedIn
+
+| Key | Required | Default | Description |
+|-----|----------|---------|-------------|
+| `linkedin_tokens_path` | No | `~/.openclaw/omniclaw-linkedin-tokens.json` | Where LinkedIn session tokens are stored |
+| `linkedin_username` | No | — | LinkedIn email for automatic login |
+| `linkedin_password` | No | — | LinkedIn password for automatic login |
 
 ---
 
@@ -413,6 +465,15 @@ Once authenticated, just talk to your agent naturally:
 > "What assignments are due this week in CS 101?"
 > "What's my current grade in Linear Algebra?"
 > "Any new announcements from my professors?"
+
+**LinkedIn**
+> "Show me my LinkedIn profile"
+> "Look up John Doe's LinkedIn profile"
+> "What's on my LinkedIn feed?"
+> "List my recent LinkedIn connections"
+> "Show me my LinkedIn messages"
+> "Search LinkedIn for software engineers at Google"
+> "Search for remote product manager jobs"
 
 ---
 

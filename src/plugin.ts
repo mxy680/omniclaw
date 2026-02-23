@@ -39,6 +39,11 @@ import { createSheetsUpdateTool } from "./tools/sheets-update";
 import { createSheetsAppendTool } from "./tools/sheets-append";
 import { createSheetsClearTool } from "./tools/sheets-clear";
 import { GitHubClientManager } from "./auth/github-client-manager";
+import { GeminiClientManager } from "./auth/gemini-client-manager";
+import { createGeminiAuthTool } from "./tools/gemini-auth-tool";
+import { createGeminiGenerateImageTool, createGeminiEditImageTool } from "./tools/gemini-image";
+import { createGeminiGenerateVideoTool } from "./tools/gemini-video-gen";
+import { createGeminiAnalyzeVideoTool } from "./tools/gemini-video-understand";
 import { createGitHubAuthTool } from "./tools/github-auth-tool";
 import { createGitHubIssuesTool, createGitHubGetIssueTool, createGitHubCreateIssueTool, createGitHubUpdateIssueTool, createGitHubAddIssueCommentTool } from "./tools/github-issues";
 import { createGitHubPullsTool, createGitHubGetPullTool, createGitHubCreatePullTool, createGitHubMergePullTool, createGitHubAddPullReviewTool } from "./tools/github-pulls";
@@ -109,6 +114,20 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createGitHubBranchesTool(githubManager), { optional: true });
   api.registerTool(createGitHubNotificationsTool(githubManager), { optional: true });
   api.registerTool(createGitHubMarkNotificationReadTool(githubManager), { optional: true });
+
+  // Gemini tools — register unconditionally, no Google OAuth credentials required
+  const geminiKeysPath =
+    config.tokens_path
+      ? path.join(path.dirname(config.tokens_path), "omniclaw-gemini-keys.json")
+      : path.join(defaultTokensDir, "omniclaw-gemini-keys.json");
+
+  const geminiManager = new GeminiClientManager(geminiKeysPath);
+
+  api.registerTool(createGeminiAuthTool(geminiManager, config), { optional: true });
+  api.registerTool(createGeminiGenerateImageTool(geminiManager), { optional: true });
+  api.registerTool(createGeminiEditImageTool(geminiManager), { optional: true });
+  api.registerTool(createGeminiGenerateVideoTool(geminiManager), { optional: true });
+  api.registerTool(createGeminiAnalyzeVideoTool(geminiManager), { optional: true });
 
   if (!config.client_secret_path) {
     api.logger.warn(

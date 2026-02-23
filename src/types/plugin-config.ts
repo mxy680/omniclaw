@@ -9,4 +9,5 @@ export interface PluginConfig {
   canvas_auto_mfa?: boolean;
   duo_totp_secret?: string;
   github_token?: string;
+  gemini_api_key?: string;
 }

@@ -31,7 +31,7 @@ import { createCalendarUpdateTool } from "../../src/tools/calendar-update.js";
 // ---------------------------------------------------------------------------
 const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
-  "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com.json";
+  join(homedir(), ".openclaw", "client_secret.json");
 
 const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 

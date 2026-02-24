@@ -9,7 +9,9 @@
  *   counter = Math.floor(Date.now() / 1000 / 30)
  *   Pinning Date.now() to N * 30_000 ms drives counter to exactly N.
  *
- * Also tests the full canvas_auth_setup tool with TOTP when env vars are set:
+ * Also tests the full canvas_auth_setup tool with TOTP. Credentials are read
+ * from the openclaw config file (~/.openclaw/openclaw.json) by default, with
+ * env var overrides:
  *   CANVAS_BASE_URL       Canvas instance URL
  *   CANVAS_USERNAME       SSO username
  *   CANVAS_PASSWORD       SSO password
@@ -17,14 +19,10 @@
  *
  * Run:
  *   pnpm vitest run tests/integration/duo-totp.test.ts
- *
- * Run with live Canvas auth:
- *   CANVAS_BASE_URL="https://canvas.example.edu" CANVAS_USERNAME="user" \
- *   CANVAS_PASSWORD="pass" DUO_TOTP_SECRET="hexsecret" \
- *   pnpm vitest run tests/integration/duo-totp.test.ts
  */
 
-import { tmpdir } from "os";
+import { existsSync, readFileSync } from "fs";
+import { homedir, tmpdir } from "os";
 import { join } from "path";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { generateDuoPasscode } from "../../src/auth/duo-totp.js";
@@ -154,12 +152,26 @@ describe("Duo TOTP — Duo hex secret support", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Live Canvas SSO + TOTP auth flow (skipped unless all four env vars are set)
+// Live Canvas SSO + TOTP auth flow
+// Reads from openclaw config (~/.openclaw/openclaw.json), env vars override.
 // ---------------------------------------------------------------------------
-const CANVAS_BASE_URL = process.env.CANVAS_BASE_URL ?? "";
-const CANVAS_USERNAME = process.env.CANVAS_USERNAME ?? "";
-const CANVAS_PASSWORD = process.env.CANVAS_PASSWORD ?? "";
-const DUO_TOTP_SECRET = process.env.DUO_TOTP_SECRET ?? "";
+function loadOpenclawPluginConfig(): Record<string, string> {
+  const configPath = join(homedir(), ".openclaw", "openclaw.json");
+  if (!existsSync(configPath)) return {};
+  try {
+    const raw = JSON.parse(readFileSync(configPath, "utf-8"));
+    return raw?.plugins?.entries?.omniclaw?.config ?? {};
+  } catch {
+    return {};
+  }
+}
+
+const oclConfig = loadOpenclawPluginConfig();
+
+const CANVAS_BASE_URL = process.env.CANVAS_BASE_URL || oclConfig.canvas_base_url || "";
+const CANVAS_USERNAME = process.env.CANVAS_USERNAME || oclConfig.canvas_username || "";
+const CANVAS_PASSWORD = process.env.CANVAS_PASSWORD || oclConfig.canvas_password || "";
+const DUO_TOTP_SECRET = process.env.DUO_TOTP_SECRET || oclConfig.duo_totp_secret || "";
 
 const liveCredentialsProvided =
   CANVAS_BASE_URL !== "" &&
@@ -169,8 +181,8 @@ const liveCredentialsProvided =
 
 if (!liveCredentialsProvided) {
   console.warn(
-    "\n[integration] Skipping live Canvas TOTP auth test: set CANVAS_BASE_URL, " +
-      "CANVAS_USERNAME, CANVAS_PASSWORD, and DUO_TOTP_SECRET to enable.\n",
+    "\n[integration] Skipping live Canvas TOTP auth test: credentials not found in " +
+      "~/.openclaw/openclaw.json or env vars.\n",
   );
 }
 

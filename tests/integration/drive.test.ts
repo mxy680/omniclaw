@@ -12,14 +12,15 @@
  *   RUN_WRITE_TESTS=1    enable upload / create folder / move / share / delete tests
  */
 
-import { existsSync } from "fs";
-import { homedir } from "os";
+import { existsSync, writeFileSync, readdirSync, unlinkSync, rmdirSync } from "fs";
+import { homedir, tmpdir } from "os";
 import { join } from "path";
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
 import { TokenStore } from "../../src/auth/token-store.js";
 import { createDriveCreateFolderTool } from "../../src/tools/drive-create-folder.js";
 import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
+import { createDriveDownloadTool } from "../../src/tools/drive-download.js";
 import { createDriveGetTool } from "../../src/tools/drive-get.js";
 import { createDriveListTool } from "../../src/tools/drive-list.js";
 import { createDriveMoveTool } from "../../src/tools/drive-move.js";
@@ -33,7 +34,7 @@ import { createDriveUploadTool } from "../../src/tools/drive-upload.js";
 // ---------------------------------------------------------------------------
 const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
-  "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com.json";
+  join(homedir(), ".openclaw", "client_secret.json");
 
 const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
@@ -51,6 +52,11 @@ if (!credentialsExist) {
 }
 
 // ---------------------------------------------------------------------------
+// Module-level temp directory for download/upload tests
+// ---------------------------------------------------------------------------
+const DRIVE_SAVE_DIR = join(tmpdir(), `omniclaw-drive-test-${Date.now()}`);
+
+// ---------------------------------------------------------------------------
 // Shared state
 // ---------------------------------------------------------------------------
 let clientManager: OAuthClientManager;
@@ -62,6 +68,17 @@ describe.skipIf(!credentialsExist)("Google Drive API integration", { timeout: 30
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
+  });
+
+  afterAll(() => {
+    try {
+      if (existsSync(DRIVE_SAVE_DIR)) {
+        for (const file of readdirSync(DRIVE_SAVE_DIR)) {
+          unlinkSync(join(DRIVE_SAVE_DIR, file));
+        }
+        rmdirSync(DRIVE_SAVE_DIR);
+      }
+    } catch { /* best-effort cleanup */ }
   });
 
   // -------------------------------------------------------------------------
@@ -142,6 +159,53 @@ describe.skipIf(!credentialsExist)("Google Drive API integration", { timeout: 30
       expect(typeof result.details.webViewLink).toBe("string");
 
       uploadedFileId = result.details.id;
+    });
+
+    it("drive_upload — uploads a binary file from disk via file_path", async () => {
+      // Create a temp file to upload
+      const tempFilePath = join(DRIVE_SAVE_DIR, "test-binary-upload.txt");
+      if (!existsSync(DRIVE_SAVE_DIR)) {
+        const { mkdirSync } = await import("fs");
+        mkdirSync(DRIVE_SAVE_DIR, { recursive: true });
+      }
+      writeFileSync(tempFilePath, "Binary upload test content from omniclaw.");
+
+      const tool = createDriveUploadTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        name: "[omniclaw integration test] drive_upload_binary.txt",
+        file_path: tempFilePath,
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(typeof result.details.id).toBe("string");
+      expect(result.details.id.length).toBeGreaterThan(0);
+
+      // Clean up: delete the uploaded file from Drive
+      const deleteTool = createDriveDeleteTool(clientManager);
+      await deleteTool.execute("t", {
+        account: ACCOUNT,
+        file_id: result.details.id,
+        permanent: true,
+      });
+    });
+
+    it("drive_download — downloads the uploaded file to disk", async () => {
+      expect(uploadedFileId).toBeTruthy();
+
+      const tool = createDriveDownloadTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        file_id: uploadedFileId,
+        save_dir: DRIVE_SAVE_DIR,
+      });
+
+      expect(result.details.success !== false).toBe(true);
+      expect(typeof result.details.path).toBe("string");
+      expect(existsSync(result.details.path)).toBe(true);
+      expect(typeof result.details.filename).toBe("string");
+      expect(typeof result.details.mimeType).toBe("string");
+      expect(result.details.size).toBeGreaterThan(0);
     });
 
     it("drive_get — fetches the uploaded file with correct fields", async () => {

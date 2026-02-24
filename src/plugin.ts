@@ -25,14 +25,17 @@ import { createCanvasAuthTool } from "./tools/canvas-auth-tool.js";
 import { createCanvasCoursesTool, createCanvasGetCourseTool } from "./tools/canvas-courses.js";
 import { createCanvasGradesTool } from "./tools/canvas-grades.js";
 import { createCanvasProfileTool } from "./tools/canvas-profile.js";
+import { createCanvasDownloadFileTool } from "./tools/canvas-download.js";
 import { createCanvasSubmissionsTool } from "./tools/canvas-submissions.js";
 import { createCanvasTodoTool } from "./tools/canvas-todo.js";
 import { createDocsAppendTool } from "./tools/docs-append.js";
 import { createDocsCreateTool } from "./tools/docs-create.js";
+import { createDocsExportTool } from "./tools/docs-download.js";
 import { createDocsGetTool } from "./tools/docs-get.js";
 import { createDocsReplaceTextTool } from "./tools/docs-replace-text.js";
 import { createDriveCreateFolderTool } from "./tools/drive-create-folder.js";
 import { createDriveDeleteTool } from "./tools/drive-delete.js";
+import { createDriveDownloadTool } from "./tools/drive-download.js";
 import { createDriveGetTool } from "./tools/drive-get.js";
 import { createDriveListTool } from "./tools/drive-list.js";
 import { createDriveMoveTool } from "./tools/drive-move.js";
@@ -45,9 +48,24 @@ import { createGeminiGenerateImageTool, createGeminiEditImageTool } from "./tool
 import { createGeminiGenerateVideoTool } from "./tools/gemini-video-gen.js";
 import { createGeminiAnalyzeVideoTool } from "./tools/gemini-video-understand.js";
 import { createGitHubAuthTool } from "./tools/github-auth-tool.js";
+import { InstagramClientManager } from "./auth/instagram-client-manager.js";
+import { createInstagramAuthTool } from "./tools/instagram-auth-tool.js";
+import { createInstagramFeedTool } from "./tools/instagram-feed.js";
+import { createInstagramConversationsTool, createInstagramMessagesTool } from "./tools/instagram-messages.js";
+import { createInstagramNotificationsTool } from "./tools/instagram-notifications.js";
+import { createInstagramUserPostsTool, createInstagramPostDetailsTool } from "./tools/instagram-posts.js";
+import { createInstagramProfileTool, createInstagramGetProfileTool } from "./tools/instagram-profile.js";
+import { createInstagramReelsTool } from "./tools/instagram-reels.js";
+import { createInstagramSavedTool } from "./tools/instagram-saved.js";
+import { createInstagramSearchTool } from "./tools/instagram-search.js";
+import { createInstagramFollowersTool, createInstagramFollowingTool } from "./tools/instagram-social.js";
+import { createInstagramStoriesTool } from "./tools/instagram-stories.js";
+import { createInstagramPostCommentsTool } from "./tools/instagram-comments.js";
+import { createInstagramDownloadMediaTool } from "./tools/instagram-download-media.js";
 import { createLinkedInAuthTool } from "./tools/linkedin-auth-tool.js";
 import { createLinkedInCompanyTool } from "./tools/linkedin-company.js";
 import { createLinkedInConnectionsTool } from "./tools/linkedin-connections.js";
+import { createLinkedInDownloadMediaTool } from "./tools/linkedin-download-media.js";
 import { createLinkedInFeedTool } from "./tools/linkedin-feed.js";
 import { createLinkedInPendingInvitationsTool } from "./tools/linkedin-invitations.js";
 import { createLinkedInJobDetailsTool } from "./tools/linkedin-job-details.js";
@@ -93,7 +111,7 @@ import {
   createSheetsAuthTool,
   createYouTubeAuthTool,
 } from "./tools/gmail-auth-tool.js";
-import { createGmailGetTool } from "./tools/gmail-get.js";
+import { createGmailGetTool, createGmailDownloadAttachmentTool } from "./tools/gmail-get.js";
 import { createGmailInboxTool, createGmailSearchTool } from "./tools/gmail-inbox.js";
 import { createGmailModifyTool } from "./tools/gmail-modify.js";
 import {
@@ -104,10 +122,12 @@ import {
 import { createSheetsAppendTool } from "./tools/sheets-append.js";
 import { createSheetsClearTool } from "./tools/sheets-clear.js";
 import { createSheetsCreateTool } from "./tools/sheets-create.js";
+import { createSheetsExportTool } from "./tools/sheets-download.js";
 import { createSheetsGetTool } from "./tools/sheets-get.js";
 import { createSheetsUpdateTool } from "./tools/sheets-update.js";
 import { createSlidesAppendSlideTool } from "./tools/slides-append-slide.js";
 import { createSlidesCreateTool } from "./tools/slides-create.js";
+import { createSlidesExportTool } from "./tools/slides-download.js";
 import { createSlidesGetTool } from "./tools/slides-get.js";
 import { createSlidesReplaceTextTool } from "./tools/slides-replace-text.js";
 import { createYouTubeSearchTool, createYouTubeVideoDetailsTool } from "./tools/youtube-search.js";
@@ -115,6 +135,7 @@ import {
   createYouTubeChannelInfoTool,
   createYouTubeVideoCommentsTool,
 } from "./tools/youtube-social.js";
+import { createYouTubeDownloadThumbnailTool } from "./tools/youtube-download-thumbnail.js";
 import { createYouTubeTranscriptTool } from "./tools/youtube-transcript.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 
@@ -142,6 +163,7 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createCanvasAnnouncementsTool(canvasManager), { optional: true });
   api.registerTool(createCanvasGradesTool(canvasManager), { optional: true });
   api.registerTool(createCanvasSubmissionsTool(canvasManager), { optional: true });
+  api.registerTool(createCanvasDownloadFileTool(canvasManager), { optional: true });
   api.registerTool(createCanvasTodoTool(canvasManager), { optional: true });
 
   // GitHub tools — register unconditionally, no Google credentials required
@@ -197,6 +219,7 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createLinkedInMyProfileTool(linkedinManager), { optional: true });
   api.registerTool(createLinkedInGetProfileTool(linkedinManager), { optional: true });
   api.registerTool(createLinkedInFeedTool(linkedinManager), { optional: true });
+  api.registerTool(createLinkedInDownloadMediaTool(linkedinManager), { optional: true });
   api.registerTool(createLinkedInConnectionsTool(linkedinManager), { optional: true });
   api.registerTool(createLinkedInConversationsTool(linkedinManager), { optional: true });
   api.registerTool(createLinkedInMessagesTool(linkedinManager), { optional: true });
@@ -210,8 +233,37 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createLinkedInProfileViewsTool(linkedinManager), { optional: true });
   api.registerTool(createLinkedInSavedJobsTool(linkedinManager), { optional: true });
 
-  // YouTube transcript — no OAuth required, works with any public video
+  // Instagram tools — register unconditionally, no Google credentials required
+  const instagramTokensPath =
+    config.instagram_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-instagram-tokens.json",
+    );
+
+  const instagramManager = new InstagramClientManager(instagramTokensPath);
+
+  api.registerTool(createInstagramAuthTool(instagramManager, config), { optional: true });
+  api.registerTool(createInstagramProfileTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramGetProfileTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramFeedTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramUserPostsTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramPostDetailsTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramPostCommentsTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramStoriesTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramReelsTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramSearchTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramFollowersTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramFollowingTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramConversationsTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramMessagesTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramNotificationsTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramSavedTool(instagramManager), { optional: true });
+  api.registerTool(createInstagramDownloadMediaTool(instagramManager), { optional: true });
+
+  // YouTube tools — no OAuth required
   api.registerTool(createYouTubeTranscriptTool(), { optional: true });
+  api.registerTool(createYouTubeDownloadThumbnailTool(), { optional: true });
 
   if (!config.client_secret_path) {
     api.logger.warn(
@@ -235,6 +287,7 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createGmailSearchTool(clientManager), { optional: true });
   api.registerTool(createGmailAuthTool(clientManager, config), { optional: true });
   api.registerTool(createGmailGetTool(clientManager), { optional: true });
+  api.registerTool(createGmailDownloadAttachmentTool(clientManager), { optional: true });
   api.registerTool(createGmailSendTool(clientManager), { optional: true });
   api.registerTool(createGmailReplyTool(clientManager), { optional: true });
   api.registerTool(createGmailForwardTool(clientManager), { optional: true });
@@ -256,6 +309,7 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createDriveGetTool(clientManager), { optional: true });
   api.registerTool(createDriveReadTool(clientManager), { optional: true });
   api.registerTool(createDriveUploadTool(clientManager), { optional: true });
+  api.registerTool(createDriveDownloadTool(clientManager), { optional: true });
   api.registerTool(createDriveCreateFolderTool(clientManager), { optional: true });
   api.registerTool(createDriveMoveTool(clientManager), { optional: true });
   api.registerTool(createDriveDeleteTool(clientManager), { optional: true });
@@ -266,12 +320,14 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createDocsGetTool(clientManager), { optional: true });
   api.registerTool(createDocsAppendTool(clientManager), { optional: true });
   api.registerTool(createDocsReplaceTextTool(clientManager), { optional: true });
+  api.registerTool(createDocsExportTool(clientManager), { optional: true });
 
   api.registerTool(createSlidesAuthTool(clientManager, config), { optional: true });
   api.registerTool(createSlidesCreateTool(clientManager), { optional: true });
   api.registerTool(createSlidesGetTool(clientManager), { optional: true });
   api.registerTool(createSlidesAppendSlideTool(clientManager), { optional: true });
   api.registerTool(createSlidesReplaceTextTool(clientManager), { optional: true });
+  api.registerTool(createSlidesExportTool(clientManager), { optional: true });
 
   api.registerTool(createSheetsAuthTool(clientManager, config), { optional: true });
   api.registerTool(createSheetsCreateTool(clientManager), { optional: true });
@@ -279,6 +335,7 @@ export function register(api: OpenClawPluginApi): void {
   api.registerTool(createSheetsUpdateTool(clientManager), { optional: true });
   api.registerTool(createSheetsAppendTool(clientManager), { optional: true });
   api.registerTool(createSheetsClearTool(clientManager), { optional: true });
+  api.registerTool(createSheetsExportTool(clientManager), { optional: true });
 
   api.registerTool(createYouTubeAuthTool(clientManager, config), { optional: true });
   api.registerTool(createYouTubeSearchTool(clientManager), { optional: true });

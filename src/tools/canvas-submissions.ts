@@ -22,7 +22,7 @@ export function createCanvasSubmissionsTool(canvasManager: CanvasClientManager):
     name: "canvas_submissions",
     label: "Canvas Submissions",
     description:
-      "List submissions for a Canvas assignment. Returns submission details including score, grade, submitted_at, and workflow_state.",
+      "List submissions for a Canvas assignment. Returns submission details including score, grade, submitted_at, workflow_state, and submission history. Attachments are included when available — each attachment contains id, filename, url, content_type, and size.",
     parameters: Type.Object({
       course_id: Type.String({ description: "The Canvas course ID." }),
       assignment_id: Type.String({ description: "The Canvas assignment ID." }),
@@ -45,7 +45,7 @@ export function createCanvasSubmissionsTool(canvasManager: CanvasClientManager):
         const submissions = await canvasManager.getPaginated(
           account,
           `courses/${params.course_id}/assignments/${params.assignment_id}/submissions`,
-          { "include[]": ["submission_comments", "rubric_assessment"] },
+          { "include[]": ["submission_comments", "rubric_assessment", "submission_history"] },
         );
         return jsonResult(submissions);
       } catch (err) {

@@ -13,4 +13,7 @@ export interface PluginConfig {
   linkedin_tokens_path?: string;
   linkedin_username?: string;
   linkedin_password?: string;
+  instagram_tokens_path?: string;
+  instagram_username?: string;
+  instagram_password?: string;
 }

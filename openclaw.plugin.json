@@ -52,6 +52,18 @@
       "linkedin_password": {
         "type": "string",
         "description": "LinkedIn password for automatic login."
+      },
+      "instagram_tokens_path": {
+        "type": "string",
+        "description": "Path to store Instagram session tokens. Defaults to ~/.openclaw/omniclaw-instagram-tokens.json."
+      },
+      "instagram_username": {
+        "type": "string",
+        "description": "Instagram username for automatic login."
+      },
+      "instagram_password": {
+        "type": "string",
+        "description": "Instagram password for automatic login."
       }
     },
     "required": []

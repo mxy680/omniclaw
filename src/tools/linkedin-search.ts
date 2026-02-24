@@ -146,7 +146,7 @@ export function createLinkedInSearchJobsTool(linkedinManager: LinkedInClientMana
         const keywords = encodeURIComponent(params.keywords);
         const location = params.location ? encodeURIComponent(params.location) : "";
 
-        const queryParts = [`keywords:${keywords}`];
+        const queryParts = [`keywords:${keywords}`, `origin:JOB_SEARCH_PAGE_SEARCH_BUTTON`];
         if (location) {
           queryParts.push(`locationUnion:(geoId:${location})`);
         }
@@ -161,29 +161,45 @@ export function createLinkedInSearchJobsTool(linkedinManager: LinkedInClientMana
             count: String(count),
           },
           `query=(${queryParts.join(",")})`,
-        )) as { included?: Array<Record<string, unknown>>; paging?: Record<string, unknown> };
+        )) as { included?: Array<Record<string, unknown>>; data?: Record<string, unknown> };
 
-        const jobCards = (data.included ?? []).filter(
+        // Prefer JobPostingCard entities with JOBS_SEARCH context (richest data)
+        const searchCards = (data.included ?? []).filter(
           (item) =>
             typeof item.$type === "string" &&
-            ((item.$type as string).includes("JobCard") ||
-              (item.$type as string).includes("JobPosting")),
+            (item.$type as string).includes("JobPostingCard") &&
+            typeof item.entityUrn === "string" &&
+            (item.entityUrn as string).includes("JOBS_SEARCH"),
         );
 
-        const jobs = jobCards.map((job) => ({
-          entityUrn: job.entityUrn,
-          title: job.jobTitle ?? job.title,
-          companyName:
-            (job.primaryDescription as Record<string, unknown>)?.text ?? job.companyName,
-          location:
-            (job.secondaryDescription as Record<string, unknown>)?.text ?? job.formattedLocation,
-          listDate: job.listedAt,
-          workRemoteAllowed: job.workRemoteAllowed,
-        }));
+        // Fall back to JobPosting entities if no search cards
+        const jobPostings = searchCards.length > 0
+          ? searchCards
+          : extractEntities(data.included, "JobPosting");
+
+        const jobs = jobPostings.map((job) => {
+          // JobPostingCard has title as { text: "..." }, JobPosting has title as string
+          const title = typeof job.title === "object" && job.title !== null
+            ? (job.title as Record<string, unknown>).text
+            : job.title;
+
+          return {
+            entityUrn: job.entityUrn,
+            title,
+            companyName:
+              (job.primaryDescription as Record<string, unknown>)?.text ?? job.companyName,
+            location:
+              (job.secondaryDescription as Record<string, unknown>)?.text ?? job.formattedLocation,
+            listDate: job.listedAt,
+            workRemoteAllowed: job.workRemoteAllowed,
+          };
+        });
 
         return jsonResult({
           count: jobs.length,
-          total: (data.paging as Record<string, unknown> | undefined)?.total ?? null,
+          total: (data.data as Record<string, unknown> | undefined)?.paging
+            ? ((data.data as Record<string, unknown>).paging as Record<string, unknown>)?.total
+            : null,
           jobs,
         });
       } catch (err) {

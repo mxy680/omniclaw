@@ -12,14 +12,15 @@
  *   RUN_WRITE_TESTS=1    enable create / get / append / replace / delete tests
  */
 
-import { existsSync } from "fs";
-import { homedir } from "os";
+import { existsSync, readdirSync, unlinkSync, rmdirSync } from "fs";
+import { homedir, tmpdir } from "os";
 import { join } from "path";
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
 import { TokenStore } from "../../src/auth/token-store.js";
 import { createDocsAppendTool } from "../../src/tools/docs-append.js";
 import { createDocsCreateTool } from "../../src/tools/docs-create.js";
+import { createDocsExportTool } from "../../src/tools/docs-download.js";
 import { createDocsGetTool } from "../../src/tools/docs-get.js";
 import { createDocsReplaceTextTool } from "../../src/tools/docs-replace-text.js";
 import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
@@ -29,7 +30,7 @@ import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
 // ---------------------------------------------------------------------------
 const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
-  "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com(1).json";
+  join(homedir(), ".openclaw", "client_secret.json");
 
 const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
@@ -37,6 +38,8 @@ const ACCOUNT = process.env.GMAIL_ACCOUNT ?? "default";
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
 const credentialsExist = existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
+
+const DOCS_SAVE_DIR = join(tmpdir(), `omniclaw-docs-test-${Date.now()}`);
 
 if (!credentialsExist) {
   console.warn(
@@ -57,6 +60,15 @@ describe.skipIf(!credentialsExist)("Google Docs API integration", { timeout: 30_
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
+  });
+
+  afterAll(() => {
+    if (existsSync(DOCS_SAVE_DIR)) {
+      for (const file of readdirSync(DOCS_SAVE_DIR)) {
+        unlinkSync(join(DOCS_SAVE_DIR, file));
+      }
+      rmdirSync(DOCS_SAVE_DIR);
+    }
   });
 
   // -------------------------------------------------------------------------
@@ -142,6 +154,41 @@ describe.skipIf(!credentialsExist)("Google Docs API integration", { timeout: 30_
 
       expect(result.details.content).toContain("OMNICLAW");
       expect(result.details.content).not.toContain("omniclaw");
+    });
+
+    it("docs_export — exports the document as PDF", async () => {
+      expect(createdDocId).toBeTruthy();
+
+      const tool = createDocsExportTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        document_id: createdDocId,
+        save_dir: DOCS_SAVE_DIR,
+        format: "pdf",
+      });
+
+      expect(result.details.success !== false).toBe(true);
+      expect(typeof result.details.path).toBe("string");
+      expect(existsSync(result.details.path)).toBe(true);
+      expect(result.details.mimeType).toBe("application/pdf");
+      expect(result.details.size).toBeGreaterThan(0);
+    });
+
+    it("docs_export — exports the document as DOCX", async () => {
+      expect(createdDocId).toBeTruthy();
+
+      const tool = createDocsExportTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        document_id: createdDocId,
+        save_dir: DOCS_SAVE_DIR,
+        format: "docx",
+      });
+
+      expect(result.details.success !== false).toBe(true);
+      expect(typeof result.details.path).toBe("string");
+      expect(existsSync(result.details.path)).toBe(true);
+      expect(result.details.size).toBeGreaterThan(0);
     });
 
     it("drive_delete — permanently deletes the test document", async () => {

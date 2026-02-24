@@ -3,22 +3,23 @@
  * Run with: RUN_WRITE_TESTS=1 CLIENT_SECRET_PATH="..." pnpm vitest run tests/integration/sheets.test.ts
  */
 
-import { existsSync } from "fs";
-import { homedir } from "os";
+import { existsSync, readdirSync, unlinkSync, rmdirSync } from "fs";
+import { homedir, tmpdir } from "os";
 import { join } from "path";
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
 import { TokenStore } from "../../src/auth/token-store.js";
 import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
 import { createSheetsAppendTool } from "../../src/tools/sheets-append.js";
 import { createSheetsClearTool } from "../../src/tools/sheets-clear.js";
 import { createSheetsCreateTool } from "../../src/tools/sheets-create.js";
+import { createSheetsExportTool } from "../../src/tools/sheets-download.js";
 import { createSheetsGetTool } from "../../src/tools/sheets-get.js";
 import { createSheetsUpdateTool } from "../../src/tools/sheets-update.js";
 
 const CLIENT_SECRET_PATH =
   process.env.CLIENT_SECRET_PATH ??
-  "/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com(1).json";
+  join(homedir(), ".openclaw", "client_secret.json");
 
 const TOKENS_PATH = process.env.TOKENS_PATH ?? join(homedir(), ".openclaw", "omniclaw-tokens.json");
 
@@ -26,6 +27,8 @@ const ACCOUNT = process.env.GMAIL_ACCOUNT ?? "default";
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
 const credentialsExist = existsSync(CLIENT_SECRET_PATH) && existsSync(TOKENS_PATH);
+
+const SHEETS_SAVE_DIR = join(tmpdir(), `omniclaw-sheets-test-${Date.now()}`);
 
 if (!credentialsExist) {
   console.warn("\n[integration] Skipping: credentials not found.\n");
@@ -38,6 +41,15 @@ describe.skipIf(!credentialsExist)("Google Sheets API integration", { timeout: 3
   beforeAll(() => {
     const tokenStore = new TokenStore(TOKENS_PATH);
     clientManager = new OAuthClientManager(CLIENT_SECRET_PATH, 9753, tokenStore);
+  });
+
+  afterAll(() => {
+    if (existsSync(SHEETS_SAVE_DIR)) {
+      for (const file of readdirSync(SHEETS_SAVE_DIR)) {
+        unlinkSync(join(SHEETS_SAVE_DIR, file));
+      }
+      rmdirSync(SHEETS_SAVE_DIR);
+    }
   });
 
   describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
@@ -105,6 +117,40 @@ describe.skipIf(!credentialsExist)("Google Sheets API integration", { timeout: 3
       expect(result.details.values[0]).toEqual(["Name", "Email", "Score"]);
       expect(result.details.values[1][0]).toBe("Alice");
       expect(result.details.values[2][0]).toBe("Bob");
+    });
+
+    it("sheets_export — exports the spreadsheet as XLSX", async () => {
+      expect(createdSpreadsheetId).toBeTruthy();
+
+      const tool = createSheetsExportTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        spreadsheet_id: createdSpreadsheetId,
+        save_dir: SHEETS_SAVE_DIR,
+        format: "xlsx",
+      });
+
+      expect(result.details.success !== false).toBe(true);
+      expect(typeof result.details.path).toBe("string");
+      expect(existsSync(result.details.path)).toBe(true);
+      expect(result.details.size).toBeGreaterThan(0);
+    });
+
+    it("sheets_export — exports the spreadsheet as CSV", async () => {
+      expect(createdSpreadsheetId).toBeTruthy();
+
+      const tool = createSheetsExportTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        spreadsheet_id: createdSpreadsheetId,
+        save_dir: SHEETS_SAVE_DIR,
+        format: "csv",
+      });
+
+      expect(result.details.success !== false).toBe(true);
+      expect(typeof result.details.path).toBe("string");
+      expect(existsSync(result.details.path)).toBe(true);
+      expect(result.details.size).toBeGreaterThan(0);
     });
 
     it("sheets_clear — clears the data range", async () => {

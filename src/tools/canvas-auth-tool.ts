@@ -282,18 +282,24 @@ async function runLoginFlow(
     let trustClicked = false;
     let loggedIn = false;
 
+    const canvasHost = new URL(base_url).hostname;
+
     for (let i = 0; i < 300; i++) {
       const currentUrl = page.url();
-      const cookies = await context.cookies();
-      const cookieMap: Record<string, string> = {};
-      for (const c of cookies) {
-        cookieMap[c.name] = c.value;
-      }
 
-      if ("canvas_session" in cookieMap) {
-        console.log(`[canvas] Login complete! URL: ${currentUrl}`);
-        loggedIn = true;
-        break;
+      // Only check for canvas_session once we're back on the Canvas domain
+      // (Canvas may set a pre-auth canvas_session cookie before the SSO redirect)
+      const onCanvasDomain = currentUrl.includes(canvasHost);
+      if (onCanvasDomain) {
+        const cookies = await context.cookies();
+        const canvasSessionCookie = cookies.find(
+          (c) => c.name === "canvas_session" && c.domain.includes(canvasHost),
+        );
+        if (canvasSessionCookie) {
+          console.log(`[canvas] Login complete! URL: ${currentUrl}`);
+          loggedIn = true;
+          break;
+        }
       }
 
       // Auto-click trust device buttons (Duo)

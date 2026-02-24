@@ -1,5 +1,8 @@
+import { writeFileSync } from "fs";
+import { join } from "path";
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
+import { ensureDir, sanitizeFilename } from "./media-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -162,10 +165,23 @@ export function createGitHubGetFileTool(ghManager: GitHubClientManager): any {
           default: "default",
         }),
       ),
+      save_dir: Type.Optional(
+        Type.String({
+          description:
+            "When provided, save the file to this directory instead of returning text content. Useful for binary files (images, PDFs, etc.).",
+        }),
+      ),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; path: string; ref?: string; account?: string },
+      params: {
+        owner: string;
+        repo: string;
+        path: string;
+        ref?: string;
+        account?: string;
+        save_dir?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!ghManager.hasToken(account)) return jsonResult(GITHUB_AUTH_REQUIRED);
@@ -187,7 +203,25 @@ export function createGitHubGetFileTool(ghManager: GitHubClientManager): any {
 
         // Decode base64 content
         if (data.content && data.encoding === "base64") {
-          const decoded = Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf-8");
+          const rawBytes = Buffer.from(data.content.replace(/\n/g, ""), "base64");
+
+          if (params.save_dir) {
+            // Binary download mode
+            ensureDir(params.save_dir);
+            const filename = sanitizeFilename(data.name ?? "github-file");
+            const filepath = join(params.save_dir, filename);
+            writeFileSync(filepath, rawBytes);
+            return jsonResult({
+              name: data.name,
+              path: filepath,
+              size: rawBytes.length,
+              sha: data.sha,
+              mode: "downloaded",
+            });
+          }
+
+          // Text mode (existing behavior)
+          const decoded = rawBytes.toString("utf-8");
           return jsonResult({
             name: data.name,
             path: data.path,

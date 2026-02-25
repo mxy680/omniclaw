@@ -1,12 +1,12 @@
 /**
  * Unified backend interface for iMessage tools.
- * Two implementations: SqliteMessageBackend (macOS-only) and BlueBubblesMessageBackend (cross-platform).
  */
 
 export interface ContactResult {
   handle_id: number;
   identifier: string;
   service: string;
+  name?: string | null;
 }
 
 export interface ChatResult {

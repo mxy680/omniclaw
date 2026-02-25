@@ -30,12 +30,45 @@ export class BlueBubblesMessageBackend implements IMessageBackend {
     this.account = account;
   }
 
+  /**
+   * Build a map of phone/email → display name from the Contacts API.
+   */
+  private async fetchContactNames(): Promise<Map<string, string>> {
+    const nameMap = new Map<string, string>();
+    try {
+      const res = (await this.manager.get(
+        this.account,
+        "/api/v1/contact",
+      )) as BBResponse;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const c of res.data ?? []) {
+        const name = c.displayName || [c.firstName, c.lastName].filter(Boolean).join(" ") || null;
+        if (!name) continue;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const p of c.phoneNumbers ?? []) {
+          const addr = typeof p === "string" ? p : p.address ?? p.value;
+          if (addr) nameMap.set(addr, name);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const e of c.emails ?? []) {
+          const addr = typeof e === "string" ? e : e.address ?? e.value;
+          if (addr) nameMap.set(addr.toLowerCase(), name);
+        }
+      }
+    } catch {
+      // Contacts API may not be available — silently fall back
+    }
+    return nameMap;
+  }
+
   async getContacts(params: {
     search?: string;
     limit?: number;
   }): Promise<{ count: number; contacts: ContactResult[] }> {
     const limit = params.limit ?? 50;
 
+    // Fetch handles and contact names in parallel
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body: any = {
       limit,
@@ -53,18 +86,21 @@ export class BlueBubblesMessageBackend implements IMessageBackend {
       ];
     }
 
-    const res = (await this.manager.post(
-      this.account,
-      "/api/v1/handle/query",
-      body,
-    )) as BBResponse;
+    const [handleRes, nameMap] = await Promise.all([
+      this.manager.post(this.account, "/api/v1/handle/query", body) as Promise<BBResponse>,
+      this.fetchContactNames(),
+    ]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contacts: ContactResult[] = (res.data ?? []).map((h: any) => ({
-      handle_id: h.originalROWID ?? h.ROWID ?? 0,
-      identifier: h.address ?? h.id ?? "",
-      service: h.service ?? "iMessage",
-    }));
+    const contacts: ContactResult[] = (handleRes.data ?? []).map((h: any) => {
+      const identifier = h.address ?? h.id ?? "";
+      return {
+        handle_id: h.originalROWID ?? h.ROWID ?? 0,
+        identifier,
+        service: h.service ?? "iMessage",
+        name: nameMap.get(identifier) ?? nameMap.get(identifier.toLowerCase()) ?? null,
+      };
+    });
 
     return { count: contacts.length, contacts };
   }

@@ -19,6 +19,7 @@
   "dependencies": {
     "@google/genai": "^1.42.0",
     "@sinclair/typebox": "0.34.48",
+    "better-sqlite3": "^11.0.0",
     "google-auth-library": "^10.5.0",
     "googleapis": "^144.0.0",
     "open": "^10.1.0",
@@ -27,6 +28,7 @@
     "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^20.0.0",
     "openclaw": "workspace:*",
     "tsx": "^4.21.0",

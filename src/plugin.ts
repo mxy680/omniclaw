@@ -137,6 +137,14 @@ import {
 } from "./tools/youtube-social.js";
 import { createYouTubeDownloadThumbnailTool } from "./tools/youtube-download-thumbnail.js";
 import { createYouTubeTranscriptTool } from "./tools/youtube-transcript.js";
+import { BlueBubblesClientManager } from "./auth/bluebubbles-client-manager.js";
+import { createImessageBBAuthTool } from "./tools/imessage-auth-tool.js";
+import { BlueBubblesMessageBackend } from "./tools/imessage-backend-bluebubbles.js";
+import { createImessageContactsTool } from "./tools/imessage-contacts.js";
+import { createImessageChatsTool } from "./tools/imessage-chats.js";
+import { createImessageMessagesTool, createImessageSearchTool } from "./tools/imessage-messages.js";
+import { createImessageSendTool } from "./tools/imessage-send.js";
+import { createImessageAttachmentsTool } from "./tools/imessage-attachments.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 
 export function register(api: OpenClawPluginApi): void {
@@ -264,6 +272,36 @@ export function register(api: OpenClawPluginApi): void {
   // YouTube tools — no OAuth required
   api.registerTool(createYouTubeTranscriptTool(), { optional: true });
   api.registerTool(createYouTubeDownloadThumbnailTool(), { optional: true });
+
+  // BlueBubbles / iMessage backend selection
+  const bbTokensPath =
+    config.bluebubbles_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-bluebubbles-tokens.json",
+    );
+
+  const bbManager = new BlueBubblesClientManager(bbTokensPath);
+
+  // Pre-seed from plugin config if both URL and password are provided
+  if (config.bluebubbles_url && config.bluebubbles_password) {
+    if (!bbManager.hasConfig("default")) {
+      bbManager.setConfig("default", config.bluebubbles_url, config.bluebubbles_password);
+    }
+  }
+
+  // Auth tool is always available so users can set up BlueBubbles at any time
+  api.registerTool(createImessageBBAuthTool(bbManager, config), { optional: true });
+
+  // iMessage tools — requires BlueBubbles
+  const imessageBackend = new BlueBubblesMessageBackend(bbManager);
+
+  api.registerTool(createImessageContactsTool(imessageBackend), { optional: true });
+  api.registerTool(createImessageChatsTool(imessageBackend), { optional: true });
+  api.registerTool(createImessageMessagesTool(imessageBackend), { optional: true });
+  api.registerTool(createImessageSearchTool(imessageBackend), { optional: true });
+  api.registerTool(createImessageSendTool(imessageBackend), { optional: true });
+  api.registerTool(createImessageAttachmentsTool(imessageBackend), { optional: true });
 
   if (!config.client_secret_path) {
     api.logger.warn(

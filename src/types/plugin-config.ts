@@ -16,4 +16,7 @@ export interface PluginConfig {
   instagram_tokens_path?: string;
   instagram_username?: string;
   instagram_password?: string;
+  bluebubbles_url?: string;
+  bluebubbles_password?: string;
+  bluebubbles_tokens_path?: string;
 }

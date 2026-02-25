@@ -1,2 +1,4 @@
 node_modules/
 dist/
+dashboard/.next/
+dashboard/out/

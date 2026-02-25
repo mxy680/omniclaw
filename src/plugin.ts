@@ -3,6 +3,9 @@ import * as path from "path";
 // Resolved via openclaw/plugin-sdk when loaded as a monorepo extension
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OpenClawPluginApi = any;
+import type { ChannelPlugin } from "openclaw/plugin-sdk";
+import { iosChannelPlugin } from "./channel/channel-plugin.js";
+import { setChannelRuntime } from "./channel/runtime.js";
 import { CanvasClientManager } from "./auth/canvas-client-manager.js";
 import { GeminiClientManager } from "./auth/gemini-client-manager.js";
 import { GitHubClientManager } from "./auth/github-client-manager.js";
@@ -148,6 +151,10 @@ import { createImessageAttachmentsTool } from "./tools/imessage-attachments.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 
 export function register(api: OpenClawPluginApi): void {
+  // iOS WebSocket channel
+  setChannelRuntime(api.runtime);
+  api.registerChannel({ plugin: iosChannelPlugin as ChannelPlugin });
+
   const config = (api.pluginConfig ?? {}) as unknown as PluginConfig;
 
   // Derive Canvas tokens path alongside Google tokens

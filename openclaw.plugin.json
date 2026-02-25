@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "Gmail integration for OpenClaw via Google OAuth2",
   "skills": ["skills"],
+  "channels": ["omniclaw-ios"],
   "configSchema": {
     "type": "object",
     "properties": {

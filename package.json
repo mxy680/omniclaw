@@ -25,12 +25,14 @@
     "open": "^10.1.0",
     "otpauth": "^9.4.2",
     "playwright": "^1.50.0",
+    "ws": "^8.19.0",
     "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^20.0.0",
-    "openclaw": "workspace:*",
+    "@types/ws": "^8.18.1",
+    "openclaw": "*",
     "tsx": "^4.21.0",
     "typescript": "^5.4.0",
     "vitest": "^4.0.18"

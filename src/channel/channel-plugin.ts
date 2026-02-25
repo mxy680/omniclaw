@@ -1,0 +1,151 @@
+import {
+  buildBaseAccountStatusSnapshot,
+  buildBaseChannelStatusSummary,
+  DEFAULT_ACCOUNT_ID,
+  type ChannelPlugin,
+  type OpenClawConfig,
+} from "openclaw/plugin-sdk";
+import { listIosAccountIds, resolveIosAccount } from "./accounts.js";
+import { handleIosInbound } from "./inbound.js";
+import { getChannelRuntime } from "./runtime.js";
+import { sendMessageIos, setWsServer } from "./send.js";
+import type { CoreConfig, ResolvedIosAccount } from "./types.js";
+import { startWsServer } from "./ws-server.js";
+
+export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
+  id: "omniclaw-ios",
+  meta: {
+    id: "omniclaw-ios",
+    label: "iOS",
+    selectionLabel: "iOS (WebSocket)",
+    docsPath: "docs/ios.md",
+    blurb: "iOS app channel via WebSocket",
+  },
+  capabilities: {
+    chatTypes: ["direct"],
+    blockStreaming: true,
+  },
+  reload: { configPrefixes: ["channels.omniclaw-ios"] },
+  config: {
+    listAccountIds: () => listIosAccountIds(),
+    resolveAccount: (cfg) => resolveIosAccount(cfg as CoreConfig),
+    defaultAccountId: () => DEFAULT_ACCOUNT_ID,
+    isConfigured: (account) => account.configured,
+    describeAccount: (account) => ({
+      accountId: account.accountId,
+      enabled: account.enabled,
+      configured: account.configured,
+      port: account.port,
+    }),
+  },
+  security: {
+    resolveDmPolicy: () => ({
+      policy: "open",
+      allowFrom: [],
+      policyPath: "channels.omniclaw-ios.dmPolicy",
+      allowFromPath: "channels.omniclaw-ios.allowFrom",
+      approveHint: "",
+    }),
+  },
+  messaging: {
+    normalizeTarget: (input) => {
+      const trimmed = input.trim().toLowerCase();
+      return trimmed || undefined;
+    },
+  },
+  outbound: {
+    deliveryMode: "direct",
+    chunker: (text, limit) => getChannelRuntime().channel.text.chunkMarkdownText(text, limit),
+    chunkerMode: "markdown",
+    textChunkLimit: 4000,
+    sendText: async ({ to, text }) => {
+      const result = sendMessageIos(text);
+      return { channel: "omniclaw-ios", ...result, target: to };
+    },
+    sendMedia: async ({ to, text, mediaUrl }) => {
+      const combined = mediaUrl ? `${text}\n\nAttachment: ${mediaUrl}` : text;
+      const result = sendMessageIos(combined);
+      return { channel: "omniclaw-ios", ...result, target: to };
+    },
+  },
+  status: {
+    defaultRuntime: {
+      accountId: DEFAULT_ACCOUNT_ID,
+      running: false,
+      lastStartAt: null,
+      lastStopAt: null,
+      lastError: null,
+    },
+    buildChannelSummary: ({ account, snapshot }) => ({
+      ...buildBaseChannelStatusSummary(snapshot),
+      port: account.port,
+    }),
+    buildAccountSnapshot: ({ account, runtime }) => ({
+      ...buildBaseAccountStatusSnapshot({ account, runtime }),
+      port: account.port,
+    }),
+  },
+  gateway: {
+    startAccount: async (ctx) => {
+      const account = ctx.account;
+      if (!account.configured) {
+        throw new Error(
+          `iOS channel is not configured (need authToken in channels.omniclaw-ios). ` +
+            `Set via: openclaw config set channels.omniclaw-ios.authToken "<token>"`,
+        );
+      }
+
+      ctx.log?.info(`[ios] starting WebSocket server on port ${account.port}`);
+
+      const cfg = ctx.cfg as CoreConfig;
+      const runtime = ctx.runtime;
+
+      const wsServer = startWsServer({
+        port: account.port,
+        authToken: account.authToken,
+        log: (msg) => ctx.log?.info(msg),
+        onReady: () => {
+          setWsServer(wsServer);
+          ctx.log?.info(`[ios] server ready, registered as active`);
+        },
+        onMessage: async (connId, msg) => {
+          if (msg.type !== "message") {
+            return;
+          }
+          try {
+            await handleIosInbound({
+              text: msg.text,
+              messageId: msg.id,
+              connId,
+              account,
+              config: cfg,
+              runtime,
+              statusSink: (patch) =>
+                ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+            });
+          } catch (err) {
+            ctx.log?.info(`[ios] handleIosInbound error: ${err}`);
+          }
+        },
+      });
+
+      ctx.setStatus({
+        accountId: ctx.accountId,
+        running: true,
+        lastStartAt: Date.now(),
+      });
+
+      return {
+        stop: () => {
+          wsServer.stop();
+          setWsServer(null as unknown as ReturnType<typeof startWsServer>);
+          ctx.setStatus({
+            accountId: ctx.accountId,
+            running: false,
+            lastStopAt: Date.now(),
+          });
+        },
+      };
+    },
+  },
+};

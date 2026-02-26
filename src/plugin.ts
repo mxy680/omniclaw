@@ -236,7 +236,7 @@ export function register(api: OpenClawPluginApi): void {
         },
       }).catch((err) => {
         // Background tasks fail silently — errors logged but don't crash
-        console.error(`[omniclaw] background task ${taskId} failed:`, err);
+        api.logger.error(`[omniclaw] background task ${taskId} failed: ${err}`);
       });
 
       return taskId;

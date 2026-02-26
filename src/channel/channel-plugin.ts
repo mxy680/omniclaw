@@ -15,6 +15,8 @@ import { sendMessageIos, setWsServer } from "./send.js";
 import type { CoreConfig, ResolvedIosAccount } from "./types.js";
 import { startWsServer } from "./ws-server.js";
 
+// Single-account design: only one iOS account is supported at a time.
+// If multi-account is added, replace with Map<accountId, DispatchManager>.
 let activeDispatchManager: DispatchManager | null = null;
 
 export function getDispatchManager(): DispatchManager | null {

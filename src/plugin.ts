@@ -142,6 +142,13 @@ import { createYouTubeDownloadThumbnailTool } from "./tools/youtube-download-thu
 import { createYouTubeTranscriptTool } from "./tools/youtube-transcript.js";
 import { Factor75ClientManager } from "./auth/factor75-client-manager.js";
 import { createFactor75AuthTool } from "./tools/factor75-auth-tool.js";
+import { CronometerClientManager } from "./auth/cronometer-client-manager.js";
+import { createCronometerAuthTool } from "./tools/cronometer-auth-tool.js";
+import { createCronometerDiaryTool } from "./tools/cronometer-diary.js";
+import { createCronometerNutritionTool } from "./tools/cronometer-nutrition.js";
+import { createCronometerExercisesTool } from "./tools/cronometer-exercises.js";
+import { createCronometerBiometricsTool } from "./tools/cronometer-biometrics.js";
+import { createCronometerNotesTool } from "./tools/cronometer-notes.js";
 import { createFactor75MenuTool } from "./tools/factor75-menu.js";
 import { createFactor75MealDetailsTool } from "./tools/factor75-meal-details.js";
 import {
@@ -171,6 +178,11 @@ import { getActiveContext } from "./channel/active-context.js";
 import { createBackgroundWorkerTool } from "./tools/background-worker.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function truncateStr(val: unknown, max = 200): string {
+  const s = typeof val === "string" ? val : JSON.stringify(val);
+  return s.length > max ? s.slice(0, max) + "..." : s;
+}
+
 function wrapToolWithBroadcast(tool: any): any {
   const originalExecute = tool.execute;
   return {
@@ -178,16 +190,21 @@ function wrapToolWithBroadcast(tool: any): any {
     execute: async (...args: unknown[]) => {
       const ws = getWsServer();
       const ctx = getActiveContext();
+      const params = (args[1] ?? {}) as Record<string, unknown>;
+      const startTs = Date.now();
       if (ws && ctx.conversationId) {
         ws.broadcast({
           type: "tool_use",
           name: tool.name,
           phase: "start",
           conversationId: ctx.conversationId,
+          params,
         });
       }
+      let rawResult: unknown;
       try {
-        return await originalExecute(...args);
+        rawResult = await originalExecute(...args);
+        return rawResult;
       } finally {
         if (ws && ctx.conversationId) {
           ws.broadcast({
@@ -195,6 +212,8 @@ function wrapToolWithBroadcast(tool: any): any {
             name: tool.name,
             phase: "end",
             conversationId: ctx.conversationId,
+            durationMs: Date.now() - startTs,
+            result: truncateStr(rawResult),
           });
         }
       }
@@ -387,6 +406,23 @@ export function register(api: OpenClawPluginApi): void {
   reg(createFactor75DeliveriesTool(factor75Manager));
   reg(createFactor75DeliveryDetailsTool(factor75Manager));
   reg(createFactor75AccountTool(factor75Manager));
+
+  // Cronometer tools — register unconditionally, no Google credentials required
+  const cronometerTokensPath =
+    config.cronometer_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-cronometer-tokens.json",
+    );
+
+  const cronometerManager = new CronometerClientManager(cronometerTokensPath);
+
+  reg(createCronometerAuthTool(cronometerManager, config));
+  reg(createCronometerDiaryTool(cronometerManager));
+  reg(createCronometerNutritionTool(cronometerManager));
+  reg(createCronometerExercisesTool(cronometerManager));
+  reg(createCronometerBiometricsTool(cronometerManager));
+  reg(createCronometerNotesTool(cronometerManager));
 
   // YouTube tools — no OAuth required
   reg(createYouTubeTranscriptTool());

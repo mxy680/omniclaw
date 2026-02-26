@@ -138,7 +138,7 @@ export async function handleIosInbound(params: {
   wsServer.send(connId, { type: "typing", active: true, conversationId });
   wsServer.broadcastExcept(connId, { type: "typing", active: true, conversationId });
 
-  const peerId = `ios-user`;
+  const peerId = `ios-${conversationId}`;
   const route = core.channel.routing.resolveAgentRoute({
     cfg: config as OpenClawConfig,
     channel: CHANNEL_ID,
@@ -159,7 +159,7 @@ export async function handleIosInbound(params: {
   });
   const body = core.channel.reply.formatAgentEnvelope({
     channel: "iOS",
-    from: "ios-user",
+    from: peerId,
     timestamp,
     previousTimestamp,
     envelope: envelopeOptions,

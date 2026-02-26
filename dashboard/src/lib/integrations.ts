@@ -264,3 +264,17 @@ export const integrations: Integration[] = [
     ],
   },
 ];
+
+/** Find the integration that owns a given tool name. */
+export function findIntegrationForTool(toolName: string): Integration | undefined {
+  return integrations.find((i) => i.tools.some((t) => t.name === toolName));
+}
+
+/** Find a Tool object by its tool name across all integrations. */
+export function findToolByName(toolName: string): Tool | undefined {
+  for (const integration of integrations) {
+    const tool = integration.tools.find((t) => t.name === toolName);
+    if (tool) return tool;
+  }
+  return undefined;
+}

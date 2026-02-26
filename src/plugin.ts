@@ -149,11 +149,49 @@ import { createImessageMessagesTool, createImessageSearchTool } from "./tools/im
 import { createImessageSendTool } from "./tools/imessage-send.js";
 import { createImessageAttachmentsTool } from "./tools/imessage-attachments.js";
 import type { PluginConfig } from "./types/plugin-config.js";
+import { getWsServer } from "./channel/send.js";
+import { getActiveContext } from "./channel/active-context.js";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function wrapToolWithBroadcast(tool: any): any {
+  const originalExecute = tool.execute;
+  return {
+    ...tool,
+    execute: async (...args: unknown[]) => {
+      const ws = getWsServer();
+      const ctx = getActiveContext();
+      if (ws && ctx.conversationId) {
+        ws.broadcast({
+          type: "tool_use",
+          name: tool.name,
+          phase: "start",
+          conversationId: ctx.conversationId,
+        });
+      }
+      try {
+        return await originalExecute(...args);
+      } finally {
+        if (ws && ctx.conversationId) {
+          ws.broadcast({
+            type: "tool_use",
+            name: tool.name,
+            phase: "end",
+            conversationId: ctx.conversationId,
+          });
+        }
+      }
+    },
+  };
+}
 
 export function register(api: OpenClawPluginApi): void {
   // iOS WebSocket channel
   setChannelRuntime(api.runtime);
   api.registerChannel({ plugin: iosChannelPlugin as ChannelPlugin });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const reg = (tool: any) =>
+    api.registerTool(wrapToolWithBroadcast(tool));
 
   const config = (api.pluginConfig ?? {}) as unknown as PluginConfig;
 
@@ -169,17 +207,17 @@ export function register(api: OpenClawPluginApi): void {
   const canvasManager = new CanvasClientManager(canvasTokensPath);
 
   // Canvas tools register unconditionally — no Google credentials required
-  api.registerTool(createCanvasAuthTool(canvasManager, config), { optional: true });
-  api.registerTool(createCanvasProfileTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasCoursesTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasGetCourseTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasAssignmentsTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasGetAssignmentTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasAnnouncementsTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasGradesTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasSubmissionsTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasDownloadFileTool(canvasManager), { optional: true });
-  api.registerTool(createCanvasTodoTool(canvasManager), { optional: true });
+  reg(createCanvasAuthTool(canvasManager, config));
+  reg(createCanvasProfileTool(canvasManager));
+  reg(createCanvasCoursesTool(canvasManager));
+  reg(createCanvasGetCourseTool(canvasManager));
+  reg(createCanvasAssignmentsTool(canvasManager));
+  reg(createCanvasGetAssignmentTool(canvasManager));
+  reg(createCanvasAnnouncementsTool(canvasManager));
+  reg(createCanvasGradesTool(canvasManager));
+  reg(createCanvasSubmissionsTool(canvasManager));
+  reg(createCanvasDownloadFileTool(canvasManager));
+  reg(createCanvasTodoTool(canvasManager));
 
   // GitHub tools — register unconditionally, no Google credentials required
   const githubTokensPath = config.tokens_path
@@ -188,24 +226,24 @@ export function register(api: OpenClawPluginApi): void {
 
   const githubManager = new GitHubClientManager(githubTokensPath);
 
-  api.registerTool(createGitHubAuthTool(githubManager, config), { optional: true });
-  api.registerTool(createGitHubIssuesTool(githubManager), { optional: true });
-  api.registerTool(createGitHubGetIssueTool(githubManager), { optional: true });
-  api.registerTool(createGitHubCreateIssueTool(githubManager), { optional: true });
-  api.registerTool(createGitHubUpdateIssueTool(githubManager), { optional: true });
-  api.registerTool(createGitHubAddIssueCommentTool(githubManager), { optional: true });
-  api.registerTool(createGitHubPullsTool(githubManager), { optional: true });
-  api.registerTool(createGitHubGetPullTool(githubManager), { optional: true });
-  api.registerTool(createGitHubCreatePullTool(githubManager), { optional: true });
-  api.registerTool(createGitHubMergePullTool(githubManager), { optional: true });
-  api.registerTool(createGitHubAddPullReviewTool(githubManager), { optional: true });
-  api.registerTool(createGitHubReposTool(githubManager), { optional: true });
-  api.registerTool(createGitHubGetRepoTool(githubManager), { optional: true });
-  api.registerTool(createGitHubSearchCodeTool(githubManager), { optional: true });
-  api.registerTool(createGitHubGetFileTool(githubManager), { optional: true });
-  api.registerTool(createGitHubBranchesTool(githubManager), { optional: true });
-  api.registerTool(createGitHubNotificationsTool(githubManager), { optional: true });
-  api.registerTool(createGitHubMarkNotificationReadTool(githubManager), { optional: true });
+  reg(createGitHubAuthTool(githubManager, config));
+  reg(createGitHubIssuesTool(githubManager));
+  reg(createGitHubGetIssueTool(githubManager));
+  reg(createGitHubCreateIssueTool(githubManager));
+  reg(createGitHubUpdateIssueTool(githubManager));
+  reg(createGitHubAddIssueCommentTool(githubManager));
+  reg(createGitHubPullsTool(githubManager));
+  reg(createGitHubGetPullTool(githubManager));
+  reg(createGitHubCreatePullTool(githubManager));
+  reg(createGitHubMergePullTool(githubManager));
+  reg(createGitHubAddPullReviewTool(githubManager));
+  reg(createGitHubReposTool(githubManager));
+  reg(createGitHubGetRepoTool(githubManager));
+  reg(createGitHubSearchCodeTool(githubManager));
+  reg(createGitHubGetFileTool(githubManager));
+  reg(createGitHubBranchesTool(githubManager));
+  reg(createGitHubNotificationsTool(githubManager));
+  reg(createGitHubMarkNotificationReadTool(githubManager));
 
   // Gemini tools — register unconditionally, no Google OAuth credentials required
   const geminiKeysPath = config.tokens_path
@@ -214,11 +252,11 @@ export function register(api: OpenClawPluginApi): void {
 
   const geminiManager = new GeminiClientManager(geminiKeysPath);
 
-  api.registerTool(createGeminiAuthTool(geminiManager, config), { optional: true });
-  api.registerTool(createGeminiGenerateImageTool(geminiManager), { optional: true });
-  api.registerTool(createGeminiEditImageTool(geminiManager), { optional: true });
-  api.registerTool(createGeminiGenerateVideoTool(geminiManager), { optional: true });
-  api.registerTool(createGeminiAnalyzeVideoTool(geminiManager), { optional: true });
+  reg(createGeminiAuthTool(geminiManager, config));
+  reg(createGeminiGenerateImageTool(geminiManager));
+  reg(createGeminiEditImageTool(geminiManager));
+  reg(createGeminiGenerateVideoTool(geminiManager));
+  reg(createGeminiAnalyzeVideoTool(geminiManager));
 
   // LinkedIn tools — register unconditionally, no Google credentials required
   const linkedinTokensPath =
@@ -230,23 +268,23 @@ export function register(api: OpenClawPluginApi): void {
 
   const linkedinManager = new LinkedInClientManager(linkedinTokensPath);
 
-  api.registerTool(createLinkedInAuthTool(linkedinManager, config), { optional: true });
-  api.registerTool(createLinkedInMyProfileTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInGetProfileTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInFeedTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInDownloadMediaTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInConnectionsTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInConversationsTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInMessagesTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInNotificationsTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInSearchTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInSearchJobsTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInPendingInvitationsTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInCompanyTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInJobDetailsTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInPostCommentsTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInProfileViewsTool(linkedinManager), { optional: true });
-  api.registerTool(createLinkedInSavedJobsTool(linkedinManager), { optional: true });
+  reg(createLinkedInAuthTool(linkedinManager, config));
+  reg(createLinkedInMyProfileTool(linkedinManager));
+  reg(createLinkedInGetProfileTool(linkedinManager));
+  reg(createLinkedInFeedTool(linkedinManager));
+  reg(createLinkedInDownloadMediaTool(linkedinManager));
+  reg(createLinkedInConnectionsTool(linkedinManager));
+  reg(createLinkedInConversationsTool(linkedinManager));
+  reg(createLinkedInMessagesTool(linkedinManager));
+  reg(createLinkedInNotificationsTool(linkedinManager));
+  reg(createLinkedInSearchTool(linkedinManager));
+  reg(createLinkedInSearchJobsTool(linkedinManager));
+  reg(createLinkedInPendingInvitationsTool(linkedinManager));
+  reg(createLinkedInCompanyTool(linkedinManager));
+  reg(createLinkedInJobDetailsTool(linkedinManager));
+  reg(createLinkedInPostCommentsTool(linkedinManager));
+  reg(createLinkedInProfileViewsTool(linkedinManager));
+  reg(createLinkedInSavedJobsTool(linkedinManager));
 
   // Instagram tools — register unconditionally, no Google credentials required
   const instagramTokensPath =
@@ -258,27 +296,27 @@ export function register(api: OpenClawPluginApi): void {
 
   const instagramManager = new InstagramClientManager(instagramTokensPath);
 
-  api.registerTool(createInstagramAuthTool(instagramManager, config), { optional: true });
-  api.registerTool(createInstagramProfileTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramGetProfileTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramFeedTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramUserPostsTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramPostDetailsTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramPostCommentsTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramStoriesTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramReelsTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramSearchTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramFollowersTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramFollowingTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramConversationsTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramMessagesTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramNotificationsTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramSavedTool(instagramManager), { optional: true });
-  api.registerTool(createInstagramDownloadMediaTool(instagramManager), { optional: true });
+  reg(createInstagramAuthTool(instagramManager, config));
+  reg(createInstagramProfileTool(instagramManager));
+  reg(createInstagramGetProfileTool(instagramManager));
+  reg(createInstagramFeedTool(instagramManager));
+  reg(createInstagramUserPostsTool(instagramManager));
+  reg(createInstagramPostDetailsTool(instagramManager));
+  reg(createInstagramPostCommentsTool(instagramManager));
+  reg(createInstagramStoriesTool(instagramManager));
+  reg(createInstagramReelsTool(instagramManager));
+  reg(createInstagramSearchTool(instagramManager));
+  reg(createInstagramFollowersTool(instagramManager));
+  reg(createInstagramFollowingTool(instagramManager));
+  reg(createInstagramConversationsTool(instagramManager));
+  reg(createInstagramMessagesTool(instagramManager));
+  reg(createInstagramNotificationsTool(instagramManager));
+  reg(createInstagramSavedTool(instagramManager));
+  reg(createInstagramDownloadMediaTool(instagramManager));
 
   // YouTube tools — no OAuth required
-  api.registerTool(createYouTubeTranscriptTool(), { optional: true });
-  api.registerTool(createYouTubeDownloadThumbnailTool(), { optional: true });
+  reg(createYouTubeTranscriptTool());
+  reg(createYouTubeDownloadThumbnailTool());
 
   // BlueBubbles / iMessage backend selection
   const bbTokensPath =
@@ -298,17 +336,17 @@ export function register(api: OpenClawPluginApi): void {
   }
 
   // Auth tool is always available so users can set up BlueBubbles at any time
-  api.registerTool(createImessageBBAuthTool(bbManager, config), { optional: true });
+  reg(createImessageBBAuthTool(bbManager, config));
 
   // iMessage tools — requires BlueBubbles
   const imessageBackend = new BlueBubblesMessageBackend(bbManager);
 
-  api.registerTool(createImessageContactsTool(imessageBackend), { optional: true });
-  api.registerTool(createImessageChatsTool(imessageBackend), { optional: true });
-  api.registerTool(createImessageMessagesTool(imessageBackend), { optional: true });
-  api.registerTool(createImessageSearchTool(imessageBackend), { optional: true });
-  api.registerTool(createImessageSendTool(imessageBackend), { optional: true });
-  api.registerTool(createImessageAttachmentsTool(imessageBackend), { optional: true });
+  reg(createImessageContactsTool(imessageBackend));
+  reg(createImessageChatsTool(imessageBackend));
+  reg(createImessageMessagesTool(imessageBackend));
+  reg(createImessageSearchTool(imessageBackend));
+  reg(createImessageSendTool(imessageBackend));
+  reg(createImessageAttachmentsTool(imessageBackend));
 
   if (!config.client_secret_path) {
     api.logger.warn(
@@ -328,63 +366,63 @@ export function register(api: OpenClawPluginApi): void {
     tokenStore,
   );
 
-  api.registerTool(createGmailInboxTool(clientManager), { optional: true });
-  api.registerTool(createGmailSearchTool(clientManager), { optional: true });
-  api.registerTool(createGmailAuthTool(clientManager, config), { optional: true });
-  api.registerTool(createGmailGetTool(clientManager), { optional: true });
-  api.registerTool(createGmailDownloadAttachmentTool(clientManager), { optional: true });
-  api.registerTool(createGmailSendTool(clientManager), { optional: true });
-  api.registerTool(createGmailReplyTool(clientManager), { optional: true });
-  api.registerTool(createGmailForwardTool(clientManager), { optional: true });
-  api.registerTool(createGmailModifyTool(clientManager), { optional: true });
-  api.registerTool(createGmailAccountsTool(clientManager), { optional: true });
+  reg(createGmailInboxTool(clientManager));
+  reg(createGmailSearchTool(clientManager));
+  reg(createGmailAuthTool(clientManager, config));
+  reg(createGmailGetTool(clientManager));
+  reg(createGmailDownloadAttachmentTool(clientManager));
+  reg(createGmailSendTool(clientManager));
+  reg(createGmailReplyTool(clientManager));
+  reg(createGmailForwardTool(clientManager));
+  reg(createGmailModifyTool(clientManager));
+  reg(createGmailAccountsTool(clientManager));
 
-  api.registerTool(createCalendarAuthTool(clientManager, config), { optional: true });
-  api.registerTool(createCalendarListCalendarsTool(clientManager), { optional: true });
-  api.registerTool(createCalendarEventsTool(clientManager), { optional: true });
-  api.registerTool(createCalendarGetTool(clientManager), { optional: true });
-  api.registerTool(createCalendarCreateTool(clientManager), { optional: true });
-  api.registerTool(createCalendarUpdateTool(clientManager), { optional: true });
-  api.registerTool(createCalendarDeleteTool(clientManager), { optional: true });
-  api.registerTool(createCalendarRespondTool(clientManager), { optional: true });
+  reg(createCalendarAuthTool(clientManager, config));
+  reg(createCalendarListCalendarsTool(clientManager));
+  reg(createCalendarEventsTool(clientManager));
+  reg(createCalendarGetTool(clientManager));
+  reg(createCalendarCreateTool(clientManager));
+  reg(createCalendarUpdateTool(clientManager));
+  reg(createCalendarDeleteTool(clientManager));
+  reg(createCalendarRespondTool(clientManager));
 
-  api.registerTool(createDriveAuthTool(clientManager, config), { optional: true });
-  api.registerTool(createDriveListTool(clientManager), { optional: true });
-  api.registerTool(createDriveSearchTool(clientManager), { optional: true });
-  api.registerTool(createDriveGetTool(clientManager), { optional: true });
-  api.registerTool(createDriveReadTool(clientManager), { optional: true });
-  api.registerTool(createDriveUploadTool(clientManager), { optional: true });
-  api.registerTool(createDriveDownloadTool(clientManager), { optional: true });
-  api.registerTool(createDriveCreateFolderTool(clientManager), { optional: true });
-  api.registerTool(createDriveMoveTool(clientManager), { optional: true });
-  api.registerTool(createDriveDeleteTool(clientManager), { optional: true });
-  api.registerTool(createDriveShareTool(clientManager), { optional: true });
+  reg(createDriveAuthTool(clientManager, config));
+  reg(createDriveListTool(clientManager));
+  reg(createDriveSearchTool(clientManager));
+  reg(createDriveGetTool(clientManager));
+  reg(createDriveReadTool(clientManager));
+  reg(createDriveUploadTool(clientManager));
+  reg(createDriveDownloadTool(clientManager));
+  reg(createDriveCreateFolderTool(clientManager));
+  reg(createDriveMoveTool(clientManager));
+  reg(createDriveDeleteTool(clientManager));
+  reg(createDriveShareTool(clientManager));
 
-  api.registerTool(createDocsAuthTool(clientManager, config), { optional: true });
-  api.registerTool(createDocsCreateTool(clientManager), { optional: true });
-  api.registerTool(createDocsGetTool(clientManager), { optional: true });
-  api.registerTool(createDocsAppendTool(clientManager), { optional: true });
-  api.registerTool(createDocsReplaceTextTool(clientManager), { optional: true });
-  api.registerTool(createDocsExportTool(clientManager), { optional: true });
+  reg(createDocsAuthTool(clientManager, config));
+  reg(createDocsCreateTool(clientManager));
+  reg(createDocsGetTool(clientManager));
+  reg(createDocsAppendTool(clientManager));
+  reg(createDocsReplaceTextTool(clientManager));
+  reg(createDocsExportTool(clientManager));
 
-  api.registerTool(createSlidesAuthTool(clientManager, config), { optional: true });
-  api.registerTool(createSlidesCreateTool(clientManager), { optional: true });
-  api.registerTool(createSlidesGetTool(clientManager), { optional: true });
-  api.registerTool(createSlidesAppendSlideTool(clientManager), { optional: true });
-  api.registerTool(createSlidesReplaceTextTool(clientManager), { optional: true });
-  api.registerTool(createSlidesExportTool(clientManager), { optional: true });
+  reg(createSlidesAuthTool(clientManager, config));
+  reg(createSlidesCreateTool(clientManager));
+  reg(createSlidesGetTool(clientManager));
+  reg(createSlidesAppendSlideTool(clientManager));
+  reg(createSlidesReplaceTextTool(clientManager));
+  reg(createSlidesExportTool(clientManager));
 
-  api.registerTool(createSheetsAuthTool(clientManager, config), { optional: true });
-  api.registerTool(createSheetsCreateTool(clientManager), { optional: true });
-  api.registerTool(createSheetsGetTool(clientManager), { optional: true });
-  api.registerTool(createSheetsUpdateTool(clientManager), { optional: true });
-  api.registerTool(createSheetsAppendTool(clientManager), { optional: true });
-  api.registerTool(createSheetsClearTool(clientManager), { optional: true });
-  api.registerTool(createSheetsExportTool(clientManager), { optional: true });
+  reg(createSheetsAuthTool(clientManager, config));
+  reg(createSheetsCreateTool(clientManager));
+  reg(createSheetsGetTool(clientManager));
+  reg(createSheetsUpdateTool(clientManager));
+  reg(createSheetsAppendTool(clientManager));
+  reg(createSheetsClearTool(clientManager));
+  reg(createSheetsExportTool(clientManager));
 
-  api.registerTool(createYouTubeAuthTool(clientManager, config), { optional: true });
-  api.registerTool(createYouTubeSearchTool(clientManager), { optional: true });
-  api.registerTool(createYouTubeVideoDetailsTool(clientManager), { optional: true });
-  api.registerTool(createYouTubeChannelInfoTool(clientManager), { optional: true });
-  api.registerTool(createYouTubeVideoCommentsTool(clientManager), { optional: true });
+  reg(createYouTubeAuthTool(clientManager, config));
+  reg(createYouTubeSearchTool(clientManager));
+  reg(createYouTubeVideoDetailsTool(clientManager));
+  reg(createYouTubeChannelInfoTool(clientManager));
+  reg(createYouTubeVideoCommentsTool(clientManager));
 }

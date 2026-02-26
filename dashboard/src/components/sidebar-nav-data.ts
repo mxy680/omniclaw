@@ -1,13 +1,14 @@
 import {
   LayoutDashboard,
-  Activity,
-  Clock,
-  Server,
+  DollarSign,
+  Dumbbell,
+  GraduationCap,
+  Code2,
+  Users,
+  Briefcase,
   MessageSquare,
-  Inbox,
-  Command,
-  Calendar,
-  Workflow,
+  Activity,
+  Puzzle,
   Settings,
 } from "lucide-react";
 
@@ -24,43 +25,29 @@ export interface NavGroup {
 
 export const navGroups: NavGroup[] = [
   {
-    label: "Overview",
+    label: "Home",
     items: [
       { title: "Dashboard", url: "/", icon: LayoutDashboard },
     ],
   },
   {
-    label: "Operations",
+    label: "Life",
     items: [
-      { title: "Operations Feed", url: "/operations", icon: Activity },
-      { title: "Timeline", url: "/timeline", icon: Clock },
+      { title: "Money", url: "/money", icon: DollarSign },
+      { title: "Fitness", url: "/fitness", icon: Dumbbell },
+      { title: "School", url: "/school", icon: GraduationCap },
+      { title: "Code", url: "/code", icon: Code2 },
+      { title: "Social", url: "/social", icon: Users },
+      { title: "Career", url: "/career", icon: Briefcase },
     ],
   },
   {
-    label: "Services",
-    items: [
-      { title: "Service Grid", url: "/services", icon: Server },
-    ],
-  },
-  {
-    label: "Communication",
+    label: "System",
     items: [
       { title: "Chat", url: "/chat", icon: MessageSquare },
-      { title: "Inbox", url: "/inbox", icon: Inbox },
-      { title: "Command Palette", url: "/command", icon: Command },
-    ],
-  },
-  {
-    label: "Productivity",
-    items: [
-      { title: "Calendar", url: "/calendar", icon: Calendar },
-      { title: "Automations", url: "/automations", icon: Workflow },
-    ],
-  },
-  {
-    label: "Settings",
-    items: [
-      { title: "Configuration", url: "/settings", icon: Settings },
+      { title: "Operations", url: "/operations", icon: Activity },
+      { title: "Integrations", url: "/integrations", icon: Puzzle },
+      { title: "Settings", url: "/settings", icon: Settings },
     ],
   },
 ];

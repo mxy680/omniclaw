@@ -7,6 +7,10 @@ import {
   type ServerMessage,
   type WsConversation,
 } from "@/lib/websocket";
+import {
+  appendOperation,
+  completeOperation,
+} from "@/lib/operation-store";
 
 // ── Settings (localStorage) ────────────────────────────────────────
 
@@ -56,6 +60,7 @@ export function useConversations() {
   );
 
   const wsRef = useRef<AgentWebSocket | null>(null);
+  const conversationsRef = useRef<WsConversation[]>([]);
 
   const handleMessage = useCallback((msg: ServerMessage) => {
     switch (msg.type) {
@@ -68,13 +73,16 @@ export function useConversations() {
         break;
 
       case "conversation_list":
+        conversationsRef.current = msg.conversations;
         setConversations(msg.conversations);
         break;
 
       case "conversation_created":
         setConversations((prev) => {
           if (prev.some((c) => c.id === msg.conversation.id)) return prev;
-          return [msg.conversation, ...prev];
+          const next = [msg.conversation, ...prev];
+          conversationsRef.current = next;
+          return next;
         });
         break;
 
@@ -91,11 +99,13 @@ export function useConversations() {
         break;
 
       case "conversation_renamed":
-        setConversations((prev) =>
-          prev.map((c) =>
+        setConversations((prev) => {
+          const next = prev.map((c) =>
             c.id === msg.conversationId ? { ...c, title: msg.title } : c,
-          ),
-        );
+          );
+          conversationsRef.current = next;
+          return next;
+        });
         break;
 
       case "conversation_updated":
@@ -200,6 +210,24 @@ export function useConversations() {
       case "tool_use": {
         const convId = msg.conversationId;
         if (!convId) break;
+
+        // Persist to operation store for the operations page
+        const convTitle =
+          conversationsRef.current.find((c) => c.id === convId)?.title ??
+          "Unknown";
+        if (msg.phase === "start") {
+          appendOperation({
+            id: `${Date.now()}-${msg.name}`,
+            toolName: msg.name,
+            phase: "start",
+            conversationId: convId,
+            conversationTitle: convTitle,
+            timestamp: new Date().toISOString(),
+          });
+        } else {
+          completeOperation(msg.name, convId);
+        }
+
         setMessagesMap((prev) => {
           const existing = prev[convId] ?? [];
           const last = existing[existing.length - 1];

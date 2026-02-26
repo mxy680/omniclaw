@@ -181,6 +181,10 @@ import { createNutritionLogBiometricTool } from "./tools/nutrition-log-biometric
 import { createNutritionBiometricsTool } from "./tools/nutrition-biometrics.js";
 import { createNutritionNotesTool } from "./tools/nutrition-notes.js";
 import { createNutritionSetTargetsTool } from "./tools/nutrition-set-targets.js";
+import { createNutritionAddPantryItemTool } from "./tools/nutrition-pantry-add.js";
+import { createNutritionListPantryTool } from "./tools/nutrition-pantry-list.js";
+import { createNutritionUpdatePantryItemTool } from "./tools/nutrition-pantry-update.js";
+import { createNutritionRemovePantryItemTool } from "./tools/nutrition-pantry-remove.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 import { getWsServer } from "./channel/send.js";
 import { getActiveContext } from "./channel/active-context.js";
@@ -436,6 +440,10 @@ export function register(api: OpenClawPluginApi): void {
   reg(createNutritionBiometricsTool(nutritionDb));
   reg(createNutritionNotesTool(nutritionDb));
   reg(createNutritionSetTargetsTool(nutritionDb));
+  reg(createNutritionAddPantryItemTool(nutritionDb));
+  reg(createNutritionListPantryTool(nutritionDb));
+  reg(createNutritionUpdatePantryItemTool(nutritionDb));
+  reg(createNutritionRemovePantryItemTool(nutritionDb));
 
   // YouTube tools — no OAuth required
   reg(createYouTubeTranscriptTool());

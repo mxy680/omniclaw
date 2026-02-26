@@ -4,7 +4,7 @@ import * as path from "path";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OpenClawPluginApi = any;
 import type { ChannelPlugin } from "openclaw/plugin-sdk";
-import { iosChannelPlugin } from "./channel/channel-plugin.js";
+import { iosChannelPlugin, getDispatchManager } from "./channel/channel-plugin.js";
 import { setChannelRuntime } from "./channel/runtime.js";
 import { CanvasClientManager } from "./auth/canvas-client-manager.js";
 import { GeminiClientManager } from "./auth/gemini-client-manager.js";
@@ -140,6 +140,23 @@ import {
 } from "./tools/youtube-social.js";
 import { createYouTubeDownloadThumbnailTool } from "./tools/youtube-download-thumbnail.js";
 import { createYouTubeTranscriptTool } from "./tools/youtube-transcript.js";
+import { Factor75ClientManager } from "./auth/factor75-client-manager.js";
+import { createFactor75AuthTool } from "./tools/factor75-auth-tool.js";
+import { createFactor75MenuTool } from "./tools/factor75-menu.js";
+import { createFactor75MealDetailsTool } from "./tools/factor75-meal-details.js";
+import {
+  createFactor75GetSelectionsTool,
+  createFactor75SelectMealTool,
+  createFactor75RemoveMealTool,
+} from "./tools/factor75-selections.js";
+import {
+  createFactor75SubscriptionTool,
+  createFactor75SkipWeekTool,
+  createFactor75PauseTool,
+  createFactor75ResumeTool,
+} from "./tools/factor75-subscription.js";
+import { createFactor75DeliveriesTool, createFactor75DeliveryDetailsTool } from "./tools/factor75-deliveries.js";
+import { createFactor75AccountTool } from "./tools/factor75-account.js";
 import { BlueBubblesClientManager } from "./auth/bluebubbles-client-manager.js";
 import { createImessageBBAuthTool } from "./tools/imessage-auth-tool.js";
 import { BlueBubblesMessageBackend } from "./tools/imessage-backend-bluebubbles.js";
@@ -151,6 +168,7 @@ import { createImessageAttachmentsTool } from "./tools/imessage-attachments.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 import { getWsServer } from "./channel/send.js";
 import { getActiveContext } from "./channel/active-context.js";
+import { createBackgroundWorkerTool } from "./tools/background-worker.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function wrapToolWithBroadcast(tool: any): any {
@@ -192,6 +210,38 @@ export function register(api: OpenClawPluginApi): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reg = (tool: any) =>
     api.registerTool(wrapToolWithBroadcast(tool));
+
+  reg(createBackgroundWorkerTool({
+    submitBackground: async (req) => {
+      const manager = getDispatchManager();
+      if (!manager) {
+        throw new Error("Dispatch manager not initialized — iOS channel not running");
+      }
+      const ctx = getActiveContext();
+      const conversationId = req.reportToConversation ?? ctx.conversationId;
+      if (!conversationId) {
+        throw new Error("No conversation context — cannot determine where to report results");
+      }
+      const taskId = `bg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+      // Submit as background priority — will run when a slot opens
+      manager.submit({
+        conversationId: taskId,
+        connId: ctx.connId ?? "",
+        priority: "background",
+        fn: async () => {
+          // TODO: In a future task, this will dispatch the background
+          // task text through the agent. For now, this is a placeholder
+          // that establishes the plumbing.
+        },
+      }).catch((err) => {
+        // Background tasks fail silently — errors logged but don't crash
+        console.error(`[omniclaw] background task ${taskId} failed:`, err);
+      });
+
+      return taskId;
+    },
+  }));
 
   const config = (api.pluginConfig ?? {}) as unknown as PluginConfig;
 
@@ -313,6 +363,30 @@ export function register(api: OpenClawPluginApi): void {
   reg(createInstagramNotificationsTool(instagramManager));
   reg(createInstagramSavedTool(instagramManager));
   reg(createInstagramDownloadMediaTool(instagramManager));
+
+  // Factor75 tools — register unconditionally, no Google credentials required
+  const factor75TokensPath =
+    config.factor75_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-factor75-tokens.json",
+    );
+
+  const factor75Manager = new Factor75ClientManager(factor75TokensPath);
+
+  reg(createFactor75AuthTool(factor75Manager, config));
+  reg(createFactor75MenuTool(factor75Manager));
+  reg(createFactor75MealDetailsTool(factor75Manager));
+  reg(createFactor75GetSelectionsTool(factor75Manager));
+  reg(createFactor75SelectMealTool(factor75Manager));
+  reg(createFactor75RemoveMealTool(factor75Manager));
+  reg(createFactor75SubscriptionTool(factor75Manager));
+  reg(createFactor75SkipWeekTool(factor75Manager));
+  reg(createFactor75PauseTool(factor75Manager));
+  reg(createFactor75ResumeTool(factor75Manager));
+  reg(createFactor75DeliveriesTool(factor75Manager));
+  reg(createFactor75DeliveryDetailsTool(factor75Manager));
+  reg(createFactor75AccountTool(factor75Manager));
 
   // YouTube tools — no OAuth required
   reg(createYouTubeTranscriptTool());

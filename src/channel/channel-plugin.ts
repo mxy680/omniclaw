@@ -15,6 +15,12 @@ import { sendMessageIos, setWsServer } from "./send.js";
 import type { CoreConfig, ResolvedIosAccount } from "./types.js";
 import { startWsServer } from "./ws-server.js";
 
+let activeDispatchManager: DispatchManager | null = null;
+
+export function getDispatchManager(): DispatchManager | null {
+  return activeDispatchManager;
+}
+
 export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
   id: "omniclaw-ios",
   meta: {
@@ -109,6 +115,7 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
         maxConcurrency: pluginCfg.dispatch_max_concurrency ?? 3,
         dispatchTimeoutMs: pluginCfg.dispatch_timeout_ms ?? 300_000,
       });
+      activeDispatchManager = dispatchManager;
 
       const wsServer = startWsServer({
         port: account.port,
@@ -174,6 +181,7 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
         stop: () => {
           wsServer.stop();
           store.close();
+          activeDispatchManager = null;
           setWsServer(null as unknown as ReturnType<typeof startWsServer>);
           ctx.setStatus({
             accountId: ctx.accountId,

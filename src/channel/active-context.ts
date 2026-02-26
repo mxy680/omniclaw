@@ -34,15 +34,3 @@ export function getActiveContext(): {
     connId: ctx?.connId ?? null,
   };
 }
-
-// ── Backwards-compat shims (remove after Task 3) ──────────────────
-
-/** @deprecated Use runWithContext instead */
-export function setActiveContext(_conversationId: string, _connId: string): void {
-  // no-op — context is now set via runWithContext
-}
-
-/** @deprecated Context is cleared automatically when runWithContext exits */
-export function clearActiveContext(): void {
-  // no-op
-}

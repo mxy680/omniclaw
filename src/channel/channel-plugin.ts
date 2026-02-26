@@ -9,6 +9,7 @@ import { listIosAccountIds, resolveIosAccount } from "./accounts.js";
 import { ConversationStore } from "./conversation-store.js";
 import { DispatchManager } from "./dispatch-manager.js";
 import { handleConversationMessage } from "./conversation-handlers.js";
+import { handleFitnessMessage } from "./fitness-handlers.js";
 import { handleIosInbound } from "./inbound.js";
 import { getChannelRuntime } from "./runtime.js";
 import { sendMessageIos, setWsServer } from "./send.js";
@@ -137,6 +138,11 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
             msg.type === "conversation_rename"
           ) {
             handleConversationMessage(connId, msg, store, wsServer);
+            return;
+          }
+
+          if (msg.type === "fitness_day") {
+            handleFitnessMessage(connId, msg, wsServer);
             return;
           }
 

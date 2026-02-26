@@ -142,13 +142,6 @@ import { createYouTubeDownloadThumbnailTool } from "./tools/youtube-download-thu
 import { createYouTubeTranscriptTool } from "./tools/youtube-transcript.js";
 import { Factor75ClientManager } from "./auth/factor75-client-manager.js";
 import { createFactor75AuthTool } from "./tools/factor75-auth-tool.js";
-import { CronometerClientManager } from "./auth/cronometer-client-manager.js";
-import { createCronometerAuthTool } from "./tools/cronometer-auth-tool.js";
-import { createCronometerDiaryTool } from "./tools/cronometer-diary.js";
-import { createCronometerNutritionTool } from "./tools/cronometer-nutrition.js";
-import { createCronometerExercisesTool } from "./tools/cronometer-exercises.js";
-import { createCronometerBiometricsTool } from "./tools/cronometer-biometrics.js";
-import { createCronometerNotesTool } from "./tools/cronometer-notes.js";
 import { createFactor75MenuTool } from "./tools/factor75-menu.js";
 import { createFactor75MealDetailsTool } from "./tools/factor75-meal-details.js";
 import {
@@ -406,23 +399,6 @@ export function register(api: OpenClawPluginApi): void {
   reg(createFactor75DeliveriesTool(factor75Manager));
   reg(createFactor75DeliveryDetailsTool(factor75Manager));
   reg(createFactor75AccountTool(factor75Manager));
-
-  // Cronometer tools — register unconditionally, no Google credentials required
-  const cronometerTokensPath =
-    config.cronometer_tokens_path ??
-    path.join(
-      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
-      "omniclaw-cronometer-tokens.json",
-    );
-
-  const cronometerManager = new CronometerClientManager(cronometerTokensPath);
-
-  reg(createCronometerAuthTool(cronometerManager, config));
-  reg(createCronometerDiaryTool(cronometerManager));
-  reg(createCronometerNutritionTool(cronometerManager));
-  reg(createCronometerExercisesTool(cronometerManager));
-  reg(createCronometerBiometricsTool(cronometerManager));
-  reg(createCronometerNotesTool(cronometerManager));
 
   // YouTube tools — no OAuth required
   reg(createYouTubeTranscriptTool());

@@ -22,9 +22,6 @@ export interface PluginConfig {
   factor75_tokens_path?: string;
   factor75_email?: string;
   factor75_password?: string;
-  cronometer_tokens_path?: string;
-  cronometer_email?: string;
-  cronometer_password?: string;
   dispatch_max_concurrency?: number;
   dispatch_timeout_ms?: number;
 }

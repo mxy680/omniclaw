@@ -25,7 +25,7 @@ export type WsServerMessage =
   | { type: "auth_fail"; reason: string }
   | { type: "message"; text: string; id: string; conversationId: string; isUser?: boolean }
   | { type: "typing"; active: boolean; conversationId: string }
-  | { type: "tool_use"; name: string; phase: "start" | "end"; conversationId: string }
+  | { type: "tool_use"; name: string; phase: "start" | "end"; conversationId: string; params?: unknown; durationMs?: number; result?: unknown }
   | { type: "error"; message: string }
   | { type: "conversation_list"; conversations: WsConversation[] }
   | { type: "conversation_created"; conversation: WsConversation }

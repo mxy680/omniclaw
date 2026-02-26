@@ -29,6 +29,13 @@ openclaw config set plugins.entries.omniclaw.config.nutrition_db_path "/path/to/
 - `nutrition_biometrics` — Query biometric measurements for a date range, optionally filtered by metric
 - `nutrition_notes` — Read or write daily nutrition notes (upserts by date)
 - `nutrition_set_targets` — Set daily macro/calorie targets
+- `nutrition_add_pantry_item` — Add an item to the pantry inventory with optional macros per serving
+- `nutrition_list_pantry` — List pantry items, optionally filtered by category
+- `nutrition_update_pantry_item` — Update a pantry item's details (quantity, macros, etc.)
+- `nutrition_remove_pantry_item` — Remove an item from the pantry
+- `nutrition_save_meal_plan` — Save a daily meal plan with time-slotted entries (replaces existing plan for the date)
+- `nutrition_get_meal_plan` — Retrieve meal plans for a date or date range
+- `nutrition_delete_meal_plan` — Delete the meal plan for a specific date
 
 ## Workflow
 
@@ -47,3 +54,7 @@ openclaw config set plugins.entries.omniclaw.config.nutrition_db_path "/path/to/
 - "I ran 5 miles in 40 minutes" → `nutrition_log_exercise` with details
 - "Set my daily targets to 2200 cal, 180g protein, 220g carbs, 70g fat" → `nutrition_set_targets`
 - "Show my weight trend for the last month" → `nutrition_biometrics` with metric "weight"
+- "Add Greek yogurt to my pantry" → `nutrition_add_pantry_item`
+- "What's in my pantry?" → `nutrition_list_pantry`
+- "Plan my meals for today" → Use the `meal-planning` skill for the full workflow
+- "Show today's meal plan" → `nutrition_get_meal_plan`

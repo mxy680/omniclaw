@@ -166,6 +166,11 @@ import { createImessageMessagesTool, createImessageSearchTool } from "./tools/im
 import { createImessageSendTool } from "./tools/imessage-send.js";
 import { createImessageAttachmentsTool } from "./tools/imessage-attachments.js";
 import { NutritionDbManager } from "./nutrition/nutrition-db-manager.js";
+
+let activeNutritionDb: NutritionDbManager | null = null;
+export function getNutritionDb(): NutritionDbManager | null {
+  return activeNutritionDb;
+}
 import { createNutritionLogFoodTool } from "./tools/nutrition-log-food.js";
 import { createNutritionDiaryTool } from "./tools/nutrition-diary.js";
 import { createNutritionDeleteFoodTool } from "./tools/nutrition-delete-food.js";
@@ -419,6 +424,7 @@ export function register(api: OpenClawPluginApi): void {
       "omniclaw-nutrition.db",
     );
   const nutritionDb = new NutritionDbManager(nutritionDbPath);
+  activeNutritionDb = nutritionDb;
 
   reg(createNutritionLogFoodTool(nutritionDb));
   reg(createNutritionDiaryTool(nutritionDb));

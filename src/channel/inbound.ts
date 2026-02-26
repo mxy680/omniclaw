@@ -149,13 +149,16 @@ export async function handleIosInbound(params: {
     },
   });
 
+  // Each conversation gets its own session so the SDK can dispatch them in parallel.
+  const conversationSessionKey = `${route.sessionKey}:conv:${conversationId}`;
+
   const storePath = core.channel.session.resolveStorePath(config.session?.store, {
     agentId: route.agentId,
   });
   const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(config as OpenClawConfig);
   const previousTimestamp = core.channel.session.readSessionUpdatedAt({
     storePath,
-    sessionKey: route.sessionKey,
+    sessionKey: conversationSessionKey,
   });
   const body = core.channel.reply.formatAgentEnvelope({
     channel: "iOS",
@@ -172,7 +175,7 @@ export async function handleIosInbound(params: {
     CommandBody: rawBody,
     From: `omniclaw-ios:${peerId}`,
     To: `omniclaw-ios:${peerId}`,
-    SessionKey: route.sessionKey,
+    SessionKey: conversationSessionKey,
     AccountId: route.accountId,
     ChatType: "direct",
     ConversationLabel: "iOS App",

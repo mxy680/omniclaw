@@ -1,3 +1,10 @@
+# Dashboard Rules
+
+- **NEVER run `next start` or `pnpm start` for the dashboard.** It uses `output: "export"` (static HTML), so `next start` always returns 500 Internal Server Error.
+- **Always use `pnpm dev`** to run the dashboard locally.
+- The dashboard must run on port 3000. Before starting, kill only stale `node` processes on :3000 (never blindly `kill $(lsof -ti :3000)` — that can kill Firefox).
+- When initializing React state from browser APIs (localStorage, sessionStorage, etc.), **never use a lazy initializer** like `useState(() => readFromStorage())`. Instead, initialize with a static default and hydrate in `useEffect` to avoid SSR hydration mismatches.
+
 # Development Kanban
 
 ## Done
@@ -18,6 +25,7 @@
 | Instagram | 17 | `instagram` | `docs/instagram.md` | Browser auth via Playwright |
 | iMessage | 7 | `imessage` | `skills/imessage.SKILL.md` | BlueBubbles backend, contact name resolution |
 | Factor75 | 13 | `factor75` | `docs/factor75.md` | Playwright login + direct HTTP with JWT Bearer tokens |
+| Cronometer | 6 | `cronometer` | `docs/cronometer.md` | Playwright login + CSV export API |
 
 ## In Progress
 
@@ -41,7 +49,6 @@
 | Facebook Marketplace | #27 | |
 | Even Realities | #28 | |
 | Framer | #30 | |
-| Cronometer | #32 | |
 | Revolution EHR | #33 | |
 | Gradescope | #34 | |
 | Overleaf | #35 | |

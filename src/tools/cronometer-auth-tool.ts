@@ -2,16 +2,7 @@ import { Type } from "@sinclair/typebox";
 import { chromium } from "playwright";
 import type { CronometerClientManager, CronometerSession } from "../auth/cronometer-client-manager.js";
 import type { PluginConfig } from "../types/plugin-config.js";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
-
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
-}
+import { jsonResult } from "./cronometer-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createCronometerAuthTool(

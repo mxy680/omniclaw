@@ -185,6 +185,9 @@ import { createNutritionAddPantryItemTool } from "./tools/nutrition-pantry-add.j
 import { createNutritionListPantryTool } from "./tools/nutrition-pantry-list.js";
 import { createNutritionUpdatePantryItemTool } from "./tools/nutrition-pantry-update.js";
 import { createNutritionRemovePantryItemTool } from "./tools/nutrition-pantry-remove.js";
+import { createNutritionSaveMealPlanTool } from "./tools/nutrition-save-meal-plan.js";
+import { createNutritionGetMealPlanTool } from "./tools/nutrition-get-meal-plan.js";
+import { createNutritionDeleteMealPlanTool } from "./tools/nutrition-delete-meal-plan.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 import { getWsServer } from "./channel/send.js";
 import { getActiveContext } from "./channel/active-context.js";
@@ -444,6 +447,9 @@ export function register(api: OpenClawPluginApi): void {
   reg(createNutritionListPantryTool(nutritionDb));
   reg(createNutritionUpdatePantryItemTool(nutritionDb));
   reg(createNutritionRemovePantryItemTool(nutritionDb));
+  reg(createNutritionSaveMealPlanTool(nutritionDb));
+  reg(createNutritionGetMealPlanTool(nutritionDb));
+  reg(createNutritionDeleteMealPlanTool(nutritionDb));
 
   // YouTube tools — no OAuth required
   reg(createYouTubeTranscriptTool());

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "next start",
+    "start": "echo 'ERROR: Use pnpm dev instead. next start does not work with output:export.' && exit 1",
     "lint": "eslint"
   },
   "dependencies": {
@@ -18,6 +18,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.7.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.5.0"
   },

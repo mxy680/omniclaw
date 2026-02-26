@@ -2,9 +2,10 @@ import {
   DollarSign,
   Dumbbell,
   GraduationCap,
-  Code2,
+  FolderKanban,
   Users,
   Briefcase,
+  BarChart3,
 } from "lucide-react";
 
 export type SectionStatus = "live" | "partial" | "coming-soon";
@@ -94,10 +95,10 @@ export const sections: Section[] = [
     ],
   },
   {
-    id: "code",
-    title: "Code",
+    id: "projects",
+    title: "Projects",
     tagline: "Repos, PRs, and developer tools",
-    icon: Code2,
+    icon: FolderKanban,
     color: "#f0f6fc",
     status: "live",
     metrics: [
@@ -159,6 +160,21 @@ export const sections: Section[] = [
       { id: "linkedin", status: "active" },
       { id: "handshake", status: "planned", issueNumber: 18 },
     ],
+  },
+  {
+    id: "quant",
+    title: "Quant",
+    tagline: "Quantitative analysis and trading strategies",
+    icon: BarChart3,
+    color: "#06b6d4",
+    status: "coming-soon",
+    metrics: [
+      { label: "Portfolio Value", value: null },
+      { label: "Daily P&L", value: null },
+      { label: "Active Strategies", value: null },
+      { label: "Win Rate", value: null },
+    ],
+    integrations: [],
   },
 ];
 

@@ -2,14 +2,13 @@ import {
   LayoutDashboard,
   DollarSign,
   Dumbbell,
-  GraduationCap,
-  Code2,
+  FolderKanban,
   Users,
   Briefcase,
   MessageSquare,
   Activity,
   Puzzle,
-  Settings,
+  BarChart3,
 } from "lucide-react";
 
 export interface NavItem {
@@ -35,10 +34,10 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Money", url: "/money", icon: DollarSign },
       { title: "Fitness", url: "/fitness", icon: Dumbbell },
-      { title: "School", url: "/school", icon: GraduationCap },
-      { title: "Code", url: "/code", icon: Code2 },
+      { title: "Projects", url: "/projects", icon: FolderKanban },
       { title: "Social", url: "/social", icon: Users },
       { title: "Career", url: "/career", icon: Briefcase },
+      { title: "Quant", url: "/quant", icon: BarChart3 },
     ],
   },
   {
@@ -47,7 +46,6 @@ export const navGroups: NavGroup[] = [
       { title: "Chat", url: "/chat", icon: MessageSquare },
       { title: "Operations", url: "/operations", icon: Activity },
       { title: "Integrations", url: "/integrations", icon: Puzzle },
-      { title: "Settings", url: "/settings", icon: Settings },
     ],
   },
 ];

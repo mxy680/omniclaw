@@ -7,6 +7,7 @@ import { QuickStatsBar } from "@/components/fitness/quick-stats-bar";
 import { NutritionColumn } from "@/components/fitness/nutrition-column";
 import { WorkoutColumn } from "@/components/fitness/workout-column";
 import { BodyColumn } from "@/components/fitness/body-column";
+import { MealPlanCard } from "@/components/fitness/meal-plan-card";
 import { getSection } from "@/lib/sections";
 import { useFitness } from "@/hooks/use-fitness";
 
@@ -50,6 +51,11 @@ export default function FitnessPage() {
         <>
           {/* Quick stats */}
           <QuickStatsBar data={data} color={section.color} />
+
+          {/* Meal plan (when available) */}
+          {data.mealPlan && (
+            <MealPlanCard plan={data.mealPlan} color={section.color} />
+          )}
 
           {/* Three-column grid */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

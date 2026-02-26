@@ -2,6 +2,7 @@ import type { WsFitnessDay } from "./websocket";
 import type {
   FitnessDay,
   DailyNutrition,
+  DailyMealPlan,
   Meal,
   MacroTarget,
   WorkoutSession,
@@ -32,6 +33,7 @@ export function transformFitnessDay(ws: WsFitnessDay): FitnessDay {
     workout: buildWorkout(ws),
     body: buildBody(ws),
     weekOverview: buildWeekOverview(ws, date),
+    mealPlan: buildMealPlan(ws),
   };
 }
 
@@ -231,6 +233,45 @@ function buildWeekOverview(ws: WsFitnessDay, date: Date): WeekDay[] {
 
     return { date: fmtDate(dateStr), label, status };
   });
+}
+
+// ── Meal Plan ────────────────────────────────────────────────────────
+
+function buildMealPlan(ws: WsFitnessDay): DailyMealPlan | null {
+  if (!ws.meal_plan || ws.meal_plan.length === 0) return null;
+
+  const sorted = [...ws.meal_plan].sort((a, b) =>
+    a.time_slot.localeCompare(b.time_slot),
+  );
+
+  const entries = sorted.map((e) => ({
+    id: e.id,
+    timeSlot: e.time_slot,
+    timeLabel: fmtTime(e.time_slot),
+    mealLabel: e.meal_label,
+    source: e.source,
+    itemName: e.item_name,
+    calories: e.calories,
+    protein: e.protein_g,
+    carbs: e.carbs_g,
+    fat: e.fat_g,
+    notes: e.notes,
+  }));
+
+  return {
+    entries,
+    totalCalories: entries.reduce((s, e) => s + (e.calories ?? 0), 0),
+    totalProtein: entries.reduce((s, e) => s + (e.protein ?? 0), 0),
+    totalCarbs: entries.reduce((s, e) => s + (e.carbs ?? 0), 0),
+    totalFat: entries.reduce((s, e) => s + (e.fat ?? 0), 0),
+  };
+}
+
+function fmtTime(slot: string): string {
+  const [h, m] = slot.split(":").map(Number);
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return m === 0 ? `${hour} ${suffix}` : `${hour}:${m.toString().padStart(2, "0")} ${suffix}`;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────

@@ -78,6 +78,28 @@ export interface WeightTrendPoint {
   weight: number;
 }
 
+export interface MealPlanSlot {
+  id: number;
+  timeSlot: string;
+  timeLabel: string;
+  mealLabel: string;
+  source: string;
+  itemName: string;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+  notes: string | null;
+}
+
+export interface DailyMealPlan {
+  entries: MealPlanSlot[];
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+}
+
 export interface FitnessDay {
   date: Date;
   nutrition: DailyNutrition;
@@ -91,5 +113,6 @@ export interface FitnessDay {
     recentReadings: BodyReading[];
   };
   weekOverview: WeekDay[];
+  mealPlan: DailyMealPlan | null;
 }
 

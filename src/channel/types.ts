@@ -102,6 +102,21 @@ export type WsFitnessDay = {
   }>;
   weight_trend: Array<{ date: string; value: number }>;
   week_exercises: Array<{ date: string }>;
+  meal_plan: WsMealPlanEntry[];
+};
+
+export type WsMealPlanEntry = {
+  id: number;
+  time_slot: string;
+  meal_label: string;
+  source: string;
+  source_id: string | null;
+  item_name: string;
+  calories: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  notes: string | null;
 };
 
 /** Core config shape (channels section of the OpenClaw main config). */

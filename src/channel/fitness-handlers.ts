@@ -27,6 +27,9 @@ export function handleFitnessMessage(
   // Biometrics for the requested date
   const biometrics = db.getBiometrics(date, date);
 
+  // Meal plan for the requested date
+  const mealPlanEntries = db.getMealPlan(date);
+
   // 30-day weight trend
   const trendEnd = date;
   const trendStart = offsetDate(date, -30);
@@ -88,6 +91,19 @@ export function handleFitnessMessage(
     })),
     weight_trend,
     week_exercises,
+    meal_plan: mealPlanEntries.map((e) => ({
+      id: e.id,
+      time_slot: e.time_slot,
+      meal_label: e.meal_label,
+      source: e.source,
+      source_id: e.source_id ?? null,
+      item_name: e.item_name,
+      calories: e.calories ?? null,
+      protein_g: e.protein_g ?? null,
+      carbs_g: e.carbs_g ?? null,
+      fat_g: e.fat_g ?? null,
+      notes: e.notes ?? null,
+    })),
   };
 
   wsServer.send(connId, { type: "fitness_day", data });

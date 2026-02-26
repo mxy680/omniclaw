@@ -200,6 +200,7 @@ function TypingIndicator() {
 function ConversationSidebar({
   conversations,
   activeId,
+  typingMap,
   connectionState,
   connectionError,
   onSelect,
@@ -210,6 +211,7 @@ function ConversationSidebar({
 }: {
   conversations: WsConversation[];
   activeId: string | null;
+  typingMap: Record<string, boolean>;
   connectionState: string;
   connectionError?: string;
   onSelect: (id: string) => void;
@@ -244,6 +246,7 @@ function ConversationSidebar({
             key={conv.id}
             conversation={conv}
             isActive={conv.id === activeId}
+            isTyping={!!typingMap[conv.id]}
             onSelect={() => onSelect(conv.id)}
             onDelete={() => onDelete(conv.id)}
             onRename={(title) => onRename(conv.id, title)}
@@ -297,12 +300,14 @@ function StatusIndicator({ state, error }: { state: string; error?: string }) {
 function ConversationRow({
   conversation,
   isActive,
+  isTyping,
   onSelect,
   onDelete,
   onRename,
 }: {
   conversation: WsConversation;
   isActive: boolean;
+  isTyping: boolean;
   onSelect: () => void;
   onDelete: () => void;
   onRename: (title: string) => void;
@@ -325,7 +330,11 @@ function ConversationRow({
       }`}
       onClick={() => { if (!editing) onSelect(); }}
     >
-      <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-foreground/50" : "text-muted-foreground/30"}`} />
+      {isTyping ? (
+        <Loader2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60 animate-spin" />
+      ) : (
+        <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-foreground/50" : "text-muted-foreground/30"}`} />
+      )}
       {editing ? (
         <input
           value={editTitle}
@@ -471,6 +480,7 @@ export default function ChatPage() {
     deleteConversation,
     renameConversation,
     updateSettings,
+    typingMap,
   } = useConversations();
 
   const [showSettings, setShowSettings] = useState(false);
@@ -494,6 +504,7 @@ export default function ChatPage() {
         <ConversationSidebar
           conversations={conversations}
           activeId={activeConversationId}
+          typingMap={typingMap}
           connectionState={connectionState}
           connectionError={connectionError}
           onSelect={selectConversation}

@@ -414,6 +414,7 @@ export function useConversations() {
     activeConversationId,
     messages: messagesMap[activeConversationId ?? ""] ?? [],
     isTyping: typingMap[activeConversationId ?? ""] ?? false,
+    typingMap,
     connectionState,
     connectionError,
     serverUrl,

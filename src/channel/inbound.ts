@@ -13,7 +13,7 @@ import type { CoreConfig } from "./types.js";
 import { getChannelRuntime } from "./runtime.js";
 import { sendMessageIos } from "./send.js";
 import type { WsServerInstance } from "./ws-server.js";
-import { setActiveContext, clearActiveContext } from "./active-context.js";
+import { runWithContext } from "./active-context.js";
 
 const CHANNEL_ID = "omniclaw-ios" as const;
 
@@ -214,27 +214,27 @@ export async function handleIosInbound(params: {
     });
   });
 
-  setActiveContext(conversationId, connId);
-  try {
-    await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
-      ctx: ctxPayload,
-      cfg: config as OpenClawConfig,
-      dispatcherOptions: {
-        ...prefixOptions,
-        deliver: deliverReply,
-        onError: (err: unknown, info: { kind: string }) => {
-          runtime.error?.(`ios ${info.kind} reply failed: ${String(err)}`);
-          wsServer.send(connId, { type: "error", message: String(err) });
+  await runWithContext(conversationId, connId, async () => {
+    try {
+      await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
+        ctx: ctxPayload,
+        cfg: config as OpenClawConfig,
+        dispatcherOptions: {
+          ...prefixOptions,
+          deliver: deliverReply,
+          onError: (err: unknown, info: { kind: string }) => {
+            runtime.error?.(`ios ${info.kind} reply failed: ${String(err)}`);
+            wsServer.send(connId, { type: "error", message: String(err) });
+          },
         },
-      },
-      replyOptions: {
-        onModelSelected,
-      },
-    });
-  } finally {
-    clearActiveContext();
-    // Clear typing indicator
-    wsServer.send(connId, { type: "typing", active: false, conversationId });
-    wsServer.broadcastExcept(connId, { type: "typing", active: false, conversationId });
-  }
+        replyOptions: {
+          onModelSelected,
+        },
+      });
+    } finally {
+      // Clear typing indicator
+      wsServer.send(connId, { type: "typing", active: false, conversationId });
+      wsServer.broadcastExcept(connId, { type: "typing", active: false, conversationId });
+    }
+  });
 }

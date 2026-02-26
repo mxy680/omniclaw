@@ -9,7 +9,7 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            ConversationListView(selectedConversation: $selectedConversation)
+            ConversationListView(selectedConversation: $selectedConversation, viewModel: viewModel)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button(action: createNewConversation) {
@@ -22,7 +22,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                .navigationTitle("OmniClaw")
+                .navigationTitle("omniclaw")
         } detail: {
             if let selectedConversation {
                 ChatDetailView(conversation: selectedConversation, viewModel: viewModel)
@@ -53,9 +53,8 @@ struct ContentView: View {
     }
 
     private func createNewConversation() {
-        let conversation = Conversation()
-        modelContext.insert(conversation)
-        try? modelContext.save()
-        selectedConversation = conversation
+        if let conversation = viewModel.createConversation() {
+            selectedConversation = conversation
+        }
     }
 }

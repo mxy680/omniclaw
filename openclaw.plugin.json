@@ -77,6 +77,28 @@
       "bluebubbles_tokens_path": {
         "type": "string",
         "description": "Path to store BlueBubbles credentials. Defaults to ~/.openclaw/omniclaw-bluebubbles-tokens.json."
+      },
+      "factor75_tokens_path": {
+        "type": "string",
+        "description": "Path to store Factor75 session tokens. Defaults to ~/.openclaw/omniclaw-factor75-tokens.json."
+      },
+      "factor75_email": {
+        "type": "string",
+        "description": "Factor75 account email for automatic login."
+      },
+      "factor75_password": {
+        "type": "string",
+        "description": "Factor75 account password for automatic login."
+      },
+      "dispatch_max_concurrency": {
+        "type": "number",
+        "description": "Maximum number of concurrent agent dispatches. Each active dispatch handles one conversation at a time. Default: 3.",
+        "default": 3
+      },
+      "dispatch_timeout_ms": {
+        "type": "number",
+        "description": "Maximum time in milliseconds for a single agent dispatch before it times out. Default: 300000 (5 minutes).",
+        "default": 300000
       }
     },
     "required": []

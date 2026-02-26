@@ -2,138 +2,97 @@
 
 ## Problem
 
-The current architecture processes one agent dispatch at a time via global state in `active-context.ts`. The OpenClaw SDK's `dispatchReplyWithBufferedBlockDispatcher` uses globals internally and cannot be modified. This blocks parallel conversation processing and background workers.
+The current architecture processes one agent dispatch at a time via global state in `active-context.ts`. The `wrapToolWithBroadcast` function in `plugin.ts` reads this global to route tool-use events to the correct conversation. This blocks parallel conversation processing and background workers.
 
-## Solution: Child Process Pool
+## Why Not Child Processes
 
-Full process isolation via `child_process.fork()`. A pool of pre-forked worker processes each initialize the SDK runtime independently. The main process owns WebSocket, SQLite, and conversation management. Workers are stateless compute — they run the SDK dispatch and stream results back via IPC.
+The SDK's `dispatchReplyWithBufferedBlockDispatcher` lives on the `PluginRuntime` object, which is bootstrapped by the OpenClaw host application — not by us. A child process cannot create its own `PluginRuntime`. However, analysis shows:
+
+1. The SDK dispatch takes explicit parameters (ctx, cfg, callbacks) — no globals
+2. The only global state problem is our code: `active-context.ts`
+3. The WS server already fires message handlers concurrently via `Promise.resolve()`
+4. Dispatches are I/O-bound (API calls), so they naturally interleave on the event loop
+
+## Solution: AsyncLocalStorage + Dispatch Manager
+
+Replace global `active-context.ts` with Node.js `AsyncLocalStorage` for per-dispatch context isolation. Add a Dispatch Manager with a configurable concurrency semaphore and priority queue.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Main Process                    │
-│                                                  │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────┐  │
-│  │ WS Server│  │ Conversation │  │   Pool     │  │
-│  │          │──│   Router     │──│  Manager   │  │
-│  │ (auth,   │  │ (SQLite,     │  │ (spawn,    │  │
-│  │  send,   │  │  CRUD,       │  │  assign,   │  │
-│  │  recv)   │  │  broadcast)  │  │  reclaim)  │  │
-│  └──────────┘  └──────────────┘  └─────┬─────┘  │
-│                                        │         │
-└────────────────────────────────────────┼─────────┘
-                                         │ IPC (fork)
-                    ┌────────────────────┼────────────────────┐
-                    │                    │                     │
-              ┌─────▼─────┐       ┌──────▼────┐        ┌──────▼────┐
-              │  Worker 1  │       │ Worker 2  │        │ Worker N  │
-              │ SDK runtime│       │SDK runtime│        │SDK runtime│
-              │ dispatch() │       │dispatch() │        │dispatch() │
-              └────────────┘       └───────────┘        └───────────┘
+┌────────────────────────────────────────────────────────┐
+│                     Single Process                      │
+│                                                         │
+│  ┌──────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │ WS Server│  │ Conversation │  │   Dispatch        │  │
+│  │          │──│   Router     │──│   Manager         │  │
+│  │ (auth,   │  │ (SQLite,     │  │ (semaphore,       │  │
+│  │  send,   │  │  CRUD,       │  │  priority queue,  │  │
+│  │  recv)   │  │  broadcast)  │  │  AsyncLocalStore) │  │
+│  └──────────┘  └──────────────┘  └────────┬─────────┘  │
+│                                           │             │
+│                          ┌────────────────┼──────────┐  │
+│                          │                │          │  │
+│                    ┌─────▼─────┐  ┌───────▼───┐  ┌──▼──┐
+│                    │ Dispatch 1│  │ Dispatch 2│  │ ... │ │
+│                    │ (conv A)  │  │ (conv B)  │  │     │ │
+│                    │ AsyncLocal│  │ AsyncLocal│  │     │ │
+│                    └───────────┘  └───────────┘  └─────┘ │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
 ```
 
-## IPC Protocol
+Each concurrent dispatch runs in its own `AsyncLocalStorage` context. The Dispatch Manager controls how many run at once.
 
-### Main → Worker
+## Dispatch Manager
 
-```typescript
-// Dispatch a user message to the agent
-{ type: "dispatch",
-  id: string,              // unique request ID
-  conversationId: string,
-  connId: string,
-  text: string,
-  config: CoreConfig,
-  sessionContext: object }
-
-// Graceful shutdown
-{ type: "shutdown" }
-```
-
-### Worker → Main
+### Concurrency control
 
 ```typescript
-// Agent reply chunk
-{ type: "reply",
-  id: string,
-  conversationId: string,
-  text: string }
-
-// Tool use lifecycle
-{ type: "tool_use",
-  id: string,
-  conversationId: string,
-  name: string,
-  phase: "start" | "end" }
-
-// Dispatch complete
-{ type: "done",
-  id: string,
-  conversationId: string }
-
-// Error during dispatch
-{ type: "error",
-  id: string,
-  conversationId: string,
-  message: string }
-
-// Worker ready after initialization
-{ type: "ready" }
-```
-
-Workers never touch SQLite or WebSocket directly. All state management stays in the main process.
-
-## Pool Manager
-
-### Worker state
-
-```typescript
-type WorkerState = {
-  process: ChildProcess;
-  status: "initializing" | "idle" | "busy";
-  currentDispatchId: string | null;
-  currentConversationId: string | null;
+type DispatchSlot = {
+  id: string;                    // unique dispatch ID
+  conversationId: string;
+  connId: string;
+  priority: "interactive" | "background";
+  abortController: AbortController;
 };
 ```
 
 ### Assignment logic
 
 1. Message arrives for conversation X
-2. If a worker is already handling conversation X, queue the message (per-conversation FIFO)
-3. If no worker is handling X, pick an idle worker and assign it
-4. If no idle workers, add to a global queue. When a worker finishes, it picks the oldest queued message
+2. If conversation X already has an active dispatch, queue the message (per-conversation FIFO)
+3. If a concurrency slot is available, start the dispatch immediately
+4. If no slots available, add to priority queue (interactive > background)
+5. When a dispatch finishes, pick the highest-priority queued item
 
-### Failure handling
+### Timeout handling
 
-- Worker crash: detect `exit` event, respawn, send error to client for in-flight dispatch
-- Worker timeout: configurable max dispatch time (default 5 min), kill and respawn if exceeded
-- Startup failure: kill and retry up to 3 times if worker never sends `ready` within 30s
+- Configurable max dispatch time (default 5 min)
+- AbortController signals timeout; dispatch handler catches and sends error to client
 
 ### Configuration
 
 ```typescript
-type PoolConfig = {
-  maxWorkers: number;        // default 3
-  dispatchTimeoutMs: number; // default 300_000 (5 min)
-  workerStartupMs: number;   // default 30_000
+type DispatchConfig = {
+  maxConcurrency: number;          // default 3
+  dispatchTimeoutMs: number;       // default 300_000 (5 min)
 };
 ```
 
-Exposed in `openclaw.plugin.json` so users can tune based on hardware.
+Exposed in `openclaw.plugin.json`.
 
 ## Background Workers
 
-Background workers reuse the same child process pool. They are longer-running dispatches with a different origin.
+Background workers reuse the same dispatch slots with lower priority.
 
 ### Flow
 
-1. Agent decides to spawn background work during a conversation
-2. Agent calls `spawn_background_worker` tool
-3. Tool sends IPC message to main process requesting a background dispatch
-4. Main process assigns a worker from the pool (background tasks are lower priority than interactive messages)
-5. Worker runs the dispatch, streams results back
-6. Main process posts results into the originating conversation
+1. Agent calls `spawn_background_worker` tool during a conversation
+2. Tool creates a background dispatch request via the Dispatch Manager
+3. Dispatch Manager queues it with `priority: "background"`
+4. When a slot opens, the background dispatch runs
+5. Results are posted into the originating conversation
 
 ### Tool
 
@@ -150,7 +109,7 @@ Background workers reuse the same child process pool. They are longer-running di
 
 ### Priority
 
-Interactive messages always take priority over background workers. If the pool is full and a user message arrives, the oldest queued background task stays queued.
+Interactive messages always take priority. If all slots are busy and a user message arrives, it queues ahead of all background tasks.
 
 ### Status reporting (minimal, v1)
 
@@ -158,31 +117,30 @@ Background worker posts into target conversation:
 - "Background task started: {task}"
 - "Background task completed: {summary}" or "Background task failed: {error}"
 
-Architecture supports adding a dedicated Workers panel later via new WebSocket message types.
-
 ## File Changes
 
 ### Modified
 
 | File | Change |
 |---|---|
-| `src/channel/inbound.ts` | Remove direct SDK dispatch. Build context payload, hand to Pool Manager. Receive results via callback, handle SQLite + WebSocket delivery. |
-| `src/channel/active-context.ts` | Replace globals with per-dispatch context map keyed by request ID. |
-| `src/channel/channel-plugin.ts` | Initialize Pool Manager on startup, shut down on deactivate. |
-| `openclaw.plugin.json` | Add `pool` config section. |
-| `src/types/plugin-config.ts` | Add `PoolConfig` to `PluginConfig`. |
+| `src/channel/active-context.ts` | Replace globals with `AsyncLocalStorage`-based per-dispatch context |
+| `src/channel/inbound.ts` | Run dispatch inside AsyncLocalStorage context; remove direct setActiveContext/clearActiveContext |
+| `src/channel/channel-plugin.ts` | Initialize Dispatch Manager; route messages through it instead of directly calling handleIosInbound |
+| `src/plugin.ts` | Update `wrapToolWithBroadcast` to read from AsyncLocalStorage instead of globals |
+| `openclaw.plugin.json` | Add `dispatch` config section |
+| `src/types/plugin-config.ts` | Add `DispatchConfig` to `PluginConfig` |
 
 ### New
 
 | File | Purpose |
 |---|---|
-| `src/channel/pool-manager.ts` | Pool Manager — spawn, manage, assign workers, handle failures. |
-| `src/channel/worker.ts` | Worker entry point — SDK init, IPC listener, dispatch runner. |
-| `src/channel/pool-types.ts` | Shared IPC message types. |
-| `src/tools/background-worker.ts` | `spawn_background_worker` tool. |
+| `src/channel/dispatch-manager.ts` | Dispatch Manager — semaphore, priority queue, slot tracking |
+| `src/tools/background-worker.ts` | `spawn_background_worker` tool |
 
 ### Unchanged
 
 - `ws-server.ts` — still handles connections and auth
 - `conversation-store.ts` — still single-writer from main process
 - `conversation-handlers.ts` — CRUD stays in main process
+- `send.ts` — unchanged
+- `runtime.ts` — unchanged (singleton is safe for concurrent reads)

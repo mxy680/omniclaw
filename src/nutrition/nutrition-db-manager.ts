@@ -11,6 +11,10 @@ import type {
   BiometricEntry,
   NoteEntry,
   NutritionTargets,
+  PantryItemInput,
+  PantryItem,
+  MealPlanEntryInput,
+  MealPlanEntry,
 } from "./types.js";
 
 export class NutritionDbManager {
@@ -89,6 +93,40 @@ export class NutritionDbManager {
         active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
+
+      CREATE TABLE IF NOT EXISTS pantry_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'other',
+        quantity REAL NOT NULL DEFAULT 1,
+        unit TEXT NOT NULL DEFAULT 'item',
+        calories_per_serving REAL,
+        protein_g_per_serving REAL,
+        carbs_g_per_serving REAL,
+        fat_g_per_serving REAL,
+        serving_size TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_pantry_items_category ON pantry_items(category);
+
+      CREATE TABLE IF NOT EXISTS meal_plan_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        time_slot TEXT NOT NULL,
+        meal_label TEXT NOT NULL,
+        source TEXT NOT NULL,
+        source_id TEXT,
+        item_name TEXT NOT NULL,
+        calories REAL,
+        protein_g REAL,
+        carbs_g REAL,
+        fat_g REAL,
+        notes TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_meal_plan_date ON meal_plan_entries(date);
     `);
   }
 
@@ -278,6 +316,169 @@ export class NutritionDbManager {
     if (row.fiber_g != null) targets.fiber_g = row.fiber_g as number;
     if (row.sodium_mg != null) targets.sodium_mg = row.sodium_mg as number;
     return targets;
+  }
+
+  // ── Pantry ────────────────────────────────────────────
+
+  addPantryItem(item: PantryItemInput): PantryItem {
+    const info = this.db
+      .prepare(
+        `INSERT INTO pantry_items (name, category, quantity, unit, calories_per_serving, protein_g_per_serving, carbs_g_per_serving, fat_g_per_serving, serving_size, notes)
+         VALUES (@name, @category, @quantity, @unit, @calories_per_serving, @protein_g_per_serving, @carbs_g_per_serving, @fat_g_per_serving, @serving_size, @notes)`,
+      )
+      .run({
+        name: item.name,
+        category: item.category ?? "other",
+        quantity: item.quantity ?? 1,
+        unit: item.unit ?? "item",
+        calories_per_serving: item.calories_per_serving ?? null,
+        protein_g_per_serving: item.protein_g_per_serving ?? null,
+        carbs_g_per_serving: item.carbs_g_per_serving ?? null,
+        fat_g_per_serving: item.fat_g_per_serving ?? null,
+        serving_size: item.serving_size ?? null,
+        notes: item.notes ?? null,
+      });
+
+    return this.db
+      .prepare(`SELECT * FROM pantry_items WHERE id = ?`)
+      .get(Number(info.lastInsertRowid)) as PantryItem;
+  }
+
+  listPantryItems(category?: string): PantryItem[] {
+    if (category) {
+      return this.db
+        .prepare(`SELECT * FROM pantry_items WHERE category = ? ORDER BY name`)
+        .all(category) as PantryItem[];
+    }
+    return this.db
+      .prepare(`SELECT * FROM pantry_items ORDER BY category, name`)
+      .all() as PantryItem[];
+  }
+
+  updatePantryItem(id: number, updates: Partial<PantryItemInput>): PantryItem | null {
+    const existing = this.db
+      .prepare(`SELECT * FROM pantry_items WHERE id = ?`)
+      .get(id) as PantryItem | undefined;
+    if (!existing) return null;
+
+    const merged = {
+      name: updates.name ?? existing.name,
+      category: updates.category ?? existing.category,
+      quantity: updates.quantity ?? existing.quantity,
+      unit: updates.unit ?? existing.unit,
+      calories_per_serving: updates.calories_per_serving ?? existing.calories_per_serving,
+      protein_g_per_serving: updates.protein_g_per_serving ?? existing.protein_g_per_serving,
+      carbs_g_per_serving: updates.carbs_g_per_serving ?? existing.carbs_g_per_serving,
+      fat_g_per_serving: updates.fat_g_per_serving ?? existing.fat_g_per_serving,
+      serving_size: updates.serving_size ?? existing.serving_size,
+      notes: updates.notes ?? existing.notes,
+    };
+
+    this.db
+      .prepare(
+        `UPDATE pantry_items SET name=@name, category=@category, quantity=@quantity, unit=@unit,
+         calories_per_serving=@calories_per_serving, protein_g_per_serving=@protein_g_per_serving,
+         carbs_g_per_serving=@carbs_g_per_serving, fat_g_per_serving=@fat_g_per_serving,
+         serving_size=@serving_size, notes=@notes, updated_at=datetime('now')
+         WHERE id=@id`,
+      )
+      .run({ ...merged, id });
+
+    return this.db
+      .prepare(`SELECT * FROM pantry_items WHERE id = ?`)
+      .get(id) as PantryItem;
+  }
+
+  removePantryItem(id: number): boolean {
+    const info = this.db.prepare(`DELETE FROM pantry_items WHERE id = ?`).run(id);
+    return info.changes > 0;
+  }
+
+  deductPantryQuantity(id: number, amount: number): PantryItem | null {
+    const item = this.db
+      .prepare(`SELECT * FROM pantry_items WHERE id = ?`)
+      .get(id) as PantryItem | undefined;
+    if (!item) return null;
+
+    const newQty = Math.max(0, item.quantity - amount);
+    if (newQty === 0) {
+      this.db.prepare(`DELETE FROM pantry_items WHERE id = ?`).run(id);
+      return { ...item, quantity: 0 };
+    }
+
+    this.db
+      .prepare(`UPDATE pantry_items SET quantity = ?, updated_at = datetime('now') WHERE id = ?`)
+      .run(newQty, id);
+
+    return this.db
+      .prepare(`SELECT * FROM pantry_items WHERE id = ?`)
+      .get(id) as PantryItem;
+  }
+
+  // ── Meal Plan ────────────────────────────────────────
+
+  saveMealPlan(date: string, entries: MealPlanEntryInput[]): MealPlanEntry[] {
+    const results: MealPlanEntry[] = [];
+    const txn = this.db.transaction(() => {
+      this.db.prepare(`DELETE FROM meal_plan_entries WHERE date = ?`).run(date);
+
+      const insert = this.db.prepare(
+        `INSERT INTO meal_plan_entries (date, time_slot, meal_label, source, source_id, item_name, calories, protein_g, carbs_g, fat_g, notes)
+         VALUES (@date, @time_slot, @meal_label, @source, @source_id, @item_name, @calories, @protein_g, @carbs_g, @fat_g, @notes)`,
+      );
+
+      for (const e of entries) {
+        const info = insert.run({
+          date,
+          time_slot: e.time_slot,
+          meal_label: e.meal_label,
+          source: e.source,
+          source_id: e.source_id ?? null,
+          item_name: e.item_name,
+          calories: e.calories ?? null,
+          protein_g: e.protein_g ?? null,
+          carbs_g: e.carbs_g ?? null,
+          fat_g: e.fat_g ?? null,
+          notes: e.notes ?? null,
+        });
+        results.push({
+          id: Number(info.lastInsertRowid),
+          date,
+          time_slot: e.time_slot,
+          meal_label: e.meal_label,
+          source: e.source,
+          source_id: e.source_id ?? null,
+          item_name: e.item_name,
+          calories: e.calories ?? null,
+          protein_g: e.protein_g ?? null,
+          carbs_g: e.carbs_g ?? null,
+          fat_g: e.fat_g ?? null,
+          notes: e.notes ?? null,
+          created_at: new Date().toISOString(),
+        });
+      }
+    });
+    txn();
+    return results;
+  }
+
+  getMealPlan(date: string): MealPlanEntry[] {
+    return this.db
+      .prepare(`SELECT * FROM meal_plan_entries WHERE date = ? ORDER BY time_slot, id`)
+      .all(date) as MealPlanEntry[];
+  }
+
+  getMealPlanRange(start: string, end: string): MealPlanEntry[] {
+    return this.db
+      .prepare(
+        `SELECT * FROM meal_plan_entries WHERE date >= ? AND date <= ? ORDER BY date, time_slot, id`,
+      )
+      .all(start, end) as MealPlanEntry[];
+  }
+
+  deleteMealPlan(date: string): number {
+    const info = this.db.prepare(`DELETE FROM meal_plan_entries WHERE date = ?`).run(date);
+    return info.changes;
   }
 
   close(): void {

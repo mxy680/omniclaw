@@ -216,8 +216,12 @@ async function runCronometerLoginFlow(
     }
     console.log("[cronometer] Login successful. Extracting session...");
 
-    // Wait a moment for GWT app to load and make requests (so we capture GWT values)
-    await page.waitForTimeout(3000);
+    // Poll for GWT app to load and fire requests so we capture GWT values
+    console.log("[cronometer] Waiting for GWT values to be intercepted...");
+    for (let i = 0; i < 15; i++) {
+      if (gwtPermutation && gwtHeader) break;
+      await page.waitForTimeout(1000);
+    }
 
     // Extract cookies
     const cookies = await context.cookies();
@@ -233,14 +237,15 @@ async function runCronometerLoginFlow(
     }
     console.log(`[cronometer] sesnonce captured: ${sesnonce.slice(0, 8)}...`);
 
-    // If GWT values weren't captured from intercepted requests, use known defaults
-    if (!gwtPermutation) {
-      console.log("[cronometer] GWT values not intercepted, using known defaults...");
-      gwtPermutation = "7B121DC5483BF272B1BC1916DA9FA963";
-      gwtModuleBase = "https://cronometer.com/cronometer/";
+    if (!gwtPermutation || !gwtHeader) {
+      throw new Error(
+        "Failed to discover GWT magic values from intercepted requests. " +
+        "Cronometer may have changed their frontend. " +
+        `Captured: permutation=${gwtPermutation || "(none)"}, header=${gwtHeader || "(none)"}`,
+      );
     }
-    if (!gwtHeader) {
-      gwtHeader = "2D6A926E3729946302DC68073CB0D550";
+    if (!gwtModuleBase) {
+      gwtModuleBase = "https://cronometer.com/cronometer/";
     }
 
     await browser.close();
@@ -275,14 +280,16 @@ async function runCronometerLoginFlow(
     const userId = userIdMatch?.[1] ?? "";
 
     if (!userId) {
-      // Authentication may have updated the sesnonce cookie
-      console.log("[cronometer] Could not extract user ID from GWT auth response, continuing...");
+      throw new Error(
+        "Failed to extract user ID from GWT authenticate response. " +
+        `Response: ${authText.slice(0, 200)}`,
+      );
     }
 
     // Extract updated sesnonce from auth response cookies if present
     const authSetCookie = authResp.headers.get("set-cookie");
     if (authSetCookie) {
-      const nMatch = authSetCookie.match(/sesnonce=([^;]+)/);
+      const nMatch = authSetCookie.match(/sesnonce=([^;,]+)/);
       if (nMatch) {
         sesnonce = nMatch[1];
         allCookies["sesnonce"] = sesnonce;
@@ -305,12 +312,25 @@ async function runCronometerLoginFlow(
     const tokenText = await tokenResp.text();
     console.log(`[cronometer] GWT generateAuthToken response: ${tokenText.slice(0, 100)}`);
 
+    // Extract updated sesnonce from token response cookies if present
+    const tokenSetCookie = tokenResp.headers.get("set-cookie");
+    if (tokenSetCookie) {
+      const nMatch = tokenSetCookie.match(/sesnonce=([^;,]+)/);
+      if (nMatch) {
+        sesnonce = nMatch[1];
+        allCookies["sesnonce"] = sesnonce;
+      }
+    }
+
     // Extract auth token: //OK["TOKEN"]
     const tokenMatch = tokenText.match(/"([^"]+)"/);
     const authToken = tokenMatch?.[1] ?? "";
 
     if (!authToken) {
-      console.log("[cronometer] Warning: could not extract auth token. Export tools may not work.");
+      throw new Error(
+        "Failed to extract auth token from GWT generateAuthToken response. " +
+        `Response: ${tokenText.slice(0, 200)}`,
+      );
     }
 
     return {

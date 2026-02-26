@@ -23,7 +23,7 @@ export const AUTH_REQUIRED = {
  * Handles quoted fields with commas inside them.
  */
 export function parseCsv(csv: string): Array<Record<string, string>> {
-  const lines = csv.trim().split("\n");
+  const lines = csv.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
 
   const headers = parseCsvLine(lines[0]);
@@ -80,7 +80,7 @@ function parseCsvLine(line: string): string[] {
 }
 
 /** Parse a float from a CSV value, returning 0 for empty strings. */
-export function parseFloat(val: string): number {
+export function parseCsvFloat(val: string): number {
   if (!val || val.trim() === "") return 0;
   const n = Number(val);
   return isNaN(n) ? 0 : n;
@@ -95,14 +95,14 @@ export function formatServing(row: Record<string, string>): Record<string, unkno
     food_name: row["Food Name"] ?? row["Name"] ?? "",
     quantity: row["Amount"] ?? row["Quantity"] ?? "",
     unit: row["Unit"] ?? "",
-    calories: parseFloat(row["Energy (kcal)"] ?? row["Calories"] ?? "0"),
-    protein_g: parseFloat(row["Protein (g)"] ?? "0"),
-    fat_g: parseFloat(row["Fat (g)"] ?? "0"),
-    carbs_g: parseFloat(row["Carbs (g)"] ?? "0"),
-    fiber_g: parseFloat(row["Fiber (g)"] ?? "0"),
-    sugar_g: parseFloat(row["Sugars (g)"] ?? "0"),
-    sodium_mg: parseFloat(row["Sodium (mg)"] ?? "0"),
-    cholesterol_mg: parseFloat(row["Cholesterol (mg)"] ?? "0"),
+    calories: parseCsvFloat(row["Energy (kcal)"] ?? row["Calories"] ?? "0"),
+    protein_g: parseCsvFloat(row["Protein (g)"] ?? "0"),
+    fat_g: parseCsvFloat(row["Fat (g)"] ?? "0"),
+    carbs_g: parseCsvFloat(row["Carbs (g)"] ?? "0"),
+    fiber_g: parseCsvFloat(row["Fiber (g)"] ?? "0"),
+    sugar_g: parseCsvFloat(row["Sugars (g)"] ?? "0"),
+    sodium_mg: parseCsvFloat(row["Sodium (mg)"] ?? "0"),
+    cholesterol_mg: parseCsvFloat(row["Cholesterol (mg)"] ?? "0"),
     category: row["Category"] ?? "",
   };
 }
@@ -112,7 +112,7 @@ export function formatDailySummary(row: Record<string, string>): Record<string, 
   const result: Record<string, unknown> = { date: row["Date"] ?? row["Day"] ?? "" };
   for (const [key, val] of Object.entries(row)) {
     if (key === "Date" || key === "Day") continue;
-    result[key] = parseFloat(val);
+    result[key] = parseCsvFloat(val);
   }
   return result;
 }
@@ -123,8 +123,8 @@ export function formatExercise(row: Record<string, string>): Record<string, unkn
     date: row["Day"] ?? row["Date"] ?? "",
     time: row["Time"] ?? "",
     exercise: row["Exercise Name"] ?? row["Exercise"] ?? "",
-    minutes: parseFloat(row["Minutes"] ?? "0"),
-    calories_burned: parseFloat(row["Calories Burned"] ?? "0"),
+    minutes: parseCsvFloat(row["Minutes"] ?? "0"),
+    calories_burned: parseCsvFloat(row["Calories Burned"] ?? "0"),
     group: row["Group"] ?? "",
   };
 }
@@ -136,7 +136,7 @@ export function formatBiometric(row: Record<string, string>): Record<string, unk
     time: row["Time"] ?? "",
     metric: row["Metric"] ?? row["Name"] ?? "",
     unit: row["Unit"] ?? "",
-    amount: parseFloat(row["Amount"] ?? row["Value"] ?? "0"),
+    amount: parseCsvFloat(row["Amount"] ?? row["Value"] ?? "0"),
   };
 }
 

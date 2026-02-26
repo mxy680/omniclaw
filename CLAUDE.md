@@ -25,7 +25,7 @@
 | Instagram | 17 | `instagram` | `docs/instagram.md` | Browser auth via Playwright |
 | iMessage | 7 | `imessage` | `skills/imessage.SKILL.md` | BlueBubbles backend, contact name resolution |
 | Factor75 | 13 | `factor75` | `docs/factor75.md` | Playwright login + direct HTTP with JWT Bearer tokens |
-| Cronometer | 6 | `cronometer` | `docs/cronometer.md` | Playwright login + CSV export API |
+| Nutrition Tracking | 10 | `nutrition` | `docs/nutrition.md` | Local SQLite, no auth |
 
 ## In Progress
 

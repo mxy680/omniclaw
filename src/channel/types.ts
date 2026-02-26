@@ -17,7 +17,8 @@ export type WsClientMessage =
   | { type: "conversation_create"; id: string; title?: string }
   | { type: "conversation_history"; conversationId: string; before?: number; limit?: number }
   | { type: "conversation_delete"; conversationId: string }
-  | { type: "conversation_rename"; conversationId: string; title: string };
+  | { type: "conversation_rename"; conversationId: string; title: string }
+  | { type: "fitness_day"; date: string };
 
 /** Server → Client messages */
 export type WsServerMessage =
@@ -32,7 +33,8 @@ export type WsServerMessage =
   | { type: "conversation_history"; conversationId: string; messages: WsMessage[] }
   | { type: "conversation_deleted"; conversationId: string }
   | { type: "conversation_renamed"; conversationId: string; title: string }
-  | { type: "conversation_updated"; conversation: WsConversation };
+  | { type: "conversation_updated"; conversation: WsConversation }
+  | { type: "fitness_day"; data: WsFitnessDay };
 
 /** Conversation as sent over the wire. */
 export type WsConversation = {
@@ -51,6 +53,55 @@ export type WsMessage = {
   timestamp: number;
   toolUses: { name: string; phase: string }[] | null;
   isStreaming: boolean;
+};
+
+/** Fitness day data as sent over the wire. */
+export type WsFitnessDay = {
+  date: string;
+  food_entries: Array<{
+    id: number;
+    meal: string | null;
+    food_name: string;
+    serving: string | null;
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    fiber_g: number | null;
+    sodium_mg: number | null;
+  }>;
+  daily_totals: {
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    fiber_g: number;
+    sodium_mg: number;
+  } | null;
+  targets: {
+    calories?: number;
+    protein_g?: number;
+    carbs_g?: number;
+    fat_g?: number;
+    fiber_g?: number;
+    sodium_mg?: number;
+  } | null;
+  exercises: Array<{
+    id: number;
+    name: string;
+    exercise_type: string | null;
+    duration_min: number | null;
+    calories_burned: number | null;
+    details: unknown;
+  }>;
+  biometrics: Array<{
+    metric: string;
+    value: number;
+    unit: string;
+    date: string;
+  }>;
+  weight_trend: Array<{ date: string; value: number }>;
+  week_exercises: Array<{ date: string }>;
 };
 
 /** Core config shape (channels section of the OpenClaw main config). */

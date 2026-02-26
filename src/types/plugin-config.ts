@@ -22,6 +22,7 @@ export interface PluginConfig {
   factor75_tokens_path?: string;
   factor75_email?: string;
   factor75_password?: string;
+  nutrition_db_path?: string;
   dispatch_max_concurrency?: number;
   dispatch_timeout_ms?: number;
 }

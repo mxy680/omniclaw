@@ -165,6 +165,17 @@ import { createImessageChatsTool } from "./tools/imessage-chats.js";
 import { createImessageMessagesTool, createImessageSearchTool } from "./tools/imessage-messages.js";
 import { createImessageSendTool } from "./tools/imessage-send.js";
 import { createImessageAttachmentsTool } from "./tools/imessage-attachments.js";
+import { NutritionDbManager } from "./nutrition/nutrition-db-manager.js";
+import { createNutritionLogFoodTool } from "./tools/nutrition-log-food.js";
+import { createNutritionDiaryTool } from "./tools/nutrition-diary.js";
+import { createNutritionDeleteFoodTool } from "./tools/nutrition-delete-food.js";
+import { createNutritionLogExerciseTool } from "./tools/nutrition-log-exercise.js";
+import { createNutritionExercisesTool } from "./tools/nutrition-exercises.js";
+import { createNutritionDeleteExerciseTool } from "./tools/nutrition-delete-exercise.js";
+import { createNutritionLogBiometricTool } from "./tools/nutrition-log-biometric.js";
+import { createNutritionBiometricsTool } from "./tools/nutrition-biometrics.js";
+import { createNutritionNotesTool } from "./tools/nutrition-notes.js";
+import { createNutritionSetTargetsTool } from "./tools/nutrition-set-targets.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 import { getWsServer } from "./channel/send.js";
 import { getActiveContext } from "./channel/active-context.js";
@@ -399,6 +410,26 @@ export function register(api: OpenClawPluginApi): void {
   reg(createFactor75DeliveriesTool(factor75Manager));
   reg(createFactor75DeliveryDetailsTool(factor75Manager));
   reg(createFactor75AccountTool(factor75Manager));
+
+  // Nutrition tools — local SQLite, no external API
+  const nutritionDbPath =
+    config.nutrition_db_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-nutrition.db",
+    );
+  const nutritionDb = new NutritionDbManager(nutritionDbPath);
+
+  reg(createNutritionLogFoodTool(nutritionDb));
+  reg(createNutritionDiaryTool(nutritionDb));
+  reg(createNutritionDeleteFoodTool(nutritionDb));
+  reg(createNutritionLogExerciseTool(nutritionDb));
+  reg(createNutritionExercisesTool(nutritionDb));
+  reg(createNutritionDeleteExerciseTool(nutritionDb));
+  reg(createNutritionLogBiometricTool(nutritionDb));
+  reg(createNutritionBiometricsTool(nutritionDb));
+  reg(createNutritionNotesTool(nutritionDb));
+  reg(createNutritionSetTargetsTool(nutritionDb));
 
   // YouTube tools — no OAuth required
   reg(createYouTubeTranscriptTool());

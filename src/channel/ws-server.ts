@@ -9,6 +9,8 @@ export type WsServerInstance = {
   send: (connId: string, msg: WsServerMessage) => void;
   /** Broadcast a message to all authenticated connections. */
   broadcast: (msg: WsServerMessage) => void;
+  /** Broadcast a message to all authenticated connections except one. */
+  broadcastExcept: (excludeConnId: string, msg: WsServerMessage) => void;
   /** Stop the WebSocket server. */
   stop: () => void;
 };
@@ -115,6 +117,14 @@ export function startWsServer(opts: {
       const payload = JSON.stringify(msg);
       for (const ws of authed.values()) {
         if (ws.readyState === WebSocket.OPEN) {
+          ws.send(payload);
+        }
+      }
+    },
+    broadcastExcept(excludeConnId, msg) {
+      const payload = JSON.stringify(msg);
+      for (const [id, ws] of authed.entries()) {
+        if (id !== excludeConnId && ws.readyState === WebSocket.OPEN) {
           ws.send(payload);
         }
       }

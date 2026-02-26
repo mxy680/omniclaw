@@ -16,14 +16,19 @@ export function getWsServer(): WsServerInstance | null {
  */
 export function sendMessageIos(
   text: string,
-  opts?: { connId?: string },
+  opts?: { connId?: string; conversationId?: string },
 ): { messageId: string } {
   if (!server) {
     throw new Error("iOS WebSocket server is not running");
   }
 
   const messageId = `ios-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const msg = { type: "message" as const, text, id: messageId };
+  const msg = {
+    type: "message" as const,
+    text,
+    id: messageId,
+    conversationId: opts?.conversationId ?? "",
+  };
 
   if (opts?.connId) {
     server.send(opts.connId, msg);

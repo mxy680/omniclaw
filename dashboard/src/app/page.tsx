@@ -45,7 +45,7 @@ export default function DashboardPage() {
           {selected.tools.map((tool) => (
             <div
               key={tool.name}
-              className="glass glow-cyan rounded-xl p-4 transition-colors hover:border-white/15"
+              className="rounded-lg border border-border p-4 transition-colors hover:border-foreground/15"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -79,7 +79,7 @@ export default function DashboardPage() {
           <button
             key={integration.id}
             onClick={() => setSelected(integration)}
-            className="glass glow-cyan rounded-xl p-5 text-left transition-transform hover:scale-[1.02] cursor-pointer"
+            className="rounded-lg border border-border p-5 text-left transition-colors hover:border-foreground/15 cursor-pointer"
           >
             <div className="flex items-start justify-between">
               <div

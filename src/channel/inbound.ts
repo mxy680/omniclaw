@@ -7,17 +7,21 @@ import {
   type OpenClawConfig,
   type RuntimeEnv,
 } from "openclaw/plugin-sdk";
+import type { ConversationStore } from "./conversation-store.js";
 import type { ResolvedIosAccount } from "./types.js";
 import type { CoreConfig } from "./types.js";
 import { getChannelRuntime } from "./runtime.js";
 import { sendMessageIos } from "./send.js";
-import { getWsServer } from "./send.js";
+import type { WsServerInstance } from "./ws-server.js";
 
 const CHANNEL_ID = "omniclaw-ios" as const;
 
 async function deliverIosReply(params: {
   payload: OutboundReplyPayload;
   connId: string;
+  conversationId: string;
+  store: ConversationStore;
+  wsServer: WsServerInstance;
   statusSink?: (patch: { lastOutboundAt?: number }) => void;
 }): Promise<void> {
   const combined = formatTextWithAttachmentLinks(
@@ -28,20 +32,62 @@ async function deliverIosReply(params: {
     return;
   }
 
-  sendMessageIos(combined, { connId: params.connId });
+  const { messageId } = sendMessageIos(combined, {
+    connId: params.connId,
+    conversationId: params.conversationId,
+  });
+
+  // Store the agent message in SQLite
+  params.store.insertMessage({
+    id: messageId,
+    conversationId: params.conversationId,
+    text: combined,
+    isUser: false,
+    timestamp: Date.now(),
+    isStreaming: false,
+  });
+
+  // Broadcast to other connections
+  params.wsServer.broadcastExcept(params.connId, {
+    type: "message",
+    text: combined,
+    id: messageId,
+    conversationId: params.conversationId,
+  });
+
+  // Notify all connections of conversation activity
+  const conv = params.store.getConversation(params.conversationId);
+  if (conv) {
+    params.wsServer.broadcastExcept(params.connId, {
+      type: "conversation_updated",
+      conversation: {
+        id: conv.id,
+        title: conv.title,
+        createdAt: conv.created_at,
+        updatedAt: conv.updated_at,
+      },
+    });
+  }
+
   params.statusSink?.({ lastOutboundAt: Date.now() });
 }
 
 export async function handleIosInbound(params: {
   text: string;
   messageId?: string;
+  conversationId: string;
   connId: string;
   account: ResolvedIosAccount;
   config: CoreConfig;
   runtime: RuntimeEnv;
+  store: ConversationStore;
+  wsServer: WsServerInstance;
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
 }): Promise<void> {
-  const { text, connId, account, config, runtime, statusSink } = params;
+  const {
+    text, connId, conversationId, account, config, runtime,
+    store, wsServer, statusSink,
+  } = params;
   const core = getChannelRuntime();
 
   const rawBody = text.trim();
@@ -52,9 +98,45 @@ export async function handleIosInbound(params: {
   const timestamp = Date.now();
   statusSink?.({ lastInboundAt: timestamp });
 
+  // Ensure conversation exists
+  if (!store.getConversation(conversationId)) {
+    store.createConversation(conversationId);
+  }
+
+  // Store user message in SQLite
+  const userMsgId = params.messageId ?? `ios-${timestamp}`;
+  store.insertMessage({
+    id: userMsgId,
+    conversationId,
+    text: rawBody,
+    isUser: true,
+    timestamp,
+  });
+
+  // Auto-title from first user message if conversation is still "New Chat"
+  const conv = store.getConversation(conversationId);
+  if (conv && conv.title === "New Chat") {
+    const autoTitle = rawBody.slice(0, 40);
+    store.renameConversation(conversationId, autoTitle);
+    wsServer.broadcast({
+      type: "conversation_renamed",
+      conversationId,
+      title: autoTitle,
+    });
+  }
+
+  // Broadcast user message to other connections
+  wsServer.broadcastExcept(connId, {
+    type: "message",
+    text: rawBody,
+    id: userMsgId,
+    conversationId,
+    isUser: true,
+  });
+
   // Send typing indicator
-  const server = getWsServer();
-  server?.send(connId, { type: "typing", active: true });
+  wsServer.send(connId, { type: "typing", active: true, conversationId });
+  wsServer.broadcastExcept(connId, { type: "typing", active: true, conversationId });
 
   const peerId = `ios-user`;
   const route = core.channel.routing.resolveAgentRoute({
@@ -98,7 +180,7 @@ export async function handleIosInbound(params: {
     SenderId: peerId,
     Provider: CHANNEL_ID,
     Surface: CHANNEL_ID,
-    MessageSid: params.messageId ?? `ios-${timestamp}`,
+    MessageSid: userMsgId,
     Timestamp: timestamp,
     OriginatingChannel: CHANNEL_ID,
     OriginatingTo: `omniclaw-ios:${peerId}`,
@@ -124,6 +206,9 @@ export async function handleIosInbound(params: {
     await deliverIosReply({
       payload,
       connId,
+      conversationId,
+      store,
+      wsServer,
       statusSink,
     });
   });
@@ -137,7 +222,7 @@ export async function handleIosInbound(params: {
         deliver: deliverReply,
         onError: (err: unknown, info: { kind: string }) => {
           runtime.error?.(`ios ${info.kind} reply failed: ${String(err)}`);
-          server?.send(connId, { type: "error", message: String(err) });
+          wsServer.send(connId, { type: "error", message: String(err) });
         },
       },
       replyOptions: {
@@ -146,6 +231,7 @@ export async function handleIosInbound(params: {
     });
   } finally {
     // Clear typing indicator
-    server?.send(connId, { type: "typing", active: false });
+    wsServer.send(connId, { type: "typing", active: false, conversationId });
+    wsServer.broadcastExcept(connId, { type: "typing", active: false, conversationId });
   }
 }

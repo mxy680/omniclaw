@@ -55,7 +55,39 @@ final class ChatViewModel {
 
         pendingResponseConversationId = conversation.id
         currentStreamingMessage = nil
-        webSocket.send(.message(text: text, id: userMsg.id))
+        webSocket.send(.message(text: text, id: userMsg.id, conversationId: conversation.id))
+    }
+
+    func createConversation(title: String? = nil) -> Conversation? {
+        guard let modelContext else { return nil }
+        let conversation = Conversation(title: title ?? "New Chat")
+        modelContext.insert(conversation)
+        try? modelContext.save()
+        // Notify server
+        webSocket.send(.conversationCreate(id: conversation.id, title: title))
+        return conversation
+    }
+
+    func deleteConversation(_ conversation: Conversation) {
+        guard let modelContext else { return }
+        let id = conversation.id
+        modelContext.delete(conversation)
+        try? modelContext.save()
+        webSocket.send(.conversationDelete(conversationId: id))
+    }
+
+    func renameConversation(_ conversation: Conversation, title: String) {
+        conversation.title = title
+        try? modelContext?.save()
+        webSocket.send(.conversationRename(conversationId: conversation.id, title: title))
+    }
+
+    func requestConversationList() {
+        webSocket.send(.conversationList)
+    }
+
+    func requestConversationHistory(_ conversationId: String) {
+        webSocket.send(.conversationHistory(conversationId: conversationId, before: nil, limit: 100))
     }
 
     func updateConnectionState() {
@@ -70,16 +102,88 @@ final class ChatViewModel {
         guard let modelContext else { return }
 
         switch msg.type {
-        case .authOk, .authFail:
+        case .authOk:
+            // Request conversation list on auth
+            requestConversationList()
+
+        case .authFail:
             break
+
+        case .conversationList:
+            guard let serverConversations = msg.conversations else { return }
+            reconcileConversations(serverConversations)
+
+        case .conversationCreated:
+            guard let convData = msg.conversation else { return }
+            // Only insert if we don't already have it locally
+            let createdId = convData.id
+            let descriptor = FetchDescriptor<Conversation>(predicate: #Predicate { $0.id == createdId })
+            let existing = (try? modelContext.fetch(descriptor))?.first
+            if existing == nil {
+                let conversation = Conversation(
+                    id: convData.id,
+                    title: convData.title,
+                    createdAt: Date(timeIntervalSince1970: Double(convData.createdAt) / 1000),
+                    updatedAt: Date(timeIntervalSince1970: Double(convData.updatedAt) / 1000)
+                )
+                modelContext.insert(conversation)
+                try? modelContext.save()
+            }
+
+        case .conversationDeleted:
+            guard let convId = msg.conversationId else { return }
+            let descriptor = FetchDescriptor<Conversation>(predicate: #Predicate { $0.id == convId })
+            if let conversation = (try? modelContext.fetch(descriptor))?.first {
+                modelContext.delete(conversation)
+                try? modelContext.save()
+            }
+
+        case .conversationRenamed:
+            guard let convId = msg.conversationId, let title = msg.title else { return }
+            let descriptor = FetchDescriptor<Conversation>(predicate: #Predicate { $0.id == convId })
+            if let conversation = (try? modelContext.fetch(descriptor))?.first {
+                conversation.title = title
+                try? modelContext.save()
+            }
+
+        case .conversationUpdated:
+            guard let convData = msg.conversation else { return }
+            let updatedId = convData.id
+            let descriptor = FetchDescriptor<Conversation>(predicate: #Predicate { $0.id == updatedId })
+            if let conversation = (try? modelContext.fetch(descriptor))?.first {
+                conversation.title = convData.title
+                conversation.updatedAt = Date(timeIntervalSince1970: Double(convData.updatedAt) / 1000)
+                try? modelContext.save()
+            }
+
+        case .conversationHistory:
+            guard let convId = msg.conversationId, let serverMessages = msg.messages else { return }
+            populateHistory(conversationId: convId, serverMessages: serverMessages)
 
         case .message:
             guard let text = msg.text else { return }
+            let convId = msg.conversationId
 
+            // User message broadcast from another client
+            if msg.isUser == true {
+                guard let conversation = resolveConversation(forId: convId) else { return }
+                let userMsg = PersistentMessage(
+                    id: msg.id ?? UUID().uuidString,
+                    text: text,
+                    isUser: true,
+                    conversation: conversation
+                )
+                modelContext.insert(userMsg)
+                conversation.updatedAt = .now
+                try? modelContext.save()
+                return
+            }
+
+            // Agent message (streaming)
             if let streaming = currentStreamingMessage {
                 streaming.text += text
             } else {
-                guard let conversation = resolveConversation() else { return }
+                guard let conversation = resolveConversation(forId: convId) else { return }
                 let agentMsg = PersistentMessage(
                     id: msg.id ?? UUID().uuidString,
                     text: text,
@@ -113,7 +217,8 @@ final class ChatViewModel {
                     try? modelContext.save()
                 } else {
                     // Tool use before any message text — create empty agent message
-                    guard let conversation = resolveConversation() else { return }
+                    let convId = msg.conversationId
+                    guard let conversation = resolveConversation(forId: convId) else { return }
                     let agentMsg = PersistentMessage(
                         text: "",
                         isUser: false,
@@ -139,7 +244,8 @@ final class ChatViewModel {
             }
 
         case .error:
-            guard let conversation = resolveConversation() else { return }
+            let convId = msg.conversationId
+            guard let conversation = resolveConversation(forId: convId) else { return }
             let errMsg = PersistentMessage(
                 text: "Error: \(msg.message ?? "Unknown error")",
                 isUser: false,
@@ -150,9 +256,10 @@ final class ChatViewModel {
         }
     }
 
-    private func resolveConversation() -> Conversation? {
+    private func resolveConversation(forId conversationId: String? = nil) -> Conversation? {
         guard let modelContext else { return nil }
-        if let id = pendingResponseConversationId {
+        // Try the explicit conversationId first
+        if let id = conversationId ?? pendingResponseConversationId {
             let descriptor = FetchDescriptor<Conversation>(predicate: #Predicate { $0.id == id })
             return try? modelContext.fetch(descriptor).first
         }
@@ -161,6 +268,76 @@ final class ChatViewModel {
         modelContext.insert(conversation)
         pendingResponseConversationId = conversation.id
         try? modelContext.save()
+        // Notify server of the new conversation
+        webSocket.send(.conversationCreate(id: conversation.id, title: nil))
         return conversation
+    }
+
+    private func reconcileConversations(_ serverConversations: [ConversationData]) {
+        guard let modelContext else { return }
+
+        // Fetch all local conversations
+        let descriptor = FetchDescriptor<Conversation>()
+        let localConversations = (try? modelContext.fetch(descriptor)) ?? []
+        let localById = Dictionary(uniqueKeysWithValues: localConversations.map { ($0.id, $0) })
+        let serverIds = Set(serverConversations.map(\.id))
+
+        // Upsert from server
+        for convData in serverConversations {
+            if let local = localById[convData.id] {
+                // Update if server is newer
+                let serverUpdated = Date(timeIntervalSince1970: Double(convData.updatedAt) / 1000)
+                if serverUpdated > local.updatedAt {
+                    local.title = convData.title
+                    local.updatedAt = serverUpdated
+                }
+            } else {
+                // Insert new from server
+                let conversation = Conversation(
+                    id: convData.id,
+                    title: convData.title,
+                    createdAt: Date(timeIntervalSince1970: Double(convData.createdAt) / 1000),
+                    updatedAt: Date(timeIntervalSince1970: Double(convData.updatedAt) / 1000)
+                )
+                modelContext.insert(conversation)
+            }
+        }
+
+        // Delete local conversations not on server (server is source of truth)
+        for local in localConversations {
+            if !serverIds.contains(local.id) {
+                modelContext.delete(local)
+            }
+        }
+
+        try? modelContext.save()
+    }
+
+    private func populateHistory(conversationId: String, serverMessages: [MessageData]) {
+        guard let modelContext else { return }
+        let descriptor = FetchDescriptor<Conversation>(predicate: #Predicate { $0.id == conversationId })
+        guard let conversation = (try? modelContext.fetch(descriptor))?.first else { return }
+
+        // Build set of existing message IDs
+        let existingIds = Set(conversation.messages.map(\.id))
+
+        for msgData in serverMessages {
+            if existingIds.contains(msgData.id) { continue }
+            let toolUses = (msgData.toolUses ?? []).map {
+                ToolUseInfo(name: $0.name, phase: $0.phase)
+            }
+            let pm = PersistentMessage(
+                id: msgData.id,
+                text: msgData.text,
+                isUser: msgData.isUser,
+                timestamp: Date(timeIntervalSince1970: Double(msgData.timestamp) / 1000),
+                toolUses: toolUses,
+                isStreaming: msgData.isStreaming,
+                conversation: conversation
+            )
+            modelContext.insert(pm)
+        }
+
+        try? modelContext.save()
     }
 }

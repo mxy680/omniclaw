@@ -6,6 +6,8 @@ import {
   type OpenClawConfig,
 } from "openclaw/plugin-sdk";
 import { listIosAccountIds, resolveIosAccount } from "./accounts.js";
+import { ConversationStore } from "./conversation-store.js";
+import { handleConversationMessage } from "./conversation-handlers.js";
 import { handleIosInbound } from "./inbound.js";
 import { getChannelRuntime } from "./runtime.js";
 import { sendMessageIos, setWsServer } from "./send.js";
@@ -99,6 +101,7 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
 
       const cfg = ctx.cfg as CoreConfig;
       const runtime = ctx.runtime;
+      const store = new ConversationStore();
 
       const wsServer = startWsServer({
         port: account.port,
@@ -109,6 +112,18 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
           ctx.log?.info(`[ios] server ready, registered as active`);
         },
         onMessage: async (connId, msg) => {
+          // Route conversation CRUD messages
+          if (
+            msg.type === "conversation_list" ||
+            msg.type === "conversation_create" ||
+            msg.type === "conversation_history" ||
+            msg.type === "conversation_delete" ||
+            msg.type === "conversation_rename"
+          ) {
+            handleConversationMessage(connId, msg, store, wsServer);
+            return;
+          }
+
           if (msg.type !== "message") {
             return;
           }
@@ -116,10 +131,13 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
             await handleIosInbound({
               text: msg.text,
               messageId: msg.id,
+              conversationId: msg.conversationId,
               connId,
               account,
               config: cfg,
               runtime,
+              store,
+              wsServer,
               statusSink: (patch) =>
                 ctx.setStatus({ accountId: ctx.accountId, ...patch }),
             });
@@ -138,6 +156,7 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
       return {
         stop: () => {
           wsServer.stop();
+          store.close();
           setWsServer(null as unknown as ReturnType<typeof startWsServer>);
           ctx.setStatus({
             accountId: ctx.accountId,

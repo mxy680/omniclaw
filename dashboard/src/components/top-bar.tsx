@@ -24,19 +24,11 @@ export function TopBar() {
   }, []);
 
   return (
-    <header className="glass sticky top-0 z-30 flex h-12 items-center gap-3 px-4">
+    <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-border bg-background px-4">
       <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
       <Separator orientation="vertical" className="h-5" />
 
-      <div className="flex items-center gap-2">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-        </span>
-        <span className="text-xs text-muted-foreground">Connected</span>
-      </div>
-
-      <div className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">
+      <div className="ml-auto font-mono text-xs text-muted-foreground/60 tabular-nums">
         {time}
       </div>
     </header>

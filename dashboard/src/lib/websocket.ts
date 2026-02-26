@@ -12,15 +12,43 @@ export type ConnectionState =
 
 export type ClientMessage =
   | { type: "auth"; token: string }
-  | { type: "message"; text: string; id?: string };
+  | { type: "message"; text: string; id?: string; conversationId: string }
+  | { type: "conversation_list" }
+  | { type: "conversation_create"; id: string; title?: string }
+  | { type: "conversation_history"; conversationId: string; before?: number; limit?: number }
+  | { type: "conversation_delete"; conversationId: string }
+  | { type: "conversation_rename"; conversationId: string; title: string };
+
+export type WsConversation = {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type WsMessage = {
+  id: string;
+  conversationId: string;
+  text: string;
+  isUser: boolean;
+  timestamp: number;
+  toolUses: { name: string; phase: string }[] | null;
+  isStreaming: boolean;
+};
 
 export type ServerMessage =
   | { type: "auth_ok" }
   | { type: "auth_fail"; reason: string }
-  | { type: "message"; text: string; id: string }
-  | { type: "typing"; active: boolean }
-  | { type: "tool_use"; name: string; phase: "start" | "end" }
-  | { type: "error"; message: string };
+  | { type: "message"; text: string; id: string; conversationId: string; isUser?: boolean }
+  | { type: "typing"; active: boolean; conversationId: string }
+  | { type: "tool_use"; name: string; phase: "start" | "end"; conversationId: string }
+  | { type: "error"; message: string }
+  | { type: "conversation_list"; conversations: WsConversation[] }
+  | { type: "conversation_created"; conversation: WsConversation }
+  | { type: "conversation_history"; conversationId: string; messages: WsMessage[] }
+  | { type: "conversation_deleted"; conversationId: string }
+  | { type: "conversation_renamed"; conversationId: string; title: string }
+  | { type: "conversation_updated"; conversation: WsConversation };
 
 // ── Event callbacks ────────────────────────────────────────────────
 

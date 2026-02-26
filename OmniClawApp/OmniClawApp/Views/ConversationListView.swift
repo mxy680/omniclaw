@@ -4,6 +4,7 @@ import SwiftData
 struct ConversationListView: View {
     @Query(sort: \Conversation.updatedAt, order: .reverse) private var conversations: [Conversation]
     @Binding var selectedConversation: Conversation?
+    var viewModel: ChatViewModel?
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
@@ -30,7 +31,11 @@ struct ConversationListView: View {
             if selectedConversation?.id == conversation.id {
                 selectedConversation = nil
             }
-            modelContext.delete(conversation)
+            if let viewModel {
+                viewModel.deleteConversation(conversation)
+            } else {
+                modelContext.delete(conversation)
+            }
         }
         try? modelContext.save()
     }

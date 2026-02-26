@@ -7,6 +7,7 @@ import {
 } from "openclaw/plugin-sdk";
 import { listIosAccountIds, resolveIosAccount } from "./accounts.js";
 import { ConversationStore } from "./conversation-store.js";
+import { DispatchManager } from "./dispatch-manager.js";
 import { handleConversationMessage } from "./conversation-handlers.js";
 import { handleIosInbound } from "./inbound.js";
 import { getChannelRuntime } from "./runtime.js";
@@ -103,6 +104,12 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
       const runtime = ctx.runtime;
       const store = new ConversationStore();
 
+      const pluginCfg = (ctx.cfg as any)?.plugins?.entries?.omniclaw?.config ?? {};
+      const dispatchManager = new DispatchManager({
+        maxConcurrency: pluginCfg.dispatch_max_concurrency ?? 3,
+        dispatchTimeoutMs: pluginCfg.dispatch_timeout_ms ?? 300_000,
+      });
+
       const wsServer = startWsServer({
         port: account.port,
         authToken: account.authToken,
@@ -128,21 +135,31 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
             return;
           }
           try {
-            await handleIosInbound({
-              text: msg.text,
-              messageId: msg.id,
+            await dispatchManager.submit({
               conversationId: msg.conversationId,
               connId,
-              account,
-              config: cfg,
-              runtime,
-              store,
-              wsServer,
-              statusSink: (patch) =>
-                ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+              priority: "interactive",
+              fn: () =>
+                handleIosInbound({
+                  text: msg.text,
+                  messageId: msg.id,
+                  conversationId: msg.conversationId,
+                  connId,
+                  account,
+                  config: cfg,
+                  runtime,
+                  store,
+                  wsServer,
+                  statusSink: (patch) =>
+                    ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+                }),
             });
           } catch (err) {
-            ctx.log?.info(`[ios] handleIosInbound error: ${err}`);
+            ctx.log?.info(`[ios] dispatch error: ${err}`);
+            wsServer.send(connId, {
+              type: "error",
+              message: String(err),
+            });
           }
         },
       });

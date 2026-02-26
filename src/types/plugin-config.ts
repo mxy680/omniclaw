@@ -19,4 +19,9 @@ export interface PluginConfig {
   bluebubbles_url?: string;
   bluebubbles_password?: string;
   bluebubbles_tokens_path?: string;
+  factor75_tokens_path?: string;
+  factor75_email?: string;
+  factor75_password?: string;
+  dispatch_max_concurrency?: number;
+  dispatch_timeout_ms?: number;
 }

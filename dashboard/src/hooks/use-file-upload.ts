@@ -17,6 +17,8 @@ export interface PendingFile {
 
 export function useFileUpload(serverUrl: string, authToken: string) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const pendingRef = useRef<PendingFile[]>([]);
+  pendingRef.current = pendingFiles;
   const abortRef = useRef<AbortController | null>(null);
 
   const getHttpUrl = useCallback(() => {
@@ -67,8 +69,9 @@ export function useFileUpload(serverUrl: string, authToken: string) {
 
       const results: UploadedFile[] = [];
 
-      for (let i = 0; i < pendingFiles.length; i++) {
-        const pf = pendingFiles[i];
+      const snapshot = pendingRef.current;
+      for (let i = 0; i < snapshot.length; i++) {
+        const pf = snapshot[i];
         if (pf.uploaded) {
           results.push(pf.uploaded);
           continue;
@@ -114,7 +117,7 @@ export function useFileUpload(serverUrl: string, authToken: string) {
 
       return results;
     },
-    [pendingFiles, getHttpUrl, authToken],
+    [getHttpUrl, authToken],
   );
 
   const clear = useCallback(() => {

@@ -135,7 +135,7 @@ export async function handleIosInbound(params: {
   // Auto-title from first user message if conversation is still "New Chat"
   const conv = store.getConversation(conversationId);
   if (conv && conv.title === "New Chat") {
-    const autoTitle = rawBody.slice(0, 40);
+    const autoTitle = rawBody.slice(0, 40) || (attachments.length > 0 ? `${attachments[0].filename}` : "New Chat");
     store.renameConversation(conversationId, autoTitle);
     wsServer.broadcast({
       type: "conversation_renamed",

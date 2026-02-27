@@ -8,6 +8,11 @@ import { lookup } from "mime-types";
 const UPLOADS_BASE = join(homedir(), ".openclaw", "uploads");
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
+/** Reject path segments that could escape the uploads directory. */
+function isSafePathSegment(s: string): boolean {
+  return /^[a-zA-Z0-9_-]+$/.test(s) && !s.includes("..");
+}
+
 export type UploadServerInstance = {
   stop: () => void;
 };
@@ -17,6 +22,7 @@ export type UploadServerInstance = {
  * Returns undefined if the file doesn't exist.
  */
 export function resolveUploadPath(conversationId: string, fileId: string): string | undefined {
+  if (!isSafePathSegment(conversationId) || !isSafePathSegment(fileId)) return undefined;
   const dir = join(UPLOADS_BASE, conversationId);
   if (!existsSync(dir)) return undefined;
   const files = readdirSync(dir);
@@ -100,7 +106,7 @@ function handleUpload(
   const contentType = req.headers["content-type"] ?? "";
 
   // Parse multipart boundary
-  const boundaryMatch = contentType.match(/boundary=(.+)/);
+  const boundaryMatch = contentType.match(/boundary="?([^";,]+)"?/);
   if (!boundaryMatch) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "missing multipart boundary" }));
@@ -136,6 +142,12 @@ function handleUpload(
       if (!conversationId || !fileBuffer) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "missing conversationId or file" }));
+        return;
+      }
+
+      if (!isSafePathSegment(conversationId)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid conversationId" }));
         return;
       }
 

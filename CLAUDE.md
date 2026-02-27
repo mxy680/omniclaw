@@ -29,6 +29,7 @@
 | Slack | 8 | `slack` | `docs/slack.md` | Browser session auth (xoxc- token + d cookie), read-only |
 | Vercel | 16 | `vercel` | `docs/vercel.md` | Personal Access Token |
 | X (Twitter) | 15 | `x` | `docs/plans/2026-02-27-x-twitter-design.md` | Browser session auth, GraphQL API |
+| TikTok | 10 | `tiktok` | `docs/plans/2026-02-27-tiktok-integration-design.md` | Playwright browser auth, read-only |
 
 ## In Progress
 
@@ -46,7 +47,6 @@
 | Bank of America | #21 | |
 | Kalshi | #22 | |
 | Shop | #23 | |
-| TikTok | #25 | |
 | Discord | #26 | |
 | Facebook Marketplace | #27 | |
 | Even Realities | #28 | |

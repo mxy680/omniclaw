@@ -22,19 +22,6 @@ export function formatUser(
   };
 }
 
-export function formatStats(
-  stats: Record<string, unknown> | undefined | null,
-): Record<string, unknown> | null {
-  if (!stats) return null;
-  return {
-    diggCount: stats.diggCount,
-    shareCount: stats.shareCount,
-    commentCount: stats.commentCount,
-    playCount: stats.playCount,
-    collectCount: stats.collectCount,
-  };
-}
-
 export function formatVideo(item: Record<string, unknown>): Record<string, unknown> {
   const author = item.author as Record<string, unknown> | undefined;
   const stats = item.stats as Record<string, unknown> | undefined;

@@ -122,8 +122,6 @@ export class TikTokClientManager {
         { fetchUrl: url, fetchHeaders: headers },
       );
 
-      await browser.close();
-
       if (result.status === 401 || result.status === 403) {
         throw new Error("TikTok session expired. Call tiktok_auth_setup again.");
       }
@@ -138,10 +136,13 @@ export class TikTokClientManager {
         this.updateCookiesFromHeader(account, result.setCookie);
       }
 
-      return JSON.parse(result.body);
-    } catch (err) {
+      try {
+        return JSON.parse(result.body);
+      } catch {
+        throw new Error(`TikTok returned non-JSON response (status ${result.status}): ${result.body.slice(0, 200)}`);
+      }
+    } finally {
       await browser.close().catch(() => {});
-      throw err;
     }
   }
 

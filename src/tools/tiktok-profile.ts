@@ -38,11 +38,9 @@ export function createTikTokProfileTool(tiktokManager: TikTokClientManager): any
         return jsonResult(AUTH_REQUIRED);
       }
       try {
-        // Fetch own profile — TikTok returns the logged-in user when no uniqueId is specified
-        // We'll try the webapp endpoint that returns user info from the session
         const data = (await tiktokManager.get(
           account,
-          "https://www.tiktok.com/api/user/detail/",
+          "https://www.tiktok.com/api/user/detail/?uniqueId=me",
         )) as { userInfo?: { user?: Record<string, unknown>; stats?: Record<string, unknown> } };
 
         const user = data?.userInfo?.user;

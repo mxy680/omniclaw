@@ -49,7 +49,8 @@ export function createTikTokTrendingTool(tiktokManager: TikTokClientManager): an
       try {
         const count = Math.min(params.count ?? 10, 30);
 
-        // Try the trending endpoint
+        // Uses the same recommend endpoint as tiktok_feed but with pullType=2
+        // for trending-biased results. TikTok has no distinct /api/discover/ endpoint.
         const data = (await tiktokManager.get(
           account,
           "https://www.tiktok.com/api/recommend/item_list/",

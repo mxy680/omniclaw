@@ -6,6 +6,7 @@ import {
   type ConnectionState,
   type ServerMessage,
   type WsConversation,
+  type WsAttachment,
 } from "@/lib/websocket";
 import {
   appendOperation,
@@ -31,6 +32,10 @@ function loadSetting(key: string, fallback: string) {
 export interface ToolUse {
   name: string;
   phase: "start" | "end";
+  params?: Record<string, unknown>;
+  result?: string;
+  durationMs?: number;
+  startedAt?: number;
 }
 
 export interface ChatMessage {
@@ -40,6 +45,20 @@ export interface ChatMessage {
   timestamp: Date;
   toolUses: ToolUse[];
   isStreaming: boolean;
+  attachments?: WsAttachment[];
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
+
+function buildFileUrl(serverUrl: string, authToken: string, conversationId: string, fileId: string): string {
+  try {
+    const wsUrl = new URL(serverUrl);
+    const protocol = wsUrl.protocol === "wss:" ? "https:" : "http:";
+    const port = parseInt(wsUrl.port || "9600", 10) + 1;
+    return `${protocol}//${wsUrl.hostname}:${port}/uploads/${conversationId}/${fileId}?token=${encodeURIComponent(authToken)}`;
+  } catch {
+    return "";
+  }
 }
 
 // ── Hook ───────────────────────────────────────────────────────────
@@ -49,6 +68,9 @@ export function useConversations() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messagesMap, setMessagesMap] = useState<Record<string, ChatMessage[]>>({});
   const [typingMap, setTypingMap] = useState<Record<string, boolean>>({});
+  const [reasoningMap, setReasoningMap] = useState<Record<string, string>>({});
+  const [partialReplyMap, setPartialReplyMap] = useState<Record<string, string>>({});
+  const [activeToolsMap, setActiveToolsMap] = useState<Record<string, ToolUse[]>>({});
   const [connectionState, setConnectionState] =
     useState<ConnectionState>("disconnected");
   const [connectionError, setConnectionError] = useState<string>();
@@ -61,6 +83,13 @@ export function useConversations() {
 
   const wsRef = useRef<AgentWebSocket | null>(null);
   const conversationsRef = useRef<WsConversation[]>([]);
+  const serverUrlRef = useRef(serverUrl);
+  const authTokenRef = useRef(authToken);
+
+  useEffect(() => {
+    serverUrlRef.current = serverUrl;
+    authTokenRef.current = authToken;
+  }, [serverUrl, authToken]);
 
   const handleMessage = useCallback((msg: ServerMessage) => {
     switch (msg.type) {
@@ -126,6 +155,10 @@ export function useConversations() {
             phase: t.phase as "start" | "end",
           })),
           isStreaming: m.isStreaming,
+          attachments: m.attachments?.map((att) => ({
+            ...att,
+            url: buildFileUrl(serverUrlRef.current, authTokenRef.current, m.conversationId, att.fileId),
+          })),
         }));
         setMessagesMap((prev) => ({
           ...prev,
@@ -151,13 +184,22 @@ export function useConversations() {
                 timestamp: new Date(),
                 toolUses: [],
                 isStreaming: false,
+                attachments: msg.attachments?.map((att) => ({
+                  ...att,
+                  url: buildFileUrl(serverUrlRef.current, authTokenRef.current, convId, att.fileId),
+                })),
               },
             ],
           }));
           break;
         }
 
-        // Agent message (streaming)
+        // Agent message (streaming) — clear partial reply since the
+        // finalized block text is now in the message itself.
+        setPartialReplyMap((prev) => {
+          if (!prev[convId]) return prev;
+          const next = { ...prev }; delete next[convId]; return next;
+        });
         setMessagesMap((prev) => {
           const existing = prev[convId] ?? [];
           const last = existing[existing.length - 1];
@@ -203,6 +245,26 @@ export function useConversations() {
             }
             return prev;
           });
+          // Transfer active tools to the last assistant message so they persist
+          setActiveToolsMap((prev) => {
+            const tools = prev[convId];
+            if (tools && tools.length > 0) {
+              setMessagesMap((mp) => {
+                const existing = mp[convId] ?? [];
+                const last = existing[existing.length - 1];
+                if (last && last.role === "assistant") {
+                  const updated = [...existing];
+                  updated[updated.length - 1] = { ...last, toolUses: tools };
+                  return { ...mp, [convId]: updated };
+                }
+                return mp;
+              });
+            }
+            const next = { ...prev }; delete next[convId]; return next;
+          });
+          // Clear reasoning/partial reply state
+          setReasoningMap((prev) => { const next = { ...prev }; delete next[convId]; return next; });
+          setPartialReplyMap((prev) => { const next = { ...prev }; delete next[convId]; return next; });
         }
         break;
       }
@@ -217,7 +279,7 @@ export function useConversations() {
           "Unknown";
         if (msg.phase === "start") {
           appendOperation({
-            id: `${Date.now()}-${msg.name}`,
+            id: `${Date.now()}-${msg.name}-${Math.random().toString(36).slice(2, 8)}`,
             toolName: msg.name,
             phase: "start",
             conversationId: convId,
@@ -227,6 +289,22 @@ export function useConversations() {
         } else {
           completeOperation(msg.name, convId);
         }
+
+        // Track active tools separately for the activity indicator
+        setActiveToolsMap((prev) => {
+          const current = prev[convId] ?? [];
+          if (msg.phase === "start") {
+            return { ...prev, [convId]: [...current, { name: msg.name, phase: "start", params: msg.params, startedAt: Date.now() }] };
+          }
+          return {
+            ...prev,
+            [convId]: current.map((t) =>
+              t.name === msg.name && t.phase === "start"
+                ? { ...t, phase: "end" as const, result: msg.result, durationMs: msg.durationMs }
+                : t,
+            ),
+          };
+        });
 
         setMessagesMap((prev) => {
           const existing = prev[convId] ?? [];
@@ -239,12 +317,12 @@ export function useConversations() {
           if (msg.phase === "start") {
             lastMsg.toolUses = [
               ...lastMsg.toolUses,
-              { name: msg.name, phase: "start" },
+              { name: msg.name, phase: "start", params: msg.params, startedAt: Date.now() },
             ];
           } else {
             lastMsg.toolUses = lastMsg.toolUses.map((t) =>
               t.name === msg.name && t.phase === "start"
-                ? { ...t, phase: "end" as const }
+                ? { ...t, phase: "end" as const, result: msg.result, durationMs: msg.durationMs }
                 : t,
             );
           }
@@ -252,6 +330,36 @@ export function useConversations() {
           updated[updated.length - 1] = lastMsg;
           return { ...prev, [convId]: updated };
         });
+        break;
+      }
+
+      case "reasoning": {
+        const convId = msg.conversationId;
+        if (!convId) break;
+        // Backend sends cumulative text, so replace (don't append)
+        setReasoningMap((prev) => ({
+          ...prev,
+          [convId]: msg.text,
+        }));
+        break;
+      }
+
+      case "partial_reply": {
+        const convId = msg.conversationId;
+        if (!convId) break;
+        // Backend sends cumulative text, so replace (don't append)
+        setPartialReplyMap((prev) => ({
+          ...prev,
+          [convId]: msg.text,
+        }));
+        break;
+      }
+
+      case "assistant_message_start": {
+        const convId = msg.conversationId;
+        if (!convId) break;
+        setReasoningMap((prev) => { const next = { ...prev }; delete next[convId]; return next; });
+        setPartialReplyMap((prev) => { const next = { ...prev }; delete next[convId]; return next; });
         break;
       }
 
@@ -313,9 +421,9 @@ export function useConversations() {
   }, []);
 
   const sendMessage = useCallback(
-    (text: string) => {
+    (text: string, attachments?: WsAttachment[]) => {
       const trimmed = text.trim();
-      if (!trimmed || !activeConversationId) return;
+      if ((!trimmed && (!attachments || attachments.length === 0)) || !activeConversationId) return;
 
       const id = crypto.randomUUID();
       const userMsg: ChatMessage = {
@@ -325,6 +433,7 @@ export function useConversations() {
         timestamp: new Date(),
         toolUses: [],
         isStreaming: false,
+        attachments,
       };
 
       setMessagesMap((prev) => ({
@@ -339,6 +448,7 @@ export function useConversations() {
         text: trimmed,
         id,
         conversationId: activeConversationId,
+        attachments,
       });
     },
     [activeConversationId],
@@ -414,6 +524,9 @@ export function useConversations() {
     activeConversationId,
     messages: messagesMap[activeConversationId ?? ""] ?? [],
     isTyping: typingMap[activeConversationId ?? ""] ?? false,
+    reasoning: reasoningMap[activeConversationId ?? ""] ?? "",
+    partialReply: partialReplyMap[activeConversationId ?? ""] ?? "",
+    activeTools: activeToolsMap[activeConversationId ?? ""] ?? [],
     typingMap,
     connectionState,
     connectionError,

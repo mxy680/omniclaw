@@ -26,6 +26,7 @@ export interface PluginConfig {
   slack_tokens_path?: string;
   slack_workspace?: string;
   vercel_token?: string;
+  x_tokens_path?: string;
   dispatch_max_concurrency?: number;
   dispatch_timeout_ms?: number;
 }

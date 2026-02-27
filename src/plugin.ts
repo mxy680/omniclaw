@@ -196,6 +196,14 @@ import {
   createVercelCreateEnvVarTool,
   createVercelDeleteEnvVarTool,
 } from "./tools/vercel-env.js";
+import { XClientManager } from "./auth/x-client-manager.js";
+import { createXAuthTool } from "./tools/x-auth-tool.js";
+import { createXGetTimelineTool, createXGetUserTweetsTool } from "./tools/x-timeline.js";
+import { createXSearchTool } from "./tools/x-search.js";
+import { createXPostTweetTool, createXDeleteTweetTool, createXReplyTool } from "./tools/x-tweet.js";
+import { createXLikeTool, createXUnlikeTool, createXRetweetTool, createXUnretweetTool } from "./tools/x-engagement.js";
+import { createXGetProfileTool, createXFollowTool, createXUnfollowTool } from "./tools/x-users.js";
+import { createXGetBookmarksTool } from "./tools/x-bookmarks.js";
 import { NutritionDbManager } from "./nutrition/nutrition-db-manager.js";
 
 let activeNutritionDb: NutritionDbManager | null = null;
@@ -232,6 +240,13 @@ import {
   createProjectRemoveLinkTool,
 } from "./tools/project-tools.js";
 import { createProjectCodeEditTool } from "./tools/project-code-tools.js";
+import {
+  createMemorySaveTool,
+  createMemoryReadTool,
+  createMemoryListTool,
+  createMemoryDeleteTool,
+  createMemoryUpdateIndexTool,
+} from "./tools/memory-tools.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 import { getWsServer } from "./channel/send.js";
 import { getActiveContext } from "./channel/active-context.js";
@@ -298,6 +313,13 @@ export function register(api: OpenClawPluginApi): void {
   reg(createProjectAddLinkTool());
   reg(createProjectRemoveLinkTool());
   reg(createProjectCodeEditTool());
+
+  // Memory tools — local filesystem, no auth required
+  reg(createMemorySaveTool());
+  reg(createMemoryReadTool());
+  reg(createMemoryListTool());
+  reg(createMemoryDeleteTool());
+  reg(createMemoryUpdateIndexTool());
 
   reg(createBackgroundWorkerTool({
     submitBackground: async (req) => {
@@ -518,6 +540,32 @@ export function register(api: OpenClawPluginApi): void {
   reg(createVercelEnvVarsTool(vercelManager));
   reg(createVercelCreateEnvVarTool(vercelManager));
   reg(createVercelDeleteEnvVarTool(vercelManager));
+
+  // X (Twitter) tools — register unconditionally
+  const xTokensPath =
+    config.x_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-x-tokens.json",
+    );
+
+  const xManager = new XClientManager(xTokensPath);
+
+  reg(createXAuthTool(xManager, config));
+  reg(createXGetTimelineTool(xManager));
+  reg(createXGetUserTweetsTool(xManager));
+  reg(createXSearchTool(xManager));
+  reg(createXPostTweetTool(xManager));
+  reg(createXDeleteTweetTool(xManager));
+  reg(createXReplyTool(xManager));
+  reg(createXLikeTool(xManager));
+  reg(createXUnlikeTool(xManager));
+  reg(createXRetweetTool(xManager));
+  reg(createXUnretweetTool(xManager));
+  reg(createXGetProfileTool(xManager));
+  reg(createXFollowTool(xManager));
+  reg(createXUnfollowTool(xManager));
+  reg(createXGetBookmarksTool(xManager));
 
   // Nutrition tools — local SQLite, no external API
   const nutritionDbPath =

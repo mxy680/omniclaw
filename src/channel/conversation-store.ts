@@ -20,6 +20,7 @@ export interface MessageRow {
   timestamp: number;
   tool_uses_json: string | null;
   is_streaming: number;
+  attachments_json: string | null;
 }
 
 // ── Store ───────────────────────────────────────────────────────────
@@ -62,6 +63,11 @@ export class ConversationStore {
       CREATE INDEX IF NOT EXISTS idx_messages_conv_ts
         ON messages(conversation_id, timestamp);
     `);
+    try {
+      this.db.exec(`ALTER TABLE messages ADD COLUMN attachments_json TEXT`);
+    } catch {
+      // Column already exists — ignore
+    }
   }
 
   // ── Conversations ───────────────────────────────────────────────
@@ -137,11 +143,12 @@ export class ConversationStore {
     timestamp: number;
     toolUsesJson?: string;
     isStreaming?: boolean;
+    attachmentsJson?: string;
   }): void {
     this.db
       .prepare(
-        `INSERT INTO messages (id, conversation_id, text, is_user, timestamp, tool_uses_json, is_streaming)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO messages (id, conversation_id, text, is_user, timestamp, tool_uses_json, is_streaming, attachments_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         msg.id,
@@ -151,6 +158,7 @@ export class ConversationStore {
         msg.timestamp,
         msg.toolUsesJson ?? null,
         msg.isStreaming ? 1 : 0,
+        msg.attachmentsJson ?? null,
       );
     this.touchConversation(msg.conversationId);
   }

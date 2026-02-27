@@ -13,6 +13,9 @@ import type { CoreConfig } from "./types.js";
 import { getChannelRuntime } from "./runtime.js";
 import { sendMessageIos } from "./send.js";
 import type { WsServerInstance } from "./ws-server.js";
+import { resolveUploadPath } from "./upload-server.js";
+import { join } from "path";
+import { homedir } from "os";
 
 const CHANNEL_ID = "omniclaw-ios" as const;
 
@@ -77,6 +80,7 @@ export async function handleIosInbound(params: {
   messageId?: string;
   conversationId: string;
   connId: string;
+  attachments?: Array<{ fileId: string; filename: string; mimeType: string; size?: number }>;
   account: ResolvedIosAccount;
   config: CoreConfig;
   runtime: RuntimeEnv;
@@ -91,7 +95,21 @@ export async function handleIosInbound(params: {
   const core = getChannelRuntime();
 
   const rawBody = text.trim();
-  if (!rawBody) {
+
+  // Resolve attachment file paths
+  const attachments = params.attachments ?? [];
+  const mediaPaths: string[] = [];
+  const mediaTypes: string[] = [];
+  for (const att of attachments) {
+    const path = resolveUploadPath(params.conversationId, att.fileId);
+    if (path) {
+      mediaPaths.push(path);
+      mediaTypes.push(att.mimeType);
+    }
+  }
+  const attachmentsJson = attachments.length > 0 ? JSON.stringify(attachments) : undefined;
+
+  if (!rawBody && attachments.length === 0) {
     return;
   }
 
@@ -111,6 +129,7 @@ export async function handleIosInbound(params: {
     text: rawBody,
     isUser: true,
     timestamp,
+    attachmentsJson,
   });
 
   // Auto-title from first user message if conversation is still "New Chat"
@@ -132,6 +151,7 @@ export async function handleIosInbound(params: {
     id: userMsgId,
     conversationId,
     isUser: true,
+    attachments: attachments.length > 0 ? attachments : undefined,
   });
 
   // Send typing indicator
@@ -188,6 +208,12 @@ export async function handleIosInbound(params: {
     OriginatingChannel: CHANNEL_ID,
     OriginatingTo: `omniclaw-ios:${peerId}`,
     CommandAuthorized: true,
+    // Media attachments
+    ...(mediaPaths.length > 0 && {
+      MediaPaths: mediaPaths,
+      MediaTypes: mediaTypes,
+      MediaDir: join(homedir(), ".openclaw", "uploads", conversationId),
+    }),
   });
 
   await core.channel.session.recordInboundSession({
@@ -230,6 +256,19 @@ export async function handleIosInbound(params: {
       },
       replyOptions: {
         onModelSelected,
+        onReasoningStream: (payload) => {
+          if (payload.text) {
+            wsServer.broadcast({ type: "reasoning", text: payload.text, conversationId });
+          }
+        },
+        onPartialReply: (payload) => {
+          if (payload.text) {
+            wsServer.broadcast({ type: "partial_reply", text: payload.text, conversationId });
+          }
+        },
+        onAssistantMessageStart: () => {
+          wsServer.broadcast({ type: "assistant_message_start", conversationId });
+        },
       },
     });
   } finally {

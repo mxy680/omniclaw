@@ -174,6 +174,7 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
                 handleIosInbound({
                   text: msg.text,
                   messageId: msg.id,
+                  attachments: msg.attachments,
                   conversationId: msg.conversationId,
                   connId,
                   account,

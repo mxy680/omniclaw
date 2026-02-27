@@ -7,21 +7,29 @@ import {
 } from "openclaw/plugin-sdk";
 import { listIosAccountIds, resolveIosAccount } from "./accounts.js";
 import { ConversationStore } from "./conversation-store.js";
+import { ProjectStore } from "./project-store.js";
 import { DispatchManager } from "./dispatch-manager.js";
 import { handleConversationMessage } from "./conversation-handlers.js";
 import { handleFitnessMessage } from "./fitness-handlers.js";
+import { handleProjectMessage } from "./project-handlers.js";
 import { handleIosInbound } from "./inbound.js";
 import { getChannelRuntime } from "./runtime.js";
 import { sendMessageIos, setWsServer } from "./send.js";
 import type { CoreConfig, ResolvedIosAccount } from "./types.js";
 import { startWsServer } from "./ws-server.js";
+import { startUploadServer } from "./upload-server.js";
 
 // Single-account design: only one iOS account is supported at a time.
 // If multi-account is added, replace with Map<accountId, DispatchManager>.
 let activeDispatchManager: DispatchManager | null = null;
+let activeProjectStore: ProjectStore | null = null;
 
 export function getDispatchManager(): DispatchManager | null {
   return activeDispatchManager;
+}
+
+export function getProjectStore(): ProjectStore | null {
+  return activeProjectStore;
 }
 
 export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
@@ -112,6 +120,8 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
       const cfg = ctx.cfg as CoreConfig;
       const runtime = ctx.runtime;
       const store = new ConversationStore();
+      const projectStore = new ProjectStore();
+      activeProjectStore = projectStore;
 
       const pluginCfg = (ctx.cfg as any)?.plugins?.entries?.omniclaw?.config ?? {};
       const dispatchManager = new DispatchManager({
@@ -143,6 +153,12 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
 
           if (msg.type === "fitness_day") {
             handleFitnessMessage(connId, msg, wsServer);
+            return;
+          }
+
+          // Route project messages
+          if (msg.type === "project_list" || msg.type === "project_get" || msg.type === "project_delete") {
+            handleProjectMessage(connId, msg, projectStore, wsServer);
             return;
           }
 
@@ -179,6 +195,12 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
         },
       });
 
+      const uploadServer = startUploadServer({
+        port: account.port,
+        authToken: account.authToken,
+        log: (msg) => ctx.log?.info(msg),
+      });
+
       ctx.setStatus({
         accountId: ctx.accountId,
         running: true,
@@ -188,8 +210,11 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
       return {
         stop: () => {
           wsServer.stop();
+          uploadServer.stop();
           store.close();
+          projectStore.close();
           activeDispatchManager = null;
+          activeProjectStore = null;
           setWsServer(null as unknown as ReturnType<typeof startWsServer>);
           ctx.setStatus({
             accountId: ctx.accountId,

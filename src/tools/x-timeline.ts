@@ -105,11 +105,16 @@ export function createXGetUserTweetsTool(manager: XClientManager) {
           QUERY_IDS.UserTweets,
           variables,
         )) as Record<string, unknown>;
+
+        // X API may return timeline under either "timeline_v2" or "timeline"
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const userResult = (data as any)?.data?.user?.result as Record<string, unknown> | undefined;
+        const timelineKey = userResult?.timeline_v2 ? "timeline_v2" : "timeline";
         const { tweets, cursor } = extractTimelineTweets(data, [
           "data",
           "user",
           "result",
-          "timeline_v2",
+          timelineKey,
           "timeline",
         ]);
         return jsonResult({ count: tweets.length, tweets, next_cursor: cursor });

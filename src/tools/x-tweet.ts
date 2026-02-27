@@ -32,6 +32,11 @@ export function createXPostTweetTool(manager: XClientManager) {
         )) as any;
         const result = data?.data?.create_tweet?.tweet_results?.result;
         const legacy = result?.legacy;
+        // X may return errors alongside data (e.g., automation detection)
+        if (!result && data?.errors) {
+          const errMsg = (data.errors as Array<{ message?: string }>)?.[0]?.message;
+          return jsonResult({ error: errMsg ?? "CreateTweet returned errors", errors: data.errors });
+        }
         return jsonResult({
           status: "posted",
           tweet_id: legacy?.id_str ?? result?.rest_id,
@@ -102,6 +107,10 @@ export function createXReplyTool(manager: XClientManager) {
         )) as any;
         const result = data?.data?.create_tweet?.tweet_results?.result;
         const legacy = result?.legacy;
+        if (!result && data?.errors) {
+          const errMsg = (data.errors as Array<{ message?: string }>)?.[0]?.message;
+          return jsonResult({ error: errMsg ?? "CreateTweet returned errors", errors: data.errors });
+        }
         return jsonResult({
           status: "replied",
           tweet_id: legacy?.id_str ?? result?.rest_id,

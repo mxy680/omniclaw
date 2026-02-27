@@ -34,11 +34,17 @@ export function createXGetListsTool(manager: XClientManager) {
       if (!manager.hasCredentials(account)) return jsonResult(AUTH_REQUIRED);
 
       try {
+        const session = manager.getCredentials(account);
+        const userId = session?.user_id;
+        if (!userId) {
+          return jsonResult({ error: "No user_id stored for this account. Re-run x_auth_setup." });
+        }
+
         const data = await manager.graphqlGet(
           account,
           "CombinedLists",
           LIST_QUERY_IDS.CombinedLists,
-          { count: 100 },
+          { userId, count: 100 },
         );
         return jsonResult(data);
       } catch (err) {

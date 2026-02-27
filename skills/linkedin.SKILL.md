@@ -1,12 +1,12 @@
 ---
 name: linkedin
-description: LinkedIn access — profiles, feed, connections, messages, notifications, and search.
+description: LinkedIn access — profiles, feed, connections, messages, notifications, search, and write actions (post, react, comment, message, connect).
 metadata: {"openclaw": {"emoji": "💼"}}
 ---
 
 # LinkedIn
 
-View LinkedIn profiles, read your feed, manage connections, access messages, read notifications, and search for people, companies, and jobs.
+View LinkedIn profiles, read your feed, manage connections, access messages, read notifications, search for people/companies/jobs, and take actions — create posts, react, comment, send messages, and send connection requests.
 
 ## First-Time Setup
 
@@ -49,6 +49,12 @@ linkedin_auth_setup
 - `linkedin_post_comments` — Read comments on a feed post
 - `linkedin_profile_views` — See who viewed your profile
 - `linkedin_saved_jobs` — List your saved/bookmarked jobs
+- `linkedin_send_message` — Send a direct message to a connection
+- `linkedin_send_connection_request` — Send a connection request to a user
+- `linkedin_respond_invitation` — Accept or decline a pending connection request
+- `linkedin_create_post` — Create a new post (text, or text + image)
+- `linkedin_react_to_post` — React to a feed post (like, celebrate, etc.)
+- `linkedin_comment_on_post` — Comment on a feed post
 
 ## Workflow
 
@@ -66,6 +72,12 @@ linkedin_auth_setup
 12. Use `linkedin_post_comments` with an activity URN from the feed to read comments on a post.
 13. Use `linkedin_profile_views` to see who has viewed your profile.
 14. Use `linkedin_saved_jobs` to review your bookmarked job listings.
+15. Use `linkedin_send_message` to send a DM to a connection (pass their profile URN).
+16. Use `linkedin_send_connection_request` to invite someone to connect (optionally with a personalization note, max 300 chars).
+17. Use `linkedin_respond_invitation` with "accept" or "decline" to respond to pending connection requests from `linkedin_pending_invitations`.
+18. Use `linkedin_create_post` to publish a text post. Optionally attach an image via `image_path` (local file) or `image_url`. Set `visibility` to "connections" to limit audience.
+19. Use `linkedin_react_to_post` with an activity URN from the feed to add a reaction (LIKE, CELEBRATE, SUPPORT, LOVE, INSIGHTFUL, or FUNNY).
+20. Use `linkedin_comment_on_post` with an activity URN and text to add a comment.
 
 ## Error Handling
 

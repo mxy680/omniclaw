@@ -1,6 +1,6 @@
 # LinkedIn Integration
 
-16 tools for managing your LinkedIn presence — profiles, feed, connections, messages, notifications, search, jobs, and companies.
+22 tools for managing your LinkedIn presence — profiles, feed, connections, messages, notifications, search, jobs, companies, posting, reactions, and comments.
 
 ## Setup
 
@@ -48,6 +48,12 @@ It will call `linkedin_auth_setup`, which opens a Chromium browser to LinkedIn's
 | `linkedin_post_comments` | Read comments on a feed post |
 | `linkedin_profile_views` | See who viewed your profile |
 | `linkedin_saved_jobs` | List your saved/bookmarked jobs |
+| `linkedin_send_message` | Send a direct message to a connection |
+| `linkedin_send_connection_request` | Send a connection request to a user |
+| `linkedin_respond_invitation` | Accept or decline a connection request |
+| `linkedin_create_post` | Create a post (text, or text + image) |
+| `linkedin_react_to_post` | React to a post (like, celebrate, etc.) |
+| `linkedin_comment_on_post` | Comment on a feed post |
 
 ## Configuration
 
@@ -68,3 +74,7 @@ All configuration is set via `openclaw config set plugins.entries.omniclaw.confi
 > "Show me my LinkedIn messages"
 > "Search LinkedIn for software engineers at Google"
 > "Search for remote product manager jobs"
+> "Send a LinkedIn message to John saying I'd love to connect about the role"
+> "Create a LinkedIn post about our new product launch"
+> "Like the first post on my LinkedIn feed"
+> "Accept all my pending LinkedIn connection requests"

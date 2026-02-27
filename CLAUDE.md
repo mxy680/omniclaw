@@ -21,7 +21,7 @@
 | Gemini AI | 5 | `gemini` | `docs/gemini.md` | API key auth |
 | YouTube | 7 | `youtube` | `docs/youtube.md` | Transcripts need no auth; search uses Google OAuth |
 | Canvas LMS | 11 | `canvas` | `docs/canvas.md` | Bearer token auth via Playwright SSO |
-| LinkedIn | 17 | `linkedin` | `docs/linkedin.md` | Browser auth via Playwright |
+| LinkedIn | 23 | `linkedin` | `docs/linkedin.md` | Browser auth via Playwright |
 | Instagram | 17 | `instagram` | `docs/instagram.md` | Browser auth via Playwright |
 | iMessage | 7 | `imessage` | `skills/imessage.SKILL.md` | BlueBubbles backend, contact name resolution |
 | Factor75 | 13 | `factor75` | `docs/factor75.md` | Playwright login + direct HTTP with JWT Bearer tokens |

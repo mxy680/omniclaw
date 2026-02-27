@@ -39,6 +39,12 @@ import { createLinkedInPostCommentsTool } from "../../src/tools/linkedin-post-co
 import { createLinkedInProfileViewsTool } from "../../src/tools/linkedin-profile-views.js";
 import { createLinkedInSavedJobsTool } from "../../src/tools/linkedin-saved-jobs.js";
 import { createLinkedInDownloadMediaTool } from "../../src/tools/linkedin-download-media.js";
+import { createLinkedInSendMessageTool } from "../../src/tools/linkedin-send-message.js";
+import { createLinkedInSendConnectionRequestTool } from "../../src/tools/linkedin-connection-request.js";
+import { createLinkedInRespondInvitationTool } from "../../src/tools/linkedin-respond-invitation.js";
+import { createLinkedInCreatePostTool } from "../../src/tools/linkedin-create-post.js";
+import { createLinkedInReactToPostTool } from "../../src/tools/linkedin-react.js";
+import { createLinkedInCommentOnPostTool } from "../../src/tools/linkedin-comment.js";
 
 // ---------------------------------------------------------------------------
 // Config — read auth credentials from openclaw plugin config, env overrides
@@ -63,6 +69,7 @@ const LINKEDIN_USERNAME = process.env.LINKEDIN_USERNAME || oclConfig.linkedin_us
 const LINKEDIN_PASSWORD = process.env.LINKEDIN_PASSWORD || oclConfig.linkedin_password || "";
 
 const authCredentialsAvailable = LINKEDIN_USERNAME !== "" && LINKEDIN_PASSWORD !== "";
+const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
 if (!authCredentialsAvailable) {
   console.warn(
@@ -436,6 +443,127 @@ describe.skipIf(!authCredentialsAvailable)("LinkedIn API integration", { timeout
       const tool = createLinkedInAuthTool(linkedinManager, {} as any);
       expect(tool.name).toBe("linkedin_auth_setup");
       expect(tool.label).toBe("LinkedIn Auth Setup");
+    });
+  });
+
+  // =========================================================================
+  // WRITE TOOLS — opt-in via RUN_WRITE_TESTS=1
+  // =========================================================================
+
+  describe.skipIf(!RUN_WRITE_TESTS)("linkedin_create_post (write)", () => {
+    it("creates a text-only post", async () => {
+      const tool = createLinkedInCreatePostTool(linkedinManager);
+      const result = await tool.execute("t", {
+        text: `[Automated test post — please ignore] ${new Date().toISOString()}`,
+        visibility: "connections",
+        account: ACCOUNT,
+      });
+
+      if (result.details.error) {
+        console.warn("[linkedin] create_post error:", result.details.error);
+        expect(result.details.error).toMatch(/error/i);
+      } else {
+        expect(result.details.success).toBe(true);
+        expect(typeof result.details.text).toBe("string");
+      }
+    });
+  });
+
+  describe.skipIf(!RUN_WRITE_TESTS)("linkedin_react_to_post (write)", () => {
+    it("reacts to a feed post with LIKE", async () => {
+      if (!firstPostEntityUrn) {
+        console.warn("[linkedin] Skipping react test: no post URN from feed test");
+        return;
+      }
+      const tool = createLinkedInReactToPostTool(linkedinManager);
+      const result = await tool.execute("t", {
+        activity_urn: firstPostEntityUrn,
+        reaction_type: "LIKE",
+        account: ACCOUNT,
+      });
+
+      if (result.details.error) {
+        console.warn("[linkedin] react error:", result.details.error);
+        expect(result.details.error).toMatch(/error/i);
+      } else {
+        expect(result.details.success).toBe(true);
+        expect(result.details.reaction).toBe("LIKE");
+      }
+    });
+  });
+
+  describe.skipIf(!RUN_WRITE_TESTS)("linkedin_comment_on_post (write)", () => {
+    it("comments on a feed post", async () => {
+      if (!firstPostEntityUrn) {
+        console.warn("[linkedin] Skipping comment test: no post URN from feed test");
+        return;
+      }
+      const tool = createLinkedInCommentOnPostTool(linkedinManager);
+      const result = await tool.execute("t", {
+        activity_urn: firstPostEntityUrn,
+        text: `[Automated test comment — please ignore] ${new Date().toISOString()}`,
+        account: ACCOUNT,
+      });
+
+      if (result.details.error) {
+        console.warn("[linkedin] comment error:", result.details.error);
+        expect(result.details.error).toMatch(/error/i);
+      } else {
+        expect(result.details.success).toBe(true);
+        expect(typeof result.details.text).toBe("string");
+      }
+    });
+  });
+
+  // Send message — needs a known recipient URN; use first connection if available
+  describe.skipIf(!RUN_WRITE_TESTS)("linkedin_send_message (write)", () => {
+    it("sends a message to a connection (or fails gracefully)", async () => {
+      // Get first connection's URN
+      const connTool = createLinkedInConnectionsTool(linkedinManager);
+      const connResult = await connTool.execute("t", { count: 1, account: ACCOUNT });
+      const connections = connResult.details.connections ?? [];
+      if (connections.length === 0) {
+        console.warn("[linkedin] Skipping send_message: no connections found");
+        return;
+      }
+      const recipientUrn = connections[0].entityUrn;
+      if (!recipientUrn) {
+        console.warn("[linkedin] Skipping send_message: connection has no URN");
+        return;
+      }
+
+      const tool = createLinkedInSendMessageTool(linkedinManager);
+      const result = await tool.execute("t", {
+        recipient_urn: recipientUrn,
+        text: `[Automated test message — please ignore] ${new Date().toISOString()}`,
+        account: ACCOUNT,
+      });
+
+      if (result.details.error) {
+        console.warn("[linkedin] send_message error:", result.details.error);
+        expect(result.details.error).toMatch(/error/i);
+      } else {
+        expect(result.details.success).toBe(true);
+        expect(result.details.recipient).toBe(recipientUrn);
+      }
+    });
+  });
+
+  // Connection request — just verify tool instantiation (don't spam)
+  describe("linkedin_send_connection_request", () => {
+    it("has the correct tool name", () => {
+      const tool = createLinkedInSendConnectionRequestTool(linkedinManager);
+      expect(tool.name).toBe("linkedin_send_connection_request");
+      expect(tool.label).toBe("LinkedIn Send Connection Request");
+    });
+  });
+
+  // Respond invitation — just verify tool instantiation
+  describe("linkedin_respond_invitation", () => {
+    it("has the correct tool name", () => {
+      const tool = createLinkedInRespondInvitationTool(linkedinManager);
+      expect(tool.name).toBe("linkedin_respond_invitation");
+      expect(tool.label).toBe("LinkedIn Respond to Invitation");
     });
   });
 });

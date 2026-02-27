@@ -23,6 +23,9 @@ export interface PluginConfig {
   factor75_email?: string;
   factor75_password?: string;
   nutrition_db_path?: string;
+  slack_tokens_path?: string;
+  slack_workspace?: string;
+  vercel_token?: string;
   dispatch_max_concurrency?: number;
   dispatch_timeout_ms?: number;
 }

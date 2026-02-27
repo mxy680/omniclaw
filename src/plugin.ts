@@ -141,7 +141,13 @@ import {
 import { createYouTubeDownloadThumbnailTool } from "./tools/youtube-download-thumbnail.js";
 import { createYouTubeTranscriptTool } from "./tools/youtube-transcript.js";
 import { Factor75ClientManager } from "./auth/factor75-client-manager.js";
+import { SlackClientManager } from "./auth/slack-client-manager.js";
 import { createFactor75AuthTool } from "./tools/factor75-auth-tool.js";
+import { createSlackAuthTool } from "./tools/slack-auth-tool.js";
+import { createSlackListChannelsTool, createSlackGetChannelInfoTool } from "./tools/slack-channels.js";
+import { createSlackListMessagesTool, createSlackGetThreadTool } from "./tools/slack-messages.js";
+import { createSlackSearchMessagesTool } from "./tools/slack-search.js";
+import { createSlackListUsersTool, createSlackGetUserInfoTool } from "./tools/slack-users.js";
 import { createFactor75MenuTool } from "./tools/factor75-menu.js";
 import { createFactor75MealDetailsTool } from "./tools/factor75-meal-details.js";
 import {
@@ -165,6 +171,31 @@ import { createImessageChatsTool } from "./tools/imessage-chats.js";
 import { createImessageMessagesTool, createImessageSearchTool } from "./tools/imessage-messages.js";
 import { createImessageSendTool } from "./tools/imessage-send.js";
 import { createImessageAttachmentsTool } from "./tools/imessage-attachments.js";
+import { VercelClientManager } from "./auth/vercel-client-manager.js";
+import { createVercelAuthTool } from "./tools/vercel-auth.js";
+import {
+  createVercelProjectsTool,
+  createVercelGetProjectTool,
+  createVercelCreateProjectTool,
+  createVercelDeleteProjectTool,
+} from "./tools/vercel-projects.js";
+import {
+  createVercelDeploymentsTool,
+  createVercelGetDeploymentTool,
+  createVercelCreateDeploymentTool,
+  createVercelCancelDeploymentTool,
+  createVercelDeploymentEventsTool,
+} from "./tools/vercel-deployments.js";
+import {
+  createVercelDomainsTool,
+  createVercelAddDomainTool,
+  createVercelRemoveDomainTool,
+} from "./tools/vercel-domains.js";
+import {
+  createVercelEnvVarsTool,
+  createVercelCreateEnvVarTool,
+  createVercelDeleteEnvVarTool,
+} from "./tools/vercel-env.js";
 import { NutritionDbManager } from "./nutrition/nutrition-db-manager.js";
 
 let activeNutritionDb: NutritionDbManager | null = null;
@@ -188,6 +219,19 @@ import { createNutritionRemovePantryItemTool } from "./tools/nutrition-pantry-re
 import { createNutritionSaveMealPlanTool } from "./tools/nutrition-save-meal-plan.js";
 import { createNutritionGetMealPlanTool } from "./tools/nutrition-get-meal-plan.js";
 import { createNutritionDeleteMealPlanTool } from "./tools/nutrition-delete-meal-plan.js";
+import { createNutritionSaveWorkoutPlanTool } from "./tools/nutrition-save-workout-plan.js";
+import { createNutritionSaveWorkoutProgramTool } from "./tools/nutrition-save-workout-program.js";
+import { createNutritionGetWorkoutPlanTool } from "./tools/nutrition-get-workout-plan.js";
+import { createNutritionDeleteWorkoutPlanTool } from "./tools/nutrition-delete-workout-plan.js";
+import {
+  createProjectListTool,
+  createProjectCreateTool,
+  createProjectUpdateTool,
+  createProjectDeleteTool,
+  createProjectAddLinkTool,
+  createProjectRemoveLinkTool,
+} from "./tools/project-tools.js";
+import { createProjectCodeEditTool } from "./tools/project-code-tools.js";
 import type { PluginConfig } from "./types/plugin-config.js";
 import { getWsServer } from "./channel/send.js";
 import { getActiveContext } from "./channel/active-context.js";
@@ -245,6 +289,15 @@ export function register(api: OpenClawPluginApi): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reg = (tool: any) =>
     api.registerTool(wrapToolWithBroadcast(tool));
+
+  // Project tools — register unconditionally, use lazy store access
+  reg(createProjectListTool());
+  reg(createProjectCreateTool());
+  reg(createProjectUpdateTool());
+  reg(createProjectDeleteTool());
+  reg(createProjectAddLinkTool());
+  reg(createProjectRemoveLinkTool());
+  reg(createProjectCodeEditTool());
 
   reg(createBackgroundWorkerTool({
     submitBackground: async (req) => {
@@ -423,6 +476,49 @@ export function register(api: OpenClawPluginApi): void {
   reg(createFactor75DeliveryDetailsTool(factor75Manager));
   reg(createFactor75AccountTool(factor75Manager));
 
+  // Slack tools — register unconditionally, no Google credentials required
+  const slackTokensPath =
+    config.slack_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-slack-tokens.json",
+    );
+
+  const slackManager = new SlackClientManager(slackTokensPath);
+
+  reg(createSlackAuthTool(slackManager, config));
+  reg(createSlackListChannelsTool(slackManager));
+  reg(createSlackGetChannelInfoTool(slackManager));
+  reg(createSlackListMessagesTool(slackManager));
+  reg(createSlackGetThreadTool(slackManager));
+  reg(createSlackSearchMessagesTool(slackManager));
+  reg(createSlackListUsersTool(slackManager));
+  reg(createSlackGetUserInfoTool(slackManager));
+
+  // Vercel tools — register unconditionally, no Google credentials required
+  const vercelTokensPath = config.tokens_path
+    ? path.join(path.dirname(config.tokens_path), "omniclaw-vercel-tokens.json")
+    : path.join(defaultTokensDir, "omniclaw-vercel-tokens.json");
+
+  const vercelManager = new VercelClientManager(vercelTokensPath);
+
+  reg(createVercelAuthTool(vercelManager, config));
+  reg(createVercelProjectsTool(vercelManager));
+  reg(createVercelGetProjectTool(vercelManager));
+  reg(createVercelCreateProjectTool(vercelManager));
+  reg(createVercelDeleteProjectTool(vercelManager));
+  reg(createVercelDeploymentsTool(vercelManager));
+  reg(createVercelGetDeploymentTool(vercelManager));
+  reg(createVercelCreateDeploymentTool(vercelManager));
+  reg(createVercelCancelDeploymentTool(vercelManager));
+  reg(createVercelDeploymentEventsTool(vercelManager));
+  reg(createVercelDomainsTool(vercelManager));
+  reg(createVercelAddDomainTool(vercelManager));
+  reg(createVercelRemoveDomainTool(vercelManager));
+  reg(createVercelEnvVarsTool(vercelManager));
+  reg(createVercelCreateEnvVarTool(vercelManager));
+  reg(createVercelDeleteEnvVarTool(vercelManager));
+
   // Nutrition tools — local SQLite, no external API
   const nutritionDbPath =
     config.nutrition_db_path ??
@@ -450,6 +546,10 @@ export function register(api: OpenClawPluginApi): void {
   reg(createNutritionSaveMealPlanTool(nutritionDb));
   reg(createNutritionGetMealPlanTool(nutritionDb));
   reg(createNutritionDeleteMealPlanTool(nutritionDb));
+  reg(createNutritionSaveWorkoutPlanTool(nutritionDb));
+  reg(createNutritionSaveWorkoutProgramTool(nutritionDb));
+  reg(createNutritionGetWorkoutPlanTool(nutritionDb));
+  reg(createNutritionDeleteWorkoutPlanTool(nutritionDb));
 
   // YouTube tools — no OAuth required
   reg(createYouTubeTranscriptTool());

@@ -60,8 +60,6 @@ if (!authCredentialsAvailable) {
 }
 
 // ---------------------------------------------------------------------------
-// Shared state populated across tests
-// ---------------------------------------------------------------------------
 let tiktokManager: TikTokClientManager;
 
 // ---------------------------------------------------------------------------
@@ -69,7 +67,6 @@ describe.skipIf(!authCredentialsAvailable)("TikTok API integration", { timeout: 
   beforeAll(async () => {
     tiktokManager = new TikTokClientManager(TOKENS_PATH);
 
-    // Authenticate only if no existing session is stored
     if (!tiktokManager.hasCredentials(ACCOUNT)) {
       const authTool = createTikTokAuthTool(tiktokManager, {
         ...oclConfig,
@@ -78,201 +75,93 @@ describe.skipIf(!authCredentialsAvailable)("TikTok API integration", { timeout: 
       });
       const result = await authTool.execute("reauth", {});
       const data = JSON.parse(result.content[0].text);
-      console.log("[tiktok] Auth result:", JSON.stringify(data, null, 2));
       expect(data.status).toMatch(/authenticated|already_authenticated/);
     }
   }, 120_000);
 
-  // -------------------------------------------------------------------------
-  // tiktok_auth_setup — verify tool metadata only (browser flow — don't re-execute)
-  // -------------------------------------------------------------------------
-  describe("tiktok_auth_setup", () => {
-    it("has the correct tool name (browser flow — not re-executed)", () => {
-      const tool = createTikTokAuthTool(tiktokManager, {} as PluginConfig);
-      expect(tool.name).toBe("tiktok_auth_setup");
-      expect(tool.label).toBe("TikTok Auth Setup");
-    });
+  it("tiktok_profile — gets own profile", async () => {
+    const tool = createTikTokProfileTool(tiktokManager);
+    const result = await tool.execute("test", {});
+    const data = JSON.parse(result.content[0].text);
+    expect(data.error).toBeUndefined();
+    expect(data.uniqueId).toBeTruthy();
   });
 
-  // -------------------------------------------------------------------------
-  // tiktok_profile
-  // -------------------------------------------------------------------------
-  describe("tiktok_profile", () => {
-    it("returns the authenticated user's own profile", async () => {
-      const tool = createTikTokProfileTool(tiktokManager);
-      const result = await tool.execute("t", {});
-      const data = JSON.parse(result.content[0].text);
-
-      if (data.error) {
-        // Tolerate transient API errors
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.uniqueId).toBeTruthy();
-      }
-    });
+  it("tiktok_get_user — gets a public user", async () => {
+    const tool = createTikTokGetUserTool(tiktokManager);
+    const result = await tool.execute("test", { username: "tiktok" });
+    const data = JSON.parse(result.content[0].text);
+    expect(data.error).toBeUndefined();
+    expect(data.uniqueId).toBeTruthy();
   });
 
-  // -------------------------------------------------------------------------
-  // tiktok_get_user
-  // -------------------------------------------------------------------------
-  describe("tiktok_get_user", () => {
-    it("fetches a public user profile by username", async () => {
-      const tool = createTikTokGetUserTool(tiktokManager);
-      const result = await tool.execute("t", { username: "tiktok" });
-      const data = JSON.parse(result.content[0].text);
-
-      if (data.error) {
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.uniqueId).toBeTruthy();
-      }
-    });
+  it("tiktok_user_videos — gets user videos", async () => {
+    const tool = createTikTokUserVideosTool(tiktokManager);
+    const result = await tool.execute("test", { username: "tiktok", count: 3 });
+    const data = JSON.parse(result.content[0].text);
+    expect(data.error).toBeUndefined();
+    expect(data.videos).toBeDefined();
   });
 
-  // -------------------------------------------------------------------------
-  // tiktok_user_videos
-  // -------------------------------------------------------------------------
-  describe("tiktok_user_videos", () => {
-    it("returns videos from a user", async () => {
-      const tool = createTikTokUserVideosTool(tiktokManager);
-      const result = await tool.execute("t", { username: "tiktok", count: 3 });
-      const data = JSON.parse(result.content[0].text);
-
-      if (data.error) {
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.videos).toBeDefined();
-        expect(Array.isArray(data.videos)).toBe(true);
-      }
-    });
+  it("tiktok_feed — gets For You page", async () => {
+    const tool = createTikTokFeedTool(tiktokManager);
+    const result = await tool.execute("test", { count: 5 });
+    const data = JSON.parse(result.content[0].text);
+    expect(data.error).toBeUndefined();
+    expect(data.videos).toBeDefined();
   });
 
-  // -------------------------------------------------------------------------
-  // tiktok_feed
-  // -------------------------------------------------------------------------
-  describe("tiktok_feed", () => {
-    it("returns For You page videos", async () => {
-      const tool = createTikTokFeedTool(tiktokManager);
-      const result = await tool.execute("t", { count: 5 });
-      const data = JSON.parse(result.content[0].text);
-
-      if (data.error) {
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.videos).toBeDefined();
-        expect(Array.isArray(data.videos)).toBe(true);
-      }
-    });
+  it("tiktok_search_videos — searches videos", async () => {
+    const tool = createTikTokSearchVideosTool(tiktokManager);
+    const result = await tool.execute("test", { query: "cooking", count: 5 });
+    const data = JSON.parse(result.content[0].text);
+    expect(data.error).toBeUndefined();
+    expect(data.videos).toBeDefined();
   });
 
-  // -------------------------------------------------------------------------
-  // tiktok_search_videos
-  // -------------------------------------------------------------------------
-  describe("tiktok_search_videos", () => {
-    it("searches videos by keyword", async () => {
-      const tool = createTikTokSearchVideosTool(tiktokManager);
-      const result = await tool.execute("t", { query: "cooking", count: 5 });
-      const data = JSON.parse(result.content[0].text);
-
-      if (data.error) {
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.videos).toBeDefined();
-        expect(Array.isArray(data.videos)).toBe(true);
-      }
-    });
+  it("tiktok_search_users — searches users", async () => {
+    const tool = createTikTokSearchUsersTool(tiktokManager);
+    const result = await tool.execute("test", { query: "cooking", count: 5 });
+    const data = JSON.parse(result.content[0].text);
+    expect(data.error).toBeUndefined();
+    expect(data.users).toBeDefined();
   });
 
-  // -------------------------------------------------------------------------
-  // tiktok_search_users
-  // -------------------------------------------------------------------------
-  describe("tiktok_search_users", () => {
-    it("searches users by keyword", async () => {
-      const tool = createTikTokSearchUsersTool(tiktokManager);
-      const result = await tool.execute("t", { query: "cooking", count: 5 });
-      const data = JSON.parse(result.content[0].text);
-
-      if (data.error) {
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.users).toBeDefined();
-        expect(Array.isArray(data.users)).toBe(true);
-      }
-    });
+  it("tiktok_trending — gets trending videos", async () => {
+    const tool = createTikTokTrendingTool(tiktokManager);
+    const result = await tool.execute("test", { count: 5 });
+    const data = JSON.parse(result.content[0].text);
+    expect(data.error).toBeUndefined();
+    expect(data.videos).toBeDefined();
   });
 
-  // -------------------------------------------------------------------------
-  // tiktok_trending
-  // -------------------------------------------------------------------------
-  describe("tiktok_trending", () => {
-    it("returns trending videos", async () => {
-      const tool = createTikTokTrendingTool(tiktokManager);
-      const result = await tool.execute("t", { count: 5 });
-      const data = JSON.parse(result.content[0].text);
+  it("tiktok_video_comments — gets comments on a video", async () => {
+    const trendingTool = createTikTokTrendingTool(tiktokManager);
+    const trendingResult = await trendingTool.execute("test", { count: 1 });
+    const trendingData = JSON.parse(trendingResult.content[0].text);
 
-      if (data.error) {
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.videos).toBeDefined();
-        expect(Array.isArray(data.videos)).toBe(true);
-      }
-    });
+    if (trendingData.videos?.length > 0) {
+      const videoId = trendingData.videos[0].id;
+      const commentsTool = createTikTokVideoCommentsTool(tiktokManager);
+      const result = await commentsTool.execute("test", { video: videoId, count: 5 });
+      const data = JSON.parse(result.content[0].text);
+      expect(data.error).toBeUndefined();
+      expect(data.comments).toBeDefined();
+    }
   });
 
-  // -------------------------------------------------------------------------
-  // tiktok_video_comments — chains off tiktok_trending to get a video ID
-  // -------------------------------------------------------------------------
-  describe("tiktok_video_comments", () => {
-    it("returns comments on a trending video", async () => {
-      // First get a video ID from trending
-      const trendingTool = createTikTokTrendingTool(tiktokManager);
-      const trendingResult = await trendingTool.execute("t", { count: 1 });
-      const trendingData = JSON.parse(trendingResult.content[0].text);
+  it("tiktok_video_details — gets video details", async () => {
+    const trendingTool = createTikTokTrendingTool(tiktokManager);
+    const trendingResult = await trendingTool.execute("test", { count: 1 });
+    const trendingData = JSON.parse(trendingResult.content[0].text);
 
-      if (!trendingData.videos || trendingData.videos.length === 0) {
-        console.warn("[tiktok] Skipping tiktok_video_comments: no trending videos available");
-        return;
-      }
-
-      const videoId: string = trendingData.videos[0].id;
-      const tool = createTikTokVideoCommentsTool(tiktokManager);
-      const result = await tool.execute("t", { video: videoId, count: 5 });
+    if (trendingData.videos?.length > 0) {
+      const videoId = trendingData.videos[0].id;
+      const detailsTool = createTikTokVideoDetailsTool(tiktokManager);
+      const result = await detailsTool.execute("test", { video: videoId });
       const data = JSON.parse(result.content[0].text);
-
-      if (data.error) {
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.comments).toBeDefined();
-        expect(Array.isArray(data.comments)).toBe(true);
-      }
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // tiktok_video_details — chains off tiktok_trending to get a video ID
-  // -------------------------------------------------------------------------
-  describe("tiktok_video_details", () => {
-    it("returns details for a trending video", async () => {
-      // First get a video ID from trending
-      const trendingTool = createTikTokTrendingTool(tiktokManager);
-      const trendingResult = await trendingTool.execute("t", { count: 1 });
-      const trendingData = JSON.parse(trendingResult.content[0].text);
-
-      if (!trendingData.videos || trendingData.videos.length === 0) {
-        console.warn("[tiktok] Skipping tiktok_video_details: no trending videos available");
-        return;
-      }
-
-      const videoId: string = trendingData.videos[0].id;
-      const tool = createTikTokVideoDetailsTool(tiktokManager);
-      const result = await tool.execute("t", { video: videoId });
-      const data = JSON.parse(result.content[0].text);
-
-      if (data.error) {
-        expect(typeof data.error).toBe("string");
-      } else {
-        expect(data.id).toBeTruthy();
-      }
-    });
+      expect(data.error).toBeUndefined();
+      expect(data.id).toBeTruthy();
+    }
   });
 });

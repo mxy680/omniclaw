@@ -16,7 +16,7 @@ interface XSessionFile {
 const GRAPHQL_BASE = "https://x.com/i/api/graphql";
 
 // Public bearer token used by the X web client — same across all users.
-const BEARER_TOKEN =
+export const X_BEARER_TOKEN =
   "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
 
 // Standard feature flags expected by the X GraphQL API.
@@ -80,7 +80,7 @@ export class XClientManager {
 
   hasCredentials(account: string): boolean {
     const session = this.getCredentials(account);
-    return session !== null && session.auth_token !== "";
+    return session !== null && session.auth_token !== "" && session.ct0 !== "";
   }
 
   listAccounts(): string[] {
@@ -110,7 +110,7 @@ export class XClientManager {
     }
 
     return {
-      Authorization: `Bearer ${BEARER_TOKEN}`,
+      Authorization: `Bearer ${X_BEARER_TOKEN}`,
       "x-csrf-token": session.ct0,
       Cookie: cookieParts.join("; "),
       "Content-Type": "application/json",

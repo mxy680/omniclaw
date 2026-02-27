@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { XClientManager } from "../auth/x-client-manager.js";
+import { type XClientManager, X_BEARER_TOKEN } from "../auth/x-client-manager.js";
 import { jsonResult, AUTH_REQUIRED, QUERY_IDS, extractUser } from "./x-utils.js";
 
 export function createXGetProfileTool(manager: XClientManager) {
@@ -52,8 +52,7 @@ export function createXFollowTool(manager: XClientManager) {
         const resp = await fetch("https://api.x.com/1.1/friendships/create.json", {
           method: "POST",
           headers: {
-            Authorization:
-              "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+            Authorization: `Bearer ${X_BEARER_TOKEN}`,
             "x-csrf-token": session.ct0,
             Cookie: `auth_token=${session.auth_token}; ct0=${session.ct0}`,
             "Content-Type": "application/x-www-form-urlencoded",
@@ -94,8 +93,7 @@ export function createXUnfollowTool(manager: XClientManager) {
         const resp = await fetch("https://api.x.com/1.1/friendships/destroy.json", {
           method: "POST",
           headers: {
-            Authorization:
-              "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+            Authorization: `Bearer ${X_BEARER_TOKEN}`,
             "x-csrf-token": session.ct0,
             Cookie: `auth_token=${session.auth_token}; ct0=${session.ct0}`,
             "Content-Type": "application/x-www-form-urlencoded",

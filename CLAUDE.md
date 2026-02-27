@@ -63,7 +63,6 @@
 | PyPI | #43 | |
 | Docker Hub | #44 | |
 | GroupMe | #45 | |
-
 | Reddit | #47 | |
 | YouTube Music | #48 | |
 | SoundCloud | #49 | |

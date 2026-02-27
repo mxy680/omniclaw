@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { chromium } from "playwright";
-import type { XClientManager, XSession } from "../auth/x-client-manager.js";
+import { type XClientManager, type XSession, X_BEARER_TOKEN } from "../auth/x-client-manager.js";
 import type { PluginConfig } from "../types/plugin-config.js";
 import { jsonResult } from "./x-utils.js";
 
@@ -27,8 +27,7 @@ export function createXAuthTool(manager: XClientManager, _config: PluginConfig) 
           const session = manager.getCredentials(account)!;
           const resp = await fetch("https://api.x.com/1.1/account/settings.json", {
             headers: {
-              Authorization:
-                "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+              Authorization: `Bearer ${X_BEARER_TOKEN}`,
               "x-csrf-token": session.ct0,
               Cookie: `auth_token=${session.auth_token}; ct0=${session.ct0}`,
             },

@@ -41,3 +41,59 @@ export function createXGetBookmarksTool(manager: XClientManager) {
     },
   };
 }
+
+export function createXAddBookmarkTool(manager: XClientManager) {
+  return {
+    name: "x_add_bookmark",
+    label: "X Add Bookmark",
+    description: "Bookmark a tweet on X (Twitter).",
+    parameters: Type.Object({
+      tweet_id: Type.String({ description: "The ID of the tweet to bookmark." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
+    }),
+    async execute(_toolCallId: string, params: { tweet_id: string; account?: string }) {
+      const account = params.account ?? "default";
+      if (!manager.hasCredentials(account)) return jsonResult(AUTH_REQUIRED);
+
+      try {
+        await manager.graphqlPost(
+          account,
+          "CreateBookmark",
+          QUERY_IDS.CreateBookmark,
+          { tweet_id: params.tweet_id },
+        );
+        return jsonResult({ status: "bookmarked", tweet_id: params.tweet_id });
+      } catch (err) {
+        return jsonResult({ error: err instanceof Error ? err.message : String(err) });
+      }
+    },
+  };
+}
+
+export function createXRemoveBookmarkTool(manager: XClientManager) {
+  return {
+    name: "x_remove_bookmark",
+    label: "X Remove Bookmark",
+    description: "Remove a bookmark from a tweet on X (Twitter).",
+    parameters: Type.Object({
+      tweet_id: Type.String({ description: "The ID of the tweet to remove from bookmarks." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
+    }),
+    async execute(_toolCallId: string, params: { tweet_id: string; account?: string }) {
+      const account = params.account ?? "default";
+      if (!manager.hasCredentials(account)) return jsonResult(AUTH_REQUIRED);
+
+      try {
+        await manager.graphqlPost(
+          account,
+          "DeleteBookmark",
+          QUERY_IDS.DeleteBookmark,
+          { tweet_id: params.tweet_id },
+        );
+        return jsonResult({ status: "unbookmarked", tweet_id: params.tweet_id });
+      } catch (err) {
+        return jsonResult({ error: err instanceof Error ? err.message : String(err) });
+      }
+    },
+  };
+}

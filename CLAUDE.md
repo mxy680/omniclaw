@@ -28,7 +28,7 @@
 | Nutrition Tracking | 21 | `nutrition` | `docs/nutrition.md` | Local SQLite, no auth. Includes pantry inventory + meal planning + workout planning |
 | Slack | 8 | `slack` | `docs/slack.md` | Browser session auth (xoxc- token + d cookie), read-only |
 | Vercel | 16 | `vercel` | `docs/vercel.md` | Personal Access Token |
-| X (Twitter) | 18 | `x` | `docs/plans/2026-02-27-x-twitter-design.md` | Browser session auth, GraphQL API |
+| X (Twitter) | 44 | `x` | `docs/plans/2026-02-27-x-twitter-design.md` | Browser session auth, GraphQL + REST API |
 | TikTok | 10 | `tiktok` | `docs/tiktok.md` | Playwright browser auth, read-only |
 
 ## In Progress

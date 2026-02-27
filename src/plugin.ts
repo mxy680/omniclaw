@@ -212,8 +212,13 @@ import { createXSearchTool } from "./tools/x-search.js";
 import { createXPostTweetTool, createXDeleteTweetTool, createXReplyTool } from "./tools/x-tweet.js";
 import { createXLikeTool, createXUnlikeTool, createXRetweetTool, createXUnretweetTool } from "./tools/x-engagement.js";
 import { createXGetProfileTool, createXFollowTool, createXUnfollowTool } from "./tools/x-users.js";
-import { createXGetBookmarksTool } from "./tools/x-bookmarks.js";
+import { createXGetBookmarksTool, createXAddBookmarkTool, createXRemoveBookmarkTool } from "./tools/x-bookmarks.js";
 import { createXUpdateProfileTool, createXUpdateProfileImageTool, createXUpdateProfileBannerTool } from "./tools/x-profile.js";
+import { createXGetTweetDetailTool } from "./tools/x-tweet-detail.js";
+import { createXMuteTool, createXUnmuteTool, createXBlockTool, createXUnblockTool, createXPinTweetTool, createXUnpinTweetTool, createXHideReplyTool, createXUnhideReplyTool } from "./tools/x-moderation.js";
+import { createXPostMediaTweetTool, createXQuoteTweetTool, createXPostThreadTool, createXPostPollTool } from "./tools/x-tweet-extended.js";
+import { createXDmInboxTool, createXDmConversationTool, createXDmSendTool } from "./tools/x-dms.js";
+import { createXGetListsTool, createXGetListTweetsTool, createXGetListMembersTool, createXCreateListTool, createXDeleteListTool, createXUpdateListTool, createXListAddMemberTool, createXListRemoveMemberTool } from "./tools/x-lists.js";
 import { NutritionDbManager } from "./nutrition/nutrition-db-manager.js";
 
 let activeNutritionDb: NutritionDbManager | null = null;
@@ -600,6 +605,32 @@ export function register(api: OpenClawPluginApi): void {
   reg(createXUpdateProfileTool(xManager));
   reg(createXUpdateProfileImageTool(xManager));
   reg(createXUpdateProfileBannerTool(xManager));
+  reg(createXAddBookmarkTool(xManager));
+  reg(createXRemoveBookmarkTool(xManager));
+  reg(createXGetTweetDetailTool(xManager));
+  reg(createXMuteTool(xManager));
+  reg(createXUnmuteTool(xManager));
+  reg(createXBlockTool(xManager));
+  reg(createXUnblockTool(xManager));
+  reg(createXPinTweetTool(xManager));
+  reg(createXUnpinTweetTool(xManager));
+  reg(createXHideReplyTool(xManager));
+  reg(createXUnhideReplyTool(xManager));
+  reg(createXPostMediaTweetTool(xManager));
+  reg(createXQuoteTweetTool(xManager));
+  reg(createXPostThreadTool(xManager));
+  reg(createXPostPollTool(xManager));
+  reg(createXDmInboxTool(xManager));
+  reg(createXDmConversationTool(xManager));
+  reg(createXDmSendTool(xManager));
+  reg(createXGetListsTool(xManager));
+  reg(createXGetListTweetsTool(xManager));
+  reg(createXGetListMembersTool(xManager));
+  reg(createXCreateListTool(xManager));
+  reg(createXDeleteListTool(xManager));
+  reg(createXUpdateListTool(xManager));
+  reg(createXListAddMemberTool(xManager));
+  reg(createXListRemoveMemberTool(xManager));
 
   // Nutrition tools — local SQLite, no external API
   const nutritionDbPath =

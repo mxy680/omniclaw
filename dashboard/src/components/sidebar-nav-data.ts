@@ -1,6 +1,8 @@
 import {
   LayoutDashboard,
   DollarSign,
+  HeartPulse,
+  Apple,
   Dumbbell,
   FolderKanban,
   Users,
@@ -15,6 +17,7 @@ export interface NavItem {
   title: string;
   url: string;
   icon: typeof LayoutDashboard;
+  children?: NavItem[];
 }
 
 export interface NavGroup {
@@ -33,7 +36,15 @@ export const navGroups: NavGroup[] = [
     label: "Life",
     items: [
       { title: "Money", url: "/money", icon: DollarSign },
-      { title: "Fitness", url: "/fitness", icon: Dumbbell },
+      {
+        title: "Health",
+        url: "/health",
+        icon: HeartPulse,
+        children: [
+          { title: "Nutrition", url: "/health/nutrition", icon: Apple },
+          { title: "Fitness", url: "/health/fitness", icon: Dumbbell },
+        ],
+      },
       { title: "Projects", url: "/projects", icon: FolderKanban },
       { title: "Social", url: "/social", icon: Users },
       { title: "Career", url: "/career", icon: Briefcase },

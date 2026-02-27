@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 
 import {
   Sidebar,
@@ -12,8 +13,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 import { navGroups } from "@/components/sidebar-nav-data";
 
 export function AppSidebar() {
@@ -37,13 +46,45 @@ export function AppSidebar() {
               {group.label}
             </SidebarGroupLabel>
             <SidebarMenu>
-              {group.items.map((item) => {
-                const isActive = pathname === item.url;
-                return (
+              {group.items.map((item) =>
+                item.children ? (
+                  <Collapsible
+                    key={item.url}
+                    defaultOpen={pathname.startsWith(item.url)}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton tooltip={item.title}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                          <ChevronRight className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.children.map((child) => (
+                            <SidebarMenuSubItem key={child.url}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={pathname === child.url}
+                              >
+                                <Link href={child.url}>
+                                  <child.icon className="h-3.5 w-3.5" />
+                                  <span>{child.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                ) : (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
-                      isActive={isActive}
+                      isActive={pathname === item.url}
                       tooltip={item.title}
                     >
                       <Link href={item.url}>
@@ -52,8 +93,8 @@ export function AppSidebar() {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                );
-              })}
+                ),
+              )}
             </SidebarMenu>
           </SidebarGroup>
         ))}

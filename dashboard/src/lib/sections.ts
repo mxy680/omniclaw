@@ -1,6 +1,6 @@
 import {
   DollarSign,
-  Dumbbell,
+  HeartPulse,
   GraduationCap,
   FolderKanban,
   Users,
@@ -26,7 +26,7 @@ export interface Section {
   id: string;
   title: string;
   tagline: string;
-  icon: typeof DollarSign;
+  icon: typeof HeartPulse;
   color: string;
   status: SectionStatus;
   metrics: SectionMetric[];
@@ -55,10 +55,10 @@ export const sections: Section[] = [
     ],
   },
   {
-    id: "fitness",
-    title: "Fitness",
-    tagline: "Workouts, nutrition, and body metrics",
-    icon: Dumbbell,
+    id: "health",
+    title: "Health",
+    tagline: "Nutrition, workouts, and body metrics",
+    icon: HeartPulse,
     color: "#f97316",
     status: "partial",
     metrics: [

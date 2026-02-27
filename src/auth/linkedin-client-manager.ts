@@ -64,11 +64,13 @@ export class LinkedInClientManager {
     return `li_at=${session.li_at}; JSESSIONID="${session.jsessionid}"`;
   }
 
-  async get(
+  private async request(
     account: string,
+    method: "GET" | "POST" | "DELETE",
     path: string,
     params?: Record<string, string>,
     rawQs?: string,
+    body?: unknown,
   ): Promise<unknown> {
     const session = this.getCredentials(account);
     if (!session) throw new Error("No credentials for account: " + account);
@@ -90,6 +92,10 @@ export class LinkedInClientManager {
       Accept: "application/vnd.linkedin.normalized+json+2.1",
     };
 
+    if (body !== undefined) {
+      headers["Content-Type"] = "application/json; charset=UTF-8";
+    }
+
     const { chromium } = await import("playwright");
     const browser = await chromium.launch({ headless: true });
     try {
@@ -109,23 +115,26 @@ export class LinkedInClientManager {
       const page = await context.newPage();
       await page.goto("https://www.linkedin.com", { waitUntil: "domcontentloaded" });
 
+      const fetchBody = body !== undefined ? JSON.stringify(body) : undefined;
+
       const result = await page.evaluate(
-        async ({ fetchUrl, fetchHeaders }) => {
+        async ({ fetchUrl, fetchHeaders, fetchMethod, fetchBody }) => {
           const resp = await fetch(fetchUrl, {
-            method: "GET",
+            method: fetchMethod,
             headers: fetchHeaders,
             credentials: "include",
+            ...(fetchBody !== undefined ? { body: fetchBody } : {}),
           });
-          const body = await resp.text();
+          const text = await resp.text();
           const setCookieHeader = resp.headers.get("set-cookie") ?? "";
           return {
             status: resp.status,
             statusText: resp.statusText,
-            body,
+            body: text,
             setCookie: setCookieHeader,
           };
         },
-        { fetchUrl: url, fetchHeaders: headers },
+        { fetchUrl: url, fetchHeaders: headers, fetchMethod: method, fetchBody },
       );
 
       await browser.close();
@@ -145,11 +154,39 @@ export class LinkedInClientManager {
         this.updateCookiesFromHeader(account, result.setCookie);
       }
 
-      return JSON.parse(result.body);
+      return result.body.trim() === "" ? {} : JSON.parse(result.body);
     } catch (err) {
       await browser.close().catch(() => {});
       throw err;
     }
+  }
+
+  async get(
+    account: string,
+    path: string,
+    params?: Record<string, string>,
+    rawQs?: string,
+  ): Promise<unknown> {
+    return this.request(account, "GET", path, params, rawQs);
+  }
+
+  async post(
+    account: string,
+    path: string,
+    body: unknown,
+    params?: Record<string, string>,
+    rawQs?: string,
+  ): Promise<unknown> {
+    return this.request(account, "POST", path, params, rawQs, body);
+  }
+
+  async delete(
+    account: string,
+    path: string,
+    params?: Record<string, string>,
+    rawQs?: string,
+  ): Promise<unknown> {
+    return this.request(account, "DELETE", path, params, rawQs);
   }
 
   async getPaginated(

@@ -140,8 +140,8 @@ export default function OperationsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {sorted.map((op) => (
-            <OperationRow key={op.id} operation={op} />
+          {sorted.map((op, i) => (
+            <OperationRow key={`${op.id}-${i}`} operation={op} />
           ))}
         </div>
       )}

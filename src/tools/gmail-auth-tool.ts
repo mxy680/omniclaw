@@ -35,6 +35,24 @@ function createAuthTool(
       const account = params.account ?? "default";
       const port = config.oauth_port ?? 9753;
 
+      // Check if we already have valid tokens (with refresh token for auto-renewal)
+      try {
+        const client = clientManager.getClient(account);
+        const creds = client.credentials;
+        if (creds && (creds.refresh_token || creds.access_token)) {
+          const oauth2 = google.oauth2({ version: "v2", auth: client });
+          const info = await oauth2.userinfo.get();
+          return jsonResult({
+            status: "already_authenticated",
+            account,
+            email: info.data.email ?? "unknown",
+            message: "Existing session is still valid. No re-authentication needed.",
+          });
+        }
+      } catch {
+        // Tokens invalid or expired without refresh token — proceed with re-auth
+      }
+
       try {
         const open = (await import("open")).default;
         const rawClient = clientManager.getRawClient();

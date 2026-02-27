@@ -70,6 +70,25 @@ export function createCanvasAuthTool(
 
       const base_url = rawBaseUrl.replace(/\/$/, "");
 
+      // Check if we already have a valid session
+      if (canvasManager.hasCredentials(account)) {
+        try {
+          const profile = (await canvasManager.get(account, "users/self/profile")) as {
+            name?: string;
+            login_id?: string;
+          };
+          return jsonResult({
+            status: "already_authenticated",
+            account,
+            name: profile.name ?? "unknown",
+            login_id: profile.login_id ?? "unknown",
+            message: "Existing session is still valid. No re-authentication needed.",
+          });
+        } catch {
+          // Session invalid — proceed with re-auth
+        }
+      }
+
       const autoMfa = config.canvas_auto_mfa !== false && !!config.duo_totp_secret;
 
       try {

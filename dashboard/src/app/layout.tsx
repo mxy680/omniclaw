@@ -21,6 +21,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Omniclaw Dashboard",
   description: "Unified command center for all integrations",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

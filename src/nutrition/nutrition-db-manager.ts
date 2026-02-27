@@ -15,6 +15,8 @@ import type {
   PantryItem,
   MealPlanEntryInput,
   MealPlanEntry,
+  WorkoutPlanEntryInput,
+  WorkoutPlanEntry,
 } from "./types.js";
 
 export class NutritionDbManager {
@@ -127,6 +129,21 @@ export class NutritionDbManager {
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
       CREATE INDEX IF NOT EXISTS idx_meal_plan_date ON meal_plan_entries(date);
+
+      CREATE TABLE IF NOT EXISTS workout_plan_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        workout_name TEXT NOT NULL,
+        workout_type TEXT NOT NULL,
+        exercise_order INTEGER NOT NULL,
+        exercise_name TEXT NOT NULL,
+        target_sets TEXT,
+        duration_min REAL,
+        distance REAL,
+        notes TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_workout_plan_date ON workout_plan_entries(date);
     `);
   }
 
@@ -478,6 +495,78 @@ export class NutritionDbManager {
 
   deleteMealPlan(date: string): number {
     const info = this.db.prepare(`DELETE FROM meal_plan_entries WHERE date = ?`).run(date);
+    return info.changes;
+  }
+
+  // ── Workout Plan ─────────────────────────────────────────
+
+  saveWorkoutPlan(date: string, entries: WorkoutPlanEntryInput[]): WorkoutPlanEntry[] {
+    const results: WorkoutPlanEntry[] = [];
+    const txn = this.db.transaction(() => {
+      this.db.prepare(`DELETE FROM workout_plan_entries WHERE date = ?`).run(date);
+
+      const insert = this.db.prepare(
+        `INSERT INTO workout_plan_entries (date, workout_name, workout_type, exercise_order, exercise_name, target_sets, duration_min, distance, notes)
+         VALUES (@date, @workout_name, @workout_type, @exercise_order, @exercise_name, @target_sets, @duration_min, @distance, @notes)`,
+      );
+
+      for (const e of entries) {
+        const info = insert.run({
+          date,
+          workout_name: e.workout_name,
+          workout_type: e.workout_type,
+          exercise_order: e.exercise_order,
+          exercise_name: e.exercise_name,
+          target_sets: e.target_sets ? JSON.stringify(e.target_sets) : null,
+          duration_min: e.duration_min ?? null,
+          distance: e.distance ?? null,
+          notes: e.notes ?? null,
+        });
+        results.push({
+          id: Number(info.lastInsertRowid),
+          date,
+          workout_name: e.workout_name,
+          workout_type: e.workout_type,
+          exercise_order: e.exercise_order,
+          exercise_name: e.exercise_name,
+          target_sets: e.target_sets ?? null,
+          duration_min: e.duration_min ?? null,
+          distance: e.distance ?? null,
+          notes: e.notes ?? null,
+          created_at: new Date().toISOString(),
+        });
+      }
+    });
+    txn();
+    return results;
+  }
+
+  getWorkoutPlan(date: string): WorkoutPlanEntry[] {
+    const rows = this.db
+      .prepare(`SELECT * FROM workout_plan_entries WHERE date = ? ORDER BY exercise_order, id`)
+      .all(date) as Array<Record<string, unknown>>;
+
+    return rows.map((row) => ({
+      ...row,
+      target_sets: row.target_sets ? JSON.parse(row.target_sets as string) : null,
+    })) as WorkoutPlanEntry[];
+  }
+
+  getWorkoutPlanRange(start: string, end: string): WorkoutPlanEntry[] {
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM workout_plan_entries WHERE date >= ? AND date <= ? ORDER BY date, exercise_order, id`,
+      )
+      .all(start, end) as Array<Record<string, unknown>>;
+
+    return rows.map((row) => ({
+      ...row,
+      target_sets: row.target_sets ? JSON.parse(row.target_sets as string) : null,
+    })) as WorkoutPlanEntry[];
+  }
+
+  deleteWorkoutPlan(date: string): number {
+    const info = this.db.prepare(`DELETE FROM workout_plan_entries WHERE date = ?`).run(date);
     return info.changes;
   }
 

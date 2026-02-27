@@ -77,6 +77,14 @@ export function startUploadServer(opts: {
     res.end(JSON.stringify({ error: "not found" }));
   });
 
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      log?.(`[ios] Upload HTTP port ${opts.port + 1} already in use (existing server still running)`);
+    } else {
+      log?.(`[ios] Upload HTTP server error: ${err.message}`);
+    }
+  });
+
   server.listen(opts.port + 1, () => {
     log?.(`[ios] Upload HTTP server listening on port ${opts.port + 1}`);
   });

@@ -12,6 +12,7 @@ import {
   Linkedin,
   Instagram,
   MessageCircle,
+  ChefHat,
 } from "lucide-react";
 
 export interface Tool {
@@ -261,6 +262,27 @@ export const integrations: Integration[] = [
       { name: "imessage_search", label: "Search", description: "Full-text search across all iMessage conversations." },
       { name: "imessage_send", label: "Send Message", description: "Send an iMessage to a phone number or email address." },
       { name: "imessage_attachments", label: "Attachments", description: "List file attachments (images, videos, documents) in an iMessage conversation." },
+    ],
+  },
+  {
+    id: "factor75",
+    name: "Factor75",
+    icon: ChefHat,
+    color: "#7ac143",
+    tools: [
+      { name: "factor75_auth_setup", label: "Auth Setup", description: "Authenticate with Factor75 via browser automation and JWT token capture." },
+      { name: "factor75_menu", label: "Menu", description: "Get the weekly Factor75 meal menu with names, descriptions, nutrition info, and dietary tags." },
+      { name: "factor75_meal_details", label: "Meal Details", description: "Get full details for a specific meal — nutrition facts, ingredients, allergens, and prep instructions." },
+      { name: "factor75_get_selections", label: "Selections", description: "Get current meal selections for a given week with slot counts and quantities." },
+      { name: "factor75_select_meal", label: "Select Meal", description: "Add a meal to your selections for a given delivery week." },
+      { name: "factor75_remove_meal", label: "Remove Meal", description: "Remove a meal from your selections for a given delivery week." },
+      { name: "factor75_subscription", label: "Subscription", description: "Get subscription details — plan, status, meals per week, pricing, and next delivery." },
+      { name: "factor75_skip_week", label: "Skip Week", description: "Skip a delivery week so it won't be charged or delivered." },
+      { name: "factor75_pause", label: "Pause", description: "Pause your Factor75 subscription. No deliveries until resumed." },
+      { name: "factor75_resume", label: "Resume", description: "Resume a paused Factor75 subscription from the next available week." },
+      { name: "factor75_deliveries", label: "Deliveries", description: "List upcoming and recent deliveries with dates, statuses, and tracking info." },
+      { name: "factor75_delivery_details", label: "Delivery Details", description: "Get full details for a specific delivery — tracking, meals, nutrition, and address." },
+      { name: "factor75_account", label: "Account", description: "Get account info — name, email, delivery address, subscription plan, and credits." },
     ],
   },
 ];

@@ -49,6 +49,28 @@ export function createInstagramAuthTool(
       const resolvedUsername = params.username ?? config.instagram_username;
       const resolvedPassword = params.password ?? config.instagram_password;
 
+      // Check if we already have a valid session
+      if (instagramManager.hasCredentials(account)) {
+        try {
+          const creds = instagramManager.getCredentials(account)!;
+          const pk = creds.ds_user_id;
+          if (pk) {
+            const profile = (await instagramManager.get(account, `users/${pk}/info/`)) as {
+              user?: { username?: string; full_name?: string };
+            };
+            return jsonResult({
+              status: "already_authenticated",
+              account,
+              username: profile?.user?.username ?? "unknown",
+              full_name: profile?.user?.full_name ?? "unknown",
+              message: "Existing session is still valid. No re-authentication needed.",
+            });
+          }
+        } catch {
+          // Session invalid — proceed with re-auth
+        }
+      }
+
       try {
         const session = await runInstagramLoginFlow(resolvedUsername, resolvedPassword);
 

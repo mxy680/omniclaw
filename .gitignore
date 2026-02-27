@@ -3,3 +3,5 @@ dist/
 dashboard/.next/
 dashboard/out/
 .worktrees/
+.playwright-mcp/
+.serena/

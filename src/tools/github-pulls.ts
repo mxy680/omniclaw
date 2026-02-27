@@ -124,7 +124,7 @@ export function createGitHubCreatePullTool(ghManager: GitHubClientManager): any 
   return {
     name: "github_create_pull",
     label: "GitHub Create Pull Request",
-    description: "Create a new pull request.",
+    description: "Create a new pull request. Only use after project_code_edit has pushed a branch.",
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner (user or org)." }),
       repo: Type.String({ description: "Repository name." }),

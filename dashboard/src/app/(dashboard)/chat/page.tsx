@@ -868,17 +868,23 @@ function ChatDetail({
             ref={fileInputRef}
             type="file"
             multiple
-            className="hidden"
+            accept="*/*"
+            className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
+            tabIndex={-1}
             onChange={(e) => {
-              if (e.target.files) addFiles(e.target.files);
+              if (e.target.files && e.target.files.length > 0) addFiles(e.target.files);
               e.target.value = "";
             }}
           />
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
             disabled={!isConnected}
-            className="h-7 w-7 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground disabled:opacity-15 transition-opacity"
+            className="h-7 w-7 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/5 disabled:opacity-15 transition-all cursor-pointer"
           >
             <Paperclip className="h-4 w-4" />
           </button>

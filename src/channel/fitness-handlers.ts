@@ -33,6 +33,9 @@ export function handleFitnessMessage(
   // Pantry inventory
   const pantryItems = db.listPantryItems();
 
+  // Workout plan for the requested date
+  const workoutPlanEntries = db.getWorkoutPlan(date);
+
   // 30-day weight trend
   const trendEnd = date;
   const trendStart = offsetDate(date, -30);
@@ -50,6 +53,14 @@ export function handleFitnessMessage(
       week_exercises.push({ date: ex.date });
     }
   }
+
+  // Week workout plans (dates with plans in the current week)
+  const weekPlans = db.getWorkoutPlanRange(monday, sunday);
+  const planDates = new Set<string>();
+  for (const p of weekPlans) {
+    planDates.add(p.date);
+  }
+  const week_workout_plans: Array<{ date: string }> = Array.from(planDates).map((d) => ({ date: d }));
 
   const totalsForDate = daily_totals.find((t) => t.date === date) ?? null;
 
@@ -119,6 +130,22 @@ export function handleFitnessMessage(
       fat_g_per_serving: p.fat_g_per_serving ?? null,
       serving_size: p.serving_size ?? null,
     })),
+    workout_plan: workoutPlanEntries.length > 0
+      ? {
+          workout_name: workoutPlanEntries[0].workout_name,
+          workout_type: workoutPlanEntries[0].workout_type,
+          exercises: workoutPlanEntries.map((e) => ({
+            id: e.id,
+            exercise_order: e.exercise_order,
+            exercise_name: e.exercise_name,
+            target_sets: e.target_sets ?? null,
+            duration_min: e.duration_min ?? null,
+            distance: e.distance ?? null,
+            notes: e.notes ?? null,
+          })),
+        }
+      : null,
+    week_workout_plans,
   };
 
   wsServer.send(connId, { type: "fitness_day", data });

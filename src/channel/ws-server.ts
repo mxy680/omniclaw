@@ -37,6 +37,7 @@ export function startWsServer(opts: {
 
   const authed = new Map<string, WebSocket>();
   const pending = new Set<WebSocket>();
+  const alive = new Set<WebSocket>();
 
   const wss = new WebSocketServer({ port });
 
@@ -45,9 +46,23 @@ export function startWsServer(opts: {
     opts.onReady?.();
   });
 
+  // Ping all clients every 30s; terminate if no pong received
+  const pingInterval = setInterval(() => {
+    for (const [, ws] of authed) {
+      if (!alive.has(ws)) {
+        ws.terminate();
+        continue;
+      }
+      alive.delete(ws);
+      ws.ping();
+    }
+  }, 30_000);
+
   wss.on("connection", (ws) => {
     const connId = randomUUID();
     pending.add(ws);
+    alive.add(ws);
+    ws.on("pong", () => alive.add(ws));
 
     ws.on("message", (raw) => {
       let parsed: WsClientMessage;
@@ -90,6 +105,7 @@ export function startWsServer(opts: {
 
     ws.on("close", () => {
       pending.delete(ws);
+      alive.delete(ws);
       if (authed.has(connId)) {
         authed.delete(connId);
         log?.(`[ios] client ${connId} disconnected`);
@@ -130,6 +146,7 @@ export function startWsServer(opts: {
       }
     },
     stop() {
+      clearInterval(pingInterval);
       for (const ws of authed.values()) {
         ws.close(1001, "server shutting down");
       }
@@ -138,6 +155,7 @@ export function startWsServer(opts: {
       }
       authed.clear();
       pending.clear();
+      alive.clear();
       wss.close();
       log?.("[ios] WebSocket server stopped");
     },

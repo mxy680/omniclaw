@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
@@ -32,7 +33,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-foreground text-background text-xs font-bold shrink-0">O</span>
+          <Image src="/logo.svg" alt="Omniclaw" width={24} height={24} className="shrink-0" />
           <span className="text-sm font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
             Omniclaw
           </span>
@@ -68,9 +69,10 @@ export function AppSidebar() {
                               <SidebarMenuSubButton
                                 asChild
                                 isActive={pathname === child.url}
+                                className="h-8"
                               >
                                 <Link href={child.url}>
-                                  <child.icon className="h-3.5 w-3.5" />
+                                  <child.icon className="h-4 w-4" />
                                   <span>{child.title}</span>
                                 </Link>
                               </SidebarMenuSubButton>

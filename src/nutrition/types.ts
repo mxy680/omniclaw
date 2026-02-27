@@ -133,3 +133,29 @@ export interface MealPlanEntry {
   notes: string | null;
   created_at: string;
 }
+
+export interface WorkoutPlanEntryInput {
+  date: string;
+  workout_name: string;
+  workout_type: "strength" | "cardio" | "rest";
+  exercise_order: number;
+  exercise_name: string;
+  target_sets?: { reps: number; weight: number }[];
+  duration_min?: number;
+  distance?: number;
+  notes?: string;
+}
+
+export interface WorkoutPlanEntry {
+  id: number;
+  date: string;
+  workout_name: string;
+  workout_type: string;
+  exercise_order: number;
+  exercise_name: string;
+  target_sets: { reps: number; weight: number }[] | null;
+  duration_min: number | null;
+  distance: number | null;
+  notes: string | null;
+  created_at: string;
+}

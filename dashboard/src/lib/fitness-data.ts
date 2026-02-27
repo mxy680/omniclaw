@@ -27,6 +27,7 @@ export interface DailyNutrition {
   fat: MacroTarget;
   fiber: MacroTarget;
   sodium: MacroTarget;
+  potassium: MacroTarget;
   meals: Meal[];
 }
 
@@ -56,6 +57,21 @@ export interface WorkoutSession {
   status: WorkoutStatus;
   exercises?: Exercise[];
   cardio?: CardioData;
+}
+
+export interface WorkoutPlanExercise {
+  id: number;
+  exerciseName: string;
+  targetSets: { reps: number; weight: number }[] | null;
+  durationMin: number | null;
+  distance: number | null;
+  notes: string | null;
+}
+
+export interface WorkoutPlan {
+  workoutName: string;
+  workoutType: WorkoutType;
+  exercises: WorkoutPlanExercise[];
 }
 
 export interface WeekDay {
@@ -126,6 +142,7 @@ export interface FitnessDay {
     recentReadings: BodyReading[];
   };
   weekOverview: WeekDay[];
+  workoutPlan: WorkoutPlan | null;
   mealPlan: DailyMealPlan | null;
   pantryItems: PantryItem[];
 }

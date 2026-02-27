@@ -205,6 +205,7 @@ export class AgentWebSocket {
   private intentionalDisconnect = false;
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private callbacks: WebSocketCallbacks;
 
   state: ConnectionState = "disconnected";
@@ -224,6 +225,7 @@ export class AgentWebSocket {
   disconnect() {
     this.intentionalDisconnect = true;
     this.clearReconnect();
+    this.stopHeartbeat();
     this.ws?.close(1000);
     this.ws = null;
     this.setState("disconnected");
@@ -268,6 +270,7 @@ export class AgentWebSocket {
       if (msg.type === "auth_ok") {
         this.setState("connected");
         this.reconnectAttempts = 0;
+        this.startHeartbeat();
       } else if (msg.type === "auth_fail") {
         this.setState("error", msg.reason);
         this.ws?.close();
@@ -278,6 +281,7 @@ export class AgentWebSocket {
     };
 
     this.ws.onclose = () => {
+      this.stopHeartbeat();
       if (!this.intentionalDisconnect && this.state !== "error") {
         this.setState("disconnected");
         this.scheduleReconnect();
@@ -304,6 +308,22 @@ export class AgentWebSocket {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
+    }
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 30_000);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
     }
   }
 }

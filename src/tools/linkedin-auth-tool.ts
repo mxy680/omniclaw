@@ -49,6 +49,32 @@ export function createLinkedInAuthTool(
       const resolvedUsername = params.username ?? config.linkedin_username;
       const resolvedPassword = params.password ?? config.linkedin_password;
 
+      // Check if we already have a valid session
+      if (linkedinManager.hasCredentials(account)) {
+        try {
+          const profile = (await linkedinManager.get(account, "me")) as {
+            included?: Array<Record<string, unknown>>;
+          };
+          const miniProfile = (profile.included ?? []).find(
+            (item) =>
+              typeof item.$type === "string" &&
+              (item.$type as string).endsWith("MiniProfile"),
+          );
+          const name =
+            miniProfile
+              ? `${(miniProfile.firstName as string) ?? ""} ${(miniProfile.lastName as string) ?? ""}`.trim()
+              : "unknown";
+          return jsonResult({
+            status: "already_authenticated",
+            account,
+            name,
+            message: "Existing session is still valid. No re-authentication needed.",
+          });
+        } catch {
+          // Session invalid — proceed with re-auth
+        }
+      }
+
       try {
         const session = await runLinkedInLoginFlow(resolvedUsername, resolvedPassword);
 

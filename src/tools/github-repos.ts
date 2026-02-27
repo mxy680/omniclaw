@@ -24,7 +24,7 @@ export function createGitHubReposTool(ghManager: GitHubClientManager): any {
   return {
     name: "github_repos",
     label: "GitHub Repos",
-    description: "List repositories for the authenticated user.",
+    description: "List repositories for the authenticated user. Read-only — to modify repo code, use project_code_edit.",
     parameters: Type.Object({
       type: Type.Optional(
         Type.String({
@@ -77,7 +77,7 @@ export function createGitHubGetRepoTool(ghManager: GitHubClientManager): any {
   return {
     name: "github_get_repo",
     label: "GitHub Get Repo",
-    description: "Get details for a specific GitHub repository.",
+    description: "Get details for a specific GitHub repository. Read-only — to modify repo code, use project_code_edit.",
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner (user or org)." }),
       repo: Type.String({ description: "Repository name." }),
@@ -149,7 +149,8 @@ export function createGitHubGetFileTool(ghManager: GitHubClientManager): any {
     name: "github_get_file",
     label: "GitHub Get File",
     description:
-      "Read the contents of a file from a GitHub repository. Returns the decoded file content.",
+      "READ-ONLY: Read the contents of a file from a GitHub repository. Returns the decoded file content. " +
+      "To create or modify files in a project repo, use the project_code_edit tool instead.",
     parameters: Type.Object({
       owner: Type.String({ description: "Repository owner (user or org)." }),
       repo: Type.String({ description: "Repository name." }),

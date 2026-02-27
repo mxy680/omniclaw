@@ -7,6 +7,8 @@ import type {
   Meal,
   MacroTarget,
   WorkoutSession,
+  WorkoutPlan,
+  WorkoutType,
   WeekDay,
   BodyReading,
   WeightTrendPoint,
@@ -21,6 +23,7 @@ const DEFAULT_TARGETS = {
   fat_g: 65,
   fiber_g: 30,
   sodium_mg: 2300,
+  potassium_mg: 4700,
 };
 
 // ── Main transform ──────────────────────────────────────────────────
@@ -34,6 +37,7 @@ export function transformFitnessDay(ws: WsFitnessDay): FitnessDay {
     workout: buildWorkout(ws),
     body: buildBody(ws),
     weekOverview: buildWeekOverview(ws, date),
+    workoutPlan: buildWorkoutPlan(ws),
     mealPlan: buildMealPlan(ws),
     pantryItems: buildPantryItems(ws),
   };
@@ -82,6 +86,7 @@ function buildNutrition(ws: WsFitnessDay): DailyNutrition {
     fat: macro(t?.fat_g ?? 0, tgt?.fat_g, DEFAULT_TARGETS.fat_g, "g"),
     fiber: macro(t?.fiber_g ?? 0, tgt?.fiber_g, DEFAULT_TARGETS.fiber_g, "g"),
     sodium: macro(t?.sodium_mg ?? 0, tgt?.sodium_mg, DEFAULT_TARGETS.sodium_mg, "mg"),
+    potassium: macro(0, undefined, DEFAULT_TARGETS.potassium_mg, "mg"),
     meals,
   };
 }
@@ -215,6 +220,9 @@ function buildWeekOverview(ws: WsFitnessDay, date: Date): WeekDay[] {
   monday.setDate(monday.getDate() + diffToMon);
 
   const exerciseDates = new Set(ws.week_exercises.map((e) => e.date));
+  const planDates = new Set(
+    (ws.week_workout_plans ?? []).map((p) => p.date),
+  );
   const labels = ["M", "T", "W", "T", "F", "S", "S"];
 
   return labels.map((label, i) => {
@@ -227,10 +235,12 @@ function buildWeekOverview(ws: WsFitnessDay, date: Date): WeekDay[] {
     let status: "completed" | "scheduled" | "rest";
     if (hasExercise) {
       status = "completed";
+    } else if (!isPast && planDates.has(dateStr)) {
+      status = "scheduled";
     } else if (isPast) {
       status = "rest";
     } else {
-      status = "scheduled";
+      status = "rest";
     }
 
     return { date: fmtDate(dateStr), label, status };
@@ -285,6 +295,25 @@ function buildPantryItems(ws: WsFitnessDay): PantryItem[] {
     fatPerServing: p.fat_g_per_serving,
     servingSize: p.serving_size,
   }));
+}
+
+// ── Workout Plan ──────────────────────────────────────────────────
+
+function buildWorkoutPlan(ws: WsFitnessDay): WorkoutPlan | null {
+  if (!ws.workout_plan) return null;
+
+  return {
+    workoutName: ws.workout_plan.workout_name,
+    workoutType: ws.workout_plan.workout_type as WorkoutType,
+    exercises: ws.workout_plan.exercises.map((e) => ({
+      id: e.id,
+      exerciseName: e.exercise_name,
+      targetSets: e.target_sets,
+      durationMin: e.duration_min,
+      distance: e.distance,
+      notes: e.notes,
+    })),
+  };
 }
 
 function fmtTime(slot: string): string {

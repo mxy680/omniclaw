@@ -57,6 +57,28 @@ export function createFactor75AuthTool(
         });
       }
 
+      // Check if we already have a valid session
+      if (manager.hasCredentials(account)) {
+        try {
+          const creds = manager.getCredentials(account)!;
+          const info = (await manager.get(
+            account,
+            "api/customers/me/info",
+            { country: creds.country, locale: "en-US" },
+          )) as { id?: string; firstName?: string; lastName?: string; email?: string };
+          return jsonResult({
+            status: "already_authenticated",
+            account,
+            user_id: info?.id ?? creds.user_id,
+            email: info?.email ?? resolvedEmail,
+            name: [info?.firstName, info?.lastName].filter(Boolean).join(" ") || "unknown",
+            message: "Existing session is still valid. No re-authentication needed.",
+          });
+        } catch {
+          // Session invalid — proceed with re-auth
+        }
+      }
+
       try {
         const session = await runFactor75LoginFlow(resolvedEmail, resolvedPassword);
 

@@ -1,6 +1,10 @@
 import {
   LayoutDashboard,
   DollarSign,
+  Landmark,
+  Trophy,
+  TrendingUp,
+  Receipt,
   HeartPulse,
   Apple,
   Dumbbell,
@@ -10,7 +14,6 @@ import {
   MessageSquare,
   Activity,
   Puzzle,
-  BarChart3,
 } from "lucide-react";
 
 export interface NavItem {
@@ -35,7 +38,17 @@ export const navGroups: NavGroup[] = [
   {
     label: "Life",
     items: [
-      { title: "Money", url: "/money", icon: DollarSign },
+      {
+        title: "Money",
+        url: "/money",
+        icon: DollarSign,
+        children: [
+          { title: "Financing", url: "/money/financing", icon: Landmark },
+          { title: "Sports Betting", url: "/money/sports-betting", icon: Trophy },
+          { title: "Prediction Markets", url: "/money/prediction-markets", icon: TrendingUp },
+          { title: "Revenue", url: "/money/revenue", icon: Receipt },
+        ],
+      },
       {
         title: "Health",
         url: "/health",
@@ -48,7 +61,6 @@ export const navGroups: NavGroup[] = [
       { title: "Projects", url: "/projects", icon: FolderKanban },
       { title: "Social", url: "/social", icon: Users },
       { title: "Career", url: "/career", icon: Briefcase },
-      { title: "Quant", url: "/quant", icon: BarChart3 },
     ],
   },
   {

@@ -1,10 +1,12 @@
 "use client";
 
-import { SectionPage } from "@/components/section-page";
-import { getSection } from "@/lib/sections";
-
-const section = getSection("money")!;
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function MoneyPage() {
-  return <SectionPage section={section} />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/money/financing");
+  }, [router]);
+  return null;
 }

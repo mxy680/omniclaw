@@ -7,26 +7,41 @@ export type ResolvedIosAccount = {
   authToken: string;
 };
 
+/** Attachment metadata for file uploads. */
+export type WsAttachment = {
+  fileId: string;
+  filename: string;
+  mimeType: string;
+  size?: number;
+  url?: string;
+};
+
 // ── WebSocket protocol messages ──────────────────────────────────────
 
 /** Client → Server messages */
 export type WsClientMessage =
   | { type: "auth"; token: string }
-  | { type: "message"; text: string; id?: string; conversationId: string }
+  | { type: "message"; text: string; id?: string; conversationId: string; attachments?: WsAttachment[] }
   | { type: "conversation_list" }
   | { type: "conversation_create"; id: string; title?: string }
   | { type: "conversation_history"; conversationId: string; before?: number; limit?: number }
   | { type: "conversation_delete"; conversationId: string }
   | { type: "conversation_rename"; conversationId: string; title: string }
-  | { type: "fitness_day"; date: string };
+  | { type: "fitness_day"; date: string }
+  | { type: "project_list" }
+  | { type: "project_get"; projectId: string }
+  | { type: "project_delete"; projectId: string };
 
 /** Server → Client messages */
 export type WsServerMessage =
   | { type: "auth_ok" }
   | { type: "auth_fail"; reason: string }
-  | { type: "message"; text: string; id: string; conversationId: string; isUser?: boolean }
+  | { type: "message"; text: string; id: string; conversationId: string; isUser?: boolean; attachments?: WsAttachment[] }
   | { type: "typing"; active: boolean; conversationId: string }
-  | { type: "tool_use"; name: string; phase: "start" | "end"; conversationId: string; params?: unknown; durationMs?: number; result?: unknown }
+  | { type: "tool_use"; name: string; phase: "start" | "end"; conversationId: string; params?: Record<string, unknown>; result?: string; durationMs?: number }
+  | { type: "reasoning"; text: string; conversationId: string }
+  | { type: "partial_reply"; text: string; conversationId: string }
+  | { type: "assistant_message_start"; conversationId: string }
   | { type: "error"; message: string }
   | { type: "conversation_list"; conversations: WsConversation[] }
   | { type: "conversation_created"; conversation: WsConversation }
@@ -34,7 +49,14 @@ export type WsServerMessage =
   | { type: "conversation_deleted"; conversationId: string }
   | { type: "conversation_renamed"; conversationId: string; title: string }
   | { type: "conversation_updated"; conversation: WsConversation }
-  | { type: "fitness_day"; data: WsFitnessDay };
+  | { type: "fitness_day"; data: WsFitnessDay }
+  | { type: "project_list"; projects: WsProject[] }
+  | { type: "project_data"; project: WsProject; links: WsProjectLink[] }
+  | { type: "project_created"; project: WsProject }
+  | { type: "project_updated"; project: WsProject }
+  | { type: "project_deleted"; projectId: string }
+  | { type: "project_link_added"; projectId: string; link: WsProjectLink }
+  | { type: "project_link_removed"; projectId: string; linkId: string };
 
 /** Conversation as sent over the wire. */
 export type WsConversation = {
@@ -53,6 +75,7 @@ export type WsMessage = {
   timestamp: number;
   toolUses: { name: string; phase: string }[] | null;
   isStreaming: boolean;
+  attachments: WsAttachment[] | null;
 };
 
 /** Fitness day data as sent over the wire. */
@@ -104,6 +127,8 @@ export type WsFitnessDay = {
   week_exercises: Array<{ date: string }>;
   meal_plan: WsMealPlanEntry[];
   pantry_items: WsPantryItem[];
+  workout_plan: WsWorkoutPlan | null;
+  week_workout_plans: Array<{ date: string }>;
 };
 
 export type WsPantryItem = {
@@ -131,6 +156,42 @@ export type WsMealPlanEntry = {
   carbs_g: number | null;
   fat_g: number | null;
   notes: string | null;
+};
+
+export type WsWorkoutPlanExercise = {
+  id: number;
+  exercise_order: number;
+  exercise_name: string;
+  target_sets: { reps: number; weight: number }[] | null;
+  duration_min: number | null;
+  distance: number | null;
+  notes: string | null;
+};
+
+export type WsWorkoutPlan = {
+  workout_name: string;
+  workout_type: string;
+  exercises: WsWorkoutPlanExercise[];
+};
+
+/** Project as sent over the wire. */
+export type WsProject = {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  createdAt: number;
+  updatedAt: number;
+  links: WsProjectLink[];
+};
+
+/** Project link as sent over the wire. */
+export type WsProjectLink = {
+  id: string;
+  platform: string;
+  identifier: string;
+  displayName: string;
+  metadata: unknown;
 };
 
 /** Core config shape (channels section of the OpenClaw main config). */

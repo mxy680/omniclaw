@@ -22,6 +22,7 @@ function toWsMessage(row: MessageRow): WsMessage {
     timestamp: row.timestamp,
     toolUses: row.tool_uses_json ? JSON.parse(row.tool_uses_json) : null,
     isStreaming: row.is_streaming === 1,
+    attachments: row.attachments_json ? JSON.parse(row.attachments_json) : null,
   };
 }
 

@@ -45,11 +45,21 @@ export function createXSearchTool(manager: XClientManager) {
       if (params.cursor) variables.cursor = params.cursor;
 
       try {
-        const data = (await manager.graphqlGet(
+        // SearchTimeline requires POST (not GET) and fieldToggles
+        const data = (await manager.graphqlPost(
           account,
           "SearchTimeline",
           QUERY_IDS.SearchTimeline,
           variables,
+          undefined,
+          {
+            withPayments: false,
+            withAuxiliaryUserLabels: false,
+            withArticleRichContentState: false,
+            withArticlePlainText: false,
+            withGrokAnalyze: false,
+            withDisallowedReplyControls: false,
+          },
         )) as Record<string, unknown>;
         const { tweets, cursor } = extractTimelineTweets(data, [
           "data",

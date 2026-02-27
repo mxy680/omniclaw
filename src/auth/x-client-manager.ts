@@ -189,6 +189,7 @@ export class XClientManager {
     queryId: string,
     variables: Record<string, unknown>,
     features?: Record<string, boolean>,
+    fieldToggles?: Record<string, boolean>,
   ): Promise<unknown> {
     const session = this.getCredentials(account);
     if (!session) throw new Error("No credentials for account: " + account);
@@ -197,10 +198,14 @@ export class XClientManager {
 
     const url = `${GRAPHQL_BASE}/${queryId}/${operationName}`;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body: any = { variables, features: mergedFeatures };
+    if (fieldToggles) body.fieldToggles = fieldToggles;
+
     const resp = await fetch(url, {
       method: "POST",
       headers: this.buildHeaders(session),
-      body: JSON.stringify({ variables, features: mergedFeatures }),
+      body: JSON.stringify(body),
     });
 
     return this.handleResponse(resp);

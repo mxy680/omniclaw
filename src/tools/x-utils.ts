@@ -60,21 +60,22 @@ export function extractTweet(entry: Record<string, unknown>): Record<string, unk
   if (!tweet?.legacy) return null;
 
   const legacy = tweet.legacy as Record<string, unknown>;
-  const core = tweet.core as Record<string, unknown> | undefined;
-  const userResults = core?.user_results as Record<string, unknown> | undefined;
+  const tweetCore = tweet.core as Record<string, unknown> | undefined;
+  const userResults = tweetCore?.user_results as Record<string, unknown> | undefined;
   const userResult = userResults?.result as Record<string, unknown> | undefined;
+  const userCore = userResult?.core as Record<string, unknown> | undefined;
   const userLegacy = userResult?.legacy as Record<string, unknown> | undefined;
 
   return {
     id: legacy.id_str ?? tweet.rest_id,
     text: legacy.full_text,
     created_at: legacy.created_at,
-    author: userLegacy
+    author: (userCore || userLegacy)
       ? {
           id: userResult?.rest_id,
-          name: userLegacy.name,
-          screen_name: userLegacy.screen_name,
-          verified: userLegacy.verified,
+          name: userCore?.name ?? userLegacy?.name,
+          screen_name: userCore?.screen_name ?? userLegacy?.screen_name,
+          verified: (userResult?.verification as Record<string, unknown> | undefined)?.verified ?? userLegacy?.verified,
         }
       : undefined,
     retweet_count: legacy.retweet_count,
@@ -134,6 +135,10 @@ export function extractTimelineTweets(
 
 /**
  * Extract user profile from UserByScreenName response.
+ *
+ * X restructured user data: core fields (name, screen_name, created_at) moved
+ * from `legacy` to `result.core`. Stats remain in `legacy`. Other fields moved
+ * to dedicated sub-objects (avatar, location, profile_bio, verification).
  */
 export function extractUser(data: Record<string, unknown>): Record<string, unknown> | null {
   const dataObj = data?.data as Record<string, unknown> | undefined;
@@ -142,25 +147,31 @@ export function extractUser(data: Record<string, unknown>): Record<string, unkno
     | undefined;
   if (!userResult) return null;
 
+  const core = userResult.core as Record<string, unknown> | undefined;
   const legacy = userResult.legacy as Record<string, unknown> | undefined;
-  if (!legacy) return null;
+  const avatar = userResult.avatar as Record<string, unknown> | undefined;
+  const location = userResult.location as Record<string, unknown> | undefined;
+  const profileBio = userResult.profile_bio as Record<string, unknown> | undefined;
+  const verification = userResult.verification as Record<string, unknown> | undefined;
+
+  // Need at least core or legacy to return useful data
+  if (!core && !legacy) return null;
 
   return {
     id: userResult.rest_id,
-    name: legacy.name,
-    screen_name: legacy.screen_name,
-    description: legacy.description,
-    location: legacy.location,
-    url: legacy.url,
-    followers_count: legacy.followers_count,
-    following_count: legacy.friends_count,
-    tweet_count: legacy.statuses_count,
-    listed_count: legacy.listed_count,
-    created_at: legacy.created_at,
-    verified: legacy.verified,
+    name: core?.name ?? legacy?.name,
+    screen_name: core?.screen_name ?? legacy?.screen_name,
+    description: profileBio?.description ?? legacy?.description,
+    location: location?.location ?? legacy?.location,
+    followers_count: legacy?.followers_count,
+    following_count: legacy?.friends_count,
+    tweet_count: legacy?.statuses_count,
+    listed_count: legacy?.listed_count,
+    created_at: core?.created_at ?? legacy?.created_at,
+    verified: verification?.verified ?? legacy?.verified,
     is_blue_verified: userResult.is_blue_verified,
-    profile_image_url: legacy.profile_image_url_https,
-    profile_banner_url: legacy.profile_banner_url,
-    pinned_tweet_ids: legacy.pinned_tweet_ids_str,
+    profile_image_url: avatar?.image_url ?? legacy?.profile_image_url_https,
+    profile_banner_url: legacy?.profile_banner_url,
+    pinned_tweet_ids: legacy?.pinned_tweet_ids_str,
   };
 }

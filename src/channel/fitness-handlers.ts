@@ -30,6 +30,9 @@ export function handleFitnessMessage(
   // Meal plan for the requested date
   const mealPlanEntries = db.getMealPlan(date);
 
+  // Pantry inventory
+  const pantryItems = db.listPantryItems();
+
   // 30-day weight trend
   const trendEnd = date;
   const trendStart = offsetDate(date, -30);
@@ -103,6 +106,18 @@ export function handleFitnessMessage(
       carbs_g: e.carbs_g ?? null,
       fat_g: e.fat_g ?? null,
       notes: e.notes ?? null,
+    })),
+    pantry_items: pantryItems.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      quantity: p.quantity,
+      unit: p.unit,
+      calories_per_serving: p.calories_per_serving ?? null,
+      protein_g_per_serving: p.protein_g_per_serving ?? null,
+      carbs_g_per_serving: p.carbs_g_per_serving ?? null,
+      fat_g_per_serving: p.fat_g_per_serving ?? null,
+      serving_size: p.serving_size ?? null,
     })),
   };
 

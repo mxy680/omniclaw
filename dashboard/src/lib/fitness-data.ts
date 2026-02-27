@@ -100,6 +100,19 @@ export interface DailyMealPlan {
   totalFat: number;
 }
 
+export interface PantryItem {
+  id: number;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  caloriesPerServing: number | null;
+  proteinPerServing: number | null;
+  carbsPerServing: number | null;
+  fatPerServing: number | null;
+  servingSize: string | null;
+}
+
 export interface FitnessDay {
   date: Date;
   nutrition: DailyNutrition;
@@ -114,5 +127,6 @@ export interface FitnessDay {
   };
   weekOverview: WeekDay[];
   mealPlan: DailyMealPlan | null;
+  pantryItems: PantryItem[];
 }
 

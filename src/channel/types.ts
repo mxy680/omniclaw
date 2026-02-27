@@ -103,6 +103,20 @@ export type WsFitnessDay = {
   weight_trend: Array<{ date: string; value: number }>;
   week_exercises: Array<{ date: string }>;
   meal_plan: WsMealPlanEntry[];
+  pantry_items: WsPantryItem[];
+};
+
+export type WsPantryItem = {
+  id: number;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  calories_per_serving: number | null;
+  protein_g_per_serving: number | null;
+  carbs_g_per_serving: number | null;
+  fat_g_per_serving: number | null;
+  serving_size: string | null;
 };
 
 export type WsMealPlanEntry = {

@@ -3,6 +3,7 @@ import type {
   FitnessDay,
   DailyNutrition,
   DailyMealPlan,
+  PantryItem,
   Meal,
   MacroTarget,
   WorkoutSession,
@@ -34,6 +35,7 @@ export function transformFitnessDay(ws: WsFitnessDay): FitnessDay {
     body: buildBody(ws),
     weekOverview: buildWeekOverview(ws, date),
     mealPlan: buildMealPlan(ws),
+    pantryItems: buildPantryItems(ws),
   };
 }
 
@@ -265,6 +267,24 @@ function buildMealPlan(ws: WsFitnessDay): DailyMealPlan | null {
     totalCarbs: entries.reduce((s, e) => s + (e.carbs ?? 0), 0),
     totalFat: entries.reduce((s, e) => s + (e.fat ?? 0), 0),
   };
+}
+
+// ── Pantry ──────────────────────────────────────────────────────────
+
+function buildPantryItems(ws: WsFitnessDay): PantryItem[] {
+  if (!ws.pantry_items) return [];
+  return ws.pantry_items.map((p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    quantity: p.quantity,
+    unit: p.unit,
+    caloriesPerServing: p.calories_per_serving,
+    proteinPerServing: p.protein_g_per_serving,
+    carbsPerServing: p.carbs_g_per_serving,
+    fatPerServing: p.fat_g_per_serving,
+    servingSize: p.serving_size,
+  }));
 }
 
 function fmtTime(slot: string): string {

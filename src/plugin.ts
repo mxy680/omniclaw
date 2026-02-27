@@ -65,6 +65,15 @@ import { createInstagramFollowersTool, createInstagramFollowingTool } from "./to
 import { createInstagramStoriesTool } from "./tools/instagram-stories.js";
 import { createInstagramPostCommentsTool } from "./tools/instagram-comments.js";
 import { createInstagramDownloadMediaTool } from "./tools/instagram-download-media.js";
+import { TikTokClientManager } from "./auth/tiktok-client-manager.js";
+import { createTikTokAuthTool } from "./tools/tiktok-auth-tool.js";
+import { createTikTokProfileTool, createTikTokGetUserTool } from "./tools/tiktok-profile.js";
+import { createTikTokUserVideosTool } from "./tools/tiktok-user-videos.js";
+import { createTikTokVideoDetailsTool } from "./tools/tiktok-video-details.js";
+import { createTikTokFeedTool } from "./tools/tiktok-feed.js";
+import { createTikTokSearchVideosTool, createTikTokSearchUsersTool } from "./tools/tiktok-search.js";
+import { createTikTokTrendingTool } from "./tools/tiktok-trending.js";
+import { createTikTokVideoCommentsTool } from "./tools/tiktok-video-comments.js";
 import { createLinkedInAuthTool } from "./tools/linkedin-auth-tool.js";
 import { createLinkedInCompanyTool } from "./tools/linkedin-company.js";
 import { createLinkedInConnectionsTool } from "./tools/linkedin-connections.js";
@@ -473,6 +482,27 @@ export function register(api: OpenClawPluginApi): void {
   reg(createInstagramNotificationsTool(instagramManager));
   reg(createInstagramSavedTool(instagramManager));
   reg(createInstagramDownloadMediaTool(instagramManager));
+
+  // TikTok tools — register unconditionally, no Google credentials required
+  const tiktokTokensPath =
+    config.tiktok_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-tiktok-tokens.json",
+    );
+
+  const tiktokManager = new TikTokClientManager(tiktokTokensPath);
+
+  reg(createTikTokAuthTool(tiktokManager, config));
+  reg(createTikTokProfileTool(tiktokManager));
+  reg(createTikTokGetUserTool(tiktokManager));
+  reg(createTikTokUserVideosTool(tiktokManager));
+  reg(createTikTokVideoDetailsTool(tiktokManager));
+  reg(createTikTokFeedTool(tiktokManager));
+  reg(createTikTokSearchVideosTool(tiktokManager));
+  reg(createTikTokSearchUsersTool(tiktokManager));
+  reg(createTikTokTrendingTool(tiktokManager));
+  reg(createTikTokVideoCommentsTool(tiktokManager));
 
   // Factor75 tools — register unconditionally, no Google credentials required
   const factor75TokensPath =

@@ -15,21 +15,21 @@ export const AUTH_REQUIRED = {
 
 /** GraphQL query IDs — extracted from X's web client JS bundles. Update when X deploys changes. */
 export const QUERY_IDS = {
-  // Queries (GET)
-  HomeTimeline: "c-CzHF1LboFilMpsx4ZCrQ",
-  HomeLatestTimeline: "BKB7oi212Fi7kQtCBGE4zA",
-  UserByScreenName: "1VOOyvKkiI3FMmkeDNxM9A",
-  UserTweets: "q6xj5bs0hapm9309hexA_g",
-  SearchTimeline: "VhUd6vHVmLBcw0uX-6jMLA",
-  TweetDetail: "xd_EMdYvB9hfZsZ6Idri0w",
+  // Queries (GET) — extracted from main.0aef2cca.js on 2026-02-27
+  HomeTimeline: "_J734qKR-wyeEf6vCZ1mfQ",
+  HomeLatestTimeline: "csRxUH5ocwnJtPnB3-wr4g",
+  UserByScreenName: "pLsOiyHJ1eFwPJlNmLp4Bg",
+  UserTweets: "LhtwFV9WwCOurTanx8NNfg",
+  SearchTimeline: "9AW3D-T7t9Vkvfdmq2L-iQ",
+  TweetDetail: "ShZ7Ptnc5jM_23VVusteFw",
   Bookmarks: "2neUNDqrrFzbLui8yallcQ",
   // Mutations (POST)
-  CreateTweet: "IID9x6WsdMnTlXnzXGq8ng",
-  DeleteTweet: "VaenaVgh5q5ih7kvyVjgtg",
+  CreateTweet: "y362cgN7cwMppu6Hy3JzrQ",
+  DeleteTweet: "nxpZCY2K-I6QoFHAHeojFQ",
   FavoriteTweet: "lI07N6Otwv1PhnEgXILM7A",
   UnfavoriteTweet: "ZYKSe-w7KEslx3JhSIk5LA",
-  CreateRetweet: "ojPdsZsimiJrUGLR1sjUtA",
-  DeleteRetweet: "iQtK4dl5hBmXewYZuEOKVw",
+  CreateRetweet: "mbRO74GrOvSfRcJnlMapnQ",
+  DeleteRetweet: "ZyZigVsNiFO6v1dEks1eWg",
   CreateBookmark: "aoDbu3RHznuiSkQ9aNM67Q",
   DeleteBookmark: "Wlmlj2-xzyS1GN3a6cj-mQ",
 } as const;

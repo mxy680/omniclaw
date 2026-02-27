@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox";
 import { chromium } from "playwright";
 import { type XClientManager, type XSession, X_BEARER_TOKEN } from "../auth/x-client-manager.js";
 import type { PluginConfig } from "../types/plugin-config.js";
-import { jsonResult } from "./x-utils.js";
+import { jsonResult, QUERY_IDS } from "./x-utils.js";
 
 export function createXAuthTool(manager: XClientManager, _config: PluginConfig) {
   return {
@@ -21,23 +21,24 @@ export function createXAuthTool(manager: XClientManager, _config: PluginConfig) 
     async execute(_toolCallId: string, params: { account?: string }) {
       const account = params.account ?? "default";
 
-      // Check if existing credentials are still valid
+      // Check if existing credentials are still valid via a lightweight GraphQL call
       if (manager.hasCredentials(account)) {
         try {
-          const session = manager.getCredentials(account)!;
-          const resp = await fetch("https://api.x.com/1.1/account/settings.json", {
-            headers: {
-              Authorization: `Bearer ${X_BEARER_TOKEN}`,
-              "x-csrf-token": session.ct0,
-              Cookie: `auth_token=${session.auth_token}; ct0=${session.ct0}`,
-            },
-          });
-          if (resp.ok) {
-            const settings = (await resp.json()) as { screen_name?: string };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const data = (await manager.graphqlGet(
+            account,
+            "UserByScreenName",
+            QUERY_IDS.UserByScreenName,
+            { screen_name: "x", withSafetyModeUserFields: true },
+          )) as any;
+          // If we got a response with data, the session is valid
+          if (data?.data?.user) {
+            const session = manager.getCredentials(account)!;
             return jsonResult({
               status: "already_authenticated",
               account,
-              username: settings.screen_name ?? session.username,
+              username: session.username,
+              user_id: session.user_id,
             });
           }
         } catch {
@@ -111,28 +112,33 @@ async function runXLoginFlow(): Promise<XSession> {
   let username: string | undefined;
   let userId: string | undefined;
 
-  try {
-    const settings = await fetch("https://api.x.com/1.1/account/settings.json", {
-      headers: {
-        Authorization:
-          "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
-        "x-csrf-token": ct0,
-        Cookie: `auth_token=${authToken}; ct0=${ct0}`,
-      },
-    });
-    if (settings.ok) {
-      const data = (await settings.json()) as { screen_name?: string };
-      username = data.screen_name;
-    }
-  } catch {
-    // Non-fatal
-  }
-
   // Get user_id from the twid cookie (format: u%3D<user_id>)
   const twidCookie = finalCookies.find((c) => c.name === "twid");
   if (twidCookie) {
     const match = decodeURIComponent(twidCookie.value).match(/u=(\d+)/);
     if (match) userId = match[1];
+  }
+
+  // Try to get username via the page URL (after login, X redirects to /home)
+  try {
+    // Navigate to profile to extract screen_name from the URL
+    const url = page.url();
+    if (url.includes("x.com")) {
+      // Use a script to extract the logged-in user's screen_name from the page
+      username = await page.evaluate(() => {
+        const accountSwitcher = document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]');
+        if (accountSwitcher) {
+          const spans = Array.from(accountSwitcher.querySelectorAll("span"));
+          for (const span of spans) {
+            const text = span.textContent ?? "";
+            if (text.startsWith("@")) return text.slice(1);
+          }
+        }
+        return undefined;
+      });
+    }
+  } catch {
+    // Non-fatal
   }
 
   const cookieDetails: Record<string, string> = {};

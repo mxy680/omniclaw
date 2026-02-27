@@ -48,22 +48,10 @@ describe("X (Twitter) Integration", () => {
   const bookmarksTool = createXGetBookmarksTool(manager);
 
   beforeAll(async () => {
-    // Re-authenticate if no valid session exists
-    if (manager.hasCredentials(ACCOUNT)) {
-      try {
-        const result = await authTool.execute("test", { account: ACCOUNT });
-        const parsed = JSON.parse(result.content[0].text);
-        if (parsed.status === "already_authenticated") return;
-      } catch {
-        // Fall through to re-auth
-      }
-    }
-
-    // Launch Playwright for manual login
-    console.log("No valid X session — launching browser for login...");
+    // Always call auth — it checks for valid session first, only launches browser if needed
     const result = await authTool.execute("test", { account: ACCOUNT });
     const parsed = JSON.parse(result.content[0].text);
-    expect(parsed.status).toBe("authenticated");
+    expect(["already_authenticated", "authenticated"]).toContain(parsed.status);
   }, 360_000);
 
   describe("Timeline", () => {

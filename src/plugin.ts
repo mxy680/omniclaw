@@ -88,6 +88,12 @@ import { createLinkedInProfileTool as createLinkedInMyProfileTool, createLinkedI
 import { createLinkedInProfileViewsTool } from "./tools/linkedin-profile-views.js";
 import { createLinkedInSavedJobsTool } from "./tools/linkedin-saved-jobs.js";
 import { createLinkedInSearchTool, createLinkedInSearchJobsTool } from "./tools/linkedin-search.js";
+import { createLinkedInSendMessageTool } from "./tools/linkedin-send-message.js";
+import { createLinkedInSendConnectionRequestTool } from "./tools/linkedin-connection-request.js";
+import { createLinkedInRespondInvitationTool } from "./tools/linkedin-respond-invitation.js";
+import { createLinkedInCreatePostTool } from "./tools/linkedin-create-post.js";
+import { createLinkedInReactToPostTool } from "./tools/linkedin-react.js";
+import { createLinkedInCommentOnPostTool } from "./tools/linkedin-comment.js";
 import {
   createGitHubIssuesTool,
   createGitHubGetIssueTool,
@@ -460,6 +466,12 @@ export function register(api: OpenClawPluginApi): void {
   reg(createLinkedInPostCommentsTool(linkedinManager));
   reg(createLinkedInProfileViewsTool(linkedinManager));
   reg(createLinkedInSavedJobsTool(linkedinManager));
+  reg(createLinkedInSendMessageTool(linkedinManager));
+  reg(createLinkedInSendConnectionRequestTool(linkedinManager));
+  reg(createLinkedInRespondInvitationTool(linkedinManager));
+  reg(createLinkedInCreatePostTool(linkedinManager));
+  reg(createLinkedInReactToPostTool(linkedinManager));
+  reg(createLinkedInCommentOnPostTool(linkedinManager));
 
   // Instagram tools — register unconditionally, no Google credentials required
   const instagramTokensPath =

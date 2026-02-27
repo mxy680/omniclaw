@@ -213,6 +213,7 @@ import { createXPostTweetTool, createXDeleteTweetTool, createXReplyTool } from "
 import { createXLikeTool, createXUnlikeTool, createXRetweetTool, createXUnretweetTool } from "./tools/x-engagement.js";
 import { createXGetProfileTool, createXFollowTool, createXUnfollowTool } from "./tools/x-users.js";
 import { createXGetBookmarksTool } from "./tools/x-bookmarks.js";
+import { createXUpdateProfileTool, createXUpdateProfileImageTool, createXUpdateProfileBannerTool } from "./tools/x-profile.js";
 import { NutritionDbManager } from "./nutrition/nutrition-db-manager.js";
 
 let activeNutritionDb: NutritionDbManager | null = null;
@@ -596,6 +597,9 @@ export function register(api: OpenClawPluginApi): void {
   reg(createXFollowTool(xManager));
   reg(createXUnfollowTool(xManager));
   reg(createXGetBookmarksTool(xManager));
+  reg(createXUpdateProfileTool(xManager));
+  reg(createXUpdateProfileImageTool(xManager));
+  reg(createXUpdateProfileBannerTool(xManager));
 
   // Nutrition tools — local SQLite, no external API
   const nutritionDbPath =

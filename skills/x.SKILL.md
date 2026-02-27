@@ -1,6 +1,6 @@
 ---
 name: x
-description: Full read-write X (Twitter) access — browse timelines, search, post/delete tweets, like, retweet, follow/unfollow, and manage bookmarks via browser session auth.
+description: Full read-write X (Twitter) access — browse timelines, search, post/delete tweets, like, retweet, follow/unfollow, manage bookmarks, and update your profile via browser session auth.
 metadata: {"openclaw": {"emoji": "🐦"}}
 ---
 
@@ -28,6 +28,9 @@ Full read-write access to X (Twitter) using browser session authentication. No d
 - **x_follow** / **x_unfollow** — follow or unfollow a user
 - **x_get_profile** — get a user's profile by @handle
 - **x_get_bookmarks** — get your bookmarked tweets
+- **x_update_profile** — update your name, bio, location, or website URL
+- **x_update_profile_image** — change your profile picture / avatar
+- **x_update_profile_banner** — change your profile banner / header image
 
 ## Workflow
 

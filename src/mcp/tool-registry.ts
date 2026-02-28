@@ -222,6 +222,17 @@ import { createXMuteTool, createXUnmuteTool, createXBlockTool, createXUnblockToo
 import { createXPostMediaTweetTool, createXQuoteTweetTool, createXPostThreadTool, createXPostPollTool } from "../tools/x-tweet-extended.js";
 import { createXDmInboxTool, createXDmConversationTool, createXDmSendTool } from "../tools/x-dms.js";
 import { createXGetListsTool, createXGetListTweetsTool, createXGetListMembersTool, createXCreateListTool, createXDeleteListTool, createXUpdateListTool, createXListAddMemberTool, createXListRemoveMemberTool } from "../tools/x-lists.js";
+import { HcmClientManager } from "../auth/hcm-client-manager.js";
+import { createHcmAuthTool } from "../tools/hcm-auth-tool.js";
+import {
+  createHcmGetTimesheetTool,
+  createHcmEnterHoursTool,
+  createHcmSubmitTimesheetTool,
+} from "../tools/hcm-timesheet.js";
+import {
+  createHcmGetPaystubsTool,
+  createHcmGetPaystubDetailsTool,
+} from "../tools/hcm-paystubs.js";
 import { DevpostClientManager } from "../auth/devpost-client-manager.js";
 import { createDevpostAuthTool } from "../tools/devpost-auth-tool.js";
 import {
@@ -727,6 +738,23 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createYouTubeChannelInfoTool(clientManager));
     add(createYouTubeVideoCommentsTool(clientManager));
   }
+
+  // HCM tools — register unconditionally, no Google credentials required
+  const hcmTokensPath =
+    config.hcm_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-hcm-tokens.json",
+    );
+
+  const hcmManager = new HcmClientManager(hcmTokensPath);
+
+  add(createHcmAuthTool(hcmManager, config));
+  add(createHcmGetTimesheetTool(hcmManager));
+  add(createHcmEnterHoursTool(hcmManager));
+  add(createHcmSubmitTimesheetTool(hcmManager));
+  add(createHcmGetPaystubsTool(hcmManager));
+  add(createHcmGetPaystubDetailsTool(hcmManager));
 
   // Devpost tools — register unconditionally
   const devpostTokensPath =

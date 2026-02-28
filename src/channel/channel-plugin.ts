@@ -8,10 +8,12 @@ import {
 import { listIosAccountIds, resolveIosAccount } from "./accounts.js";
 import { ConversationStore } from "./conversation-store.js";
 import { ProjectStore } from "./project-store.js";
+import { TaskStore } from "./task-store.js";
 import { DispatchManager } from "./dispatch-manager.js";
 import { handleConversationMessage } from "./conversation-handlers.js";
 import { handleFitnessMessage } from "./fitness-handlers.js";
 import { handleProjectMessage } from "./project-handlers.js";
+import { handleTaskMessage } from "./task-handlers.js";
 import { handleIosInbound } from "./inbound.js";
 import { getChannelRuntime } from "./runtime.js";
 import { sendMessageIos, setWsServer } from "./send.js";
@@ -23,6 +25,7 @@ import { startUploadServer } from "./upload-server.js";
 // If multi-account is added, replace with Map<accountId, DispatchManager>.
 let activeDispatchManager: DispatchManager | null = null;
 let activeProjectStore: ProjectStore | null = null;
+let activeTaskStore: TaskStore | null = null;
 
 export function getDispatchManager(): DispatchManager | null {
   return activeDispatchManager;
@@ -30,6 +33,10 @@ export function getDispatchManager(): DispatchManager | null {
 
 export function getProjectStore(): ProjectStore | null {
   return activeProjectStore;
+}
+
+export function getTaskStore(): TaskStore | null {
+  return activeTaskStore;
 }
 
 export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
@@ -123,6 +130,9 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
       const projectStore = new ProjectStore();
       activeProjectStore = projectStore;
 
+      const taskStore = new TaskStore();
+      activeTaskStore = taskStore;
+
       const pluginCfg = (ctx.cfg as any)?.plugins?.entries?.omniclaw?.config ?? {};
       const dispatchManager = new DispatchManager({
         maxConcurrency: pluginCfg.dispatch_max_concurrency ?? 3,
@@ -159,6 +169,12 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
           // Route project messages
           if (msg.type === "project_list" || msg.type === "project_get" || msg.type === "project_delete") {
             handleProjectMessage(connId, msg, projectStore, wsServer);
+            return;
+          }
+
+          // Route task messages
+          if (msg.type === "task_list" || msg.type === "task_approve" || msg.type === "task_delete" || msg.type === "task_execute") {
+            handleTaskMessage(connId, msg, taskStore, wsServer);
             return;
           }
 
@@ -214,8 +230,10 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
           uploadServer.stop();
           store.close();
           projectStore.close();
+          taskStore.close();
           activeDispatchManager = null;
           activeProjectStore = null;
+          activeTaskStore = null;
           setWsServer(null as unknown as ReturnType<typeof startWsServer>);
           ctx.setStatus({
             accountId: ctx.accountId,

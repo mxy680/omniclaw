@@ -26,7 +26,7 @@ const WORKSPACE_ROOT = join(homedir(), ".openclaw", "workspaces");
 
 // ── Shell helpers ───────────────────────────────────────────────────
 
-function exec(cmd: string, cwd?: string): Promise<string> {
+export function exec(cmd: string, cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn("sh", ["-c", cmd], { cwd, env: process.env });
     let stdout = "";
@@ -51,7 +51,7 @@ interface SessionFile {
   [branch: string]: SessionEntry;
 }
 
-interface ClaudeJsonOutput {
+export interface ClaudeJsonOutput {
   type: string;
   subtype: string;
   is_error: boolean;
@@ -136,7 +136,7 @@ async function ensureWorkspaceOnBranch(projectId: string, repoIdentifier: string
 
 // ── Claude Code runner ──────────────────────────────────────────────
 
-function runClaude(
+export function runClaude(
   instructions: string,
   cwd: string,
   opts?: { maxTurns?: number; resumeSessionId?: string },
@@ -186,7 +186,7 @@ function runClaude(
   });
 }
 
-async function runClaudeWithFallback(
+export async function runClaudeWithFallback(
   instructions: string,
   cwd: string,
   opts?: { maxTurns?: number; resumeSessionId?: string },

@@ -285,6 +285,14 @@ import {
 } from "../tools/project-tools.js";
 import { createProjectCodeEditTool } from "../tools/project-code-tools.js";
 import {
+  createTaskCreateTool,
+  createTaskListTool,
+  createTaskGetTool,
+  createTaskUpdateTool,
+  createTaskDeleteTool,
+  createTaskExecuteTool,
+} from "../tools/task-tools.js";
+import {
   createMemorySaveTool,
   createMemoryReadTool,
   createMemoryListTool,
@@ -323,6 +331,14 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
   add(createProjectAddLinkTool());
   add(createProjectRemoveLinkTool());
   add(createProjectCodeEditTool());
+
+  // Task tools — register unconditionally, use lazy store access
+  add(createTaskCreateTool());
+  add(createTaskListTool());
+  add(createTaskGetTool());
+  add(createTaskUpdateTool());
+  add(createTaskDeleteTool());
+  add(createTaskExecuteTool());
 
   // Memory tools — local filesystem, no auth required
   add(createMemorySaveTool());
@@ -750,11 +766,11 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
   const hcmManager = new HcmClientManager(hcmTokensPath);
 
   add(createHcmAuthTool(hcmManager, config));
-  add(createHcmGetTimesheetTool(hcmManager));
-  add(createHcmEnterHoursTool(hcmManager));
-  add(createHcmSubmitTimesheetTool(hcmManager));
-  add(createHcmGetPaystubsTool(hcmManager));
-  add(createHcmGetPaystubDetailsTool(hcmManager));
+  add(createHcmGetTimesheetTool(hcmManager, config));
+  add(createHcmEnterHoursTool(hcmManager, config));
+  add(createHcmSubmitTimesheetTool(hcmManager, config));
+  add(createHcmGetPaystubsTool(hcmManager, config));
+  add(createHcmGetPaystubDetailsTool(hcmManager, config));
 
   // Devpost tools — register unconditionally
   const devpostTokensPath =

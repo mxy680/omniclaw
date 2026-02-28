@@ -1,3 +1,5 @@
+import type { WsTask } from "./task-types.js";
+
 /** Resolved account configuration for the iOS WebSocket channel. */
 export type ResolvedIosAccount = {
   accountId: string;
@@ -30,7 +32,11 @@ export type WsClientMessage =
   | { type: "fitness_day"; date: string }
   | { type: "project_list" }
   | { type: "project_get"; projectId: string }
-  | { type: "project_delete"; projectId: string };
+  | { type: "project_delete"; projectId: string }
+  | { type: "task_list" }
+  | { type: "task_execute"; taskId: string }
+  | { type: "task_approve"; taskId: string }
+  | { type: "task_delete"; taskId: string };
 
 /** Server → Client messages */
 export type WsServerMessage =
@@ -56,7 +62,11 @@ export type WsServerMessage =
   | { type: "project_updated"; project: WsProject }
   | { type: "project_deleted"; projectId: string }
   | { type: "project_link_added"; projectId: string; link: WsProjectLink }
-  | { type: "project_link_removed"; projectId: string; linkId: string };
+  | { type: "project_link_removed"; projectId: string; linkId: string }
+  | { type: "task_list"; tasks: WsTask[] }
+  | { type: "task_created"; task: WsTask }
+  | { type: "task_updated"; task: WsTask }
+  | { type: "task_deleted"; taskId: string };
 
 /** Conversation as sent over the wire. */
 export type WsConversation = {

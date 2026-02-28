@@ -28,6 +28,9 @@ export function createNutritionSaveMealPlanTool(db: NutritionDbManager): any {
           protein_g: Type.Optional(Type.Number({ description: "Protein in grams" })),
           carbs_g: Type.Optional(Type.Number({ description: "Carbs in grams" })),
           fat_g: Type.Optional(Type.Number({ description: "Fat in grams" })),
+          fiber_g: Type.Optional(Type.Number({ description: "Fiber in grams" })),
+          sodium_mg: Type.Optional(Type.Number({ description: "Sodium in milligrams" })),
+          potassium_mg: Type.Optional(Type.Number({ description: "Potassium in milligrams" })),
           notes: Type.Optional(Type.String({ description: "Notes" })),
         }),
         { description: "Array of meal plan entries for the day" },
@@ -53,6 +56,9 @@ export function createNutritionSaveMealPlanTool(db: NutritionDbManager): any {
           protein_g?: number;
           carbs_g?: number;
           fat_g?: number;
+          fiber_g?: number;
+          sodium_mg?: number;
+          potassium_mg?: number;
           notes?: string;
         }>;
         deduct_pantry?: boolean;
@@ -78,6 +84,9 @@ export function createNutritionSaveMealPlanTool(db: NutritionDbManager): any {
           protein_g: entries.reduce((s, e) => s + (e.protein_g ?? 0), 0),
           carbs_g: entries.reduce((s, e) => s + (e.carbs_g ?? 0), 0),
           fat_g: entries.reduce((s, e) => s + (e.fat_g ?? 0), 0),
+          fiber_g: entries.reduce((s, e) => s + (e.fiber_g ?? 0), 0),
+          sodium_mg: entries.reduce((s, e) => s + (e.sodium_mg ?? 0), 0),
+          potassium_mg: entries.reduce((s, e) => s + (e.potassium_mg ?? 0), 0),
         };
 
         const targets = db.getActiveTargets();

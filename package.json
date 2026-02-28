@@ -23,6 +23,7 @@
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@sinclair/typebox": "0.34.48",
     "better-sqlite3": "^11.0.0",
+    "croner": "^10.0.1",
     "express": "^5.2.1",
     "google-auth-library": "^10.5.0",
     "googleapis": "^144.0.0",

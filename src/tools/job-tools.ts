@@ -275,6 +275,18 @@ export function createJobUpdateTool(): any {
         }
       }
 
+      // Cross-field validation: ensure mode/param consistency after merge
+      const effectiveMode = params.mode ?? existing.mode;
+      const effectiveToolName = params.tool_name ?? existing.tool_name;
+      const effectivePrompt = params.prompt ?? existing.prompt;
+
+      if (effectiveMode === "tool" && !effectiveToolName) {
+        return jsonResult({ status: "error", error: "tool_name is required when mode is 'tool'" });
+      }
+      if (effectiveMode === "agent" && !effectivePrompt) {
+        return jsonResult({ status: "error", error: "prompt is required when mode is 'agent'" });
+      }
+
       try {
         store.updateJob(params.job_id, {
           name: params.name,

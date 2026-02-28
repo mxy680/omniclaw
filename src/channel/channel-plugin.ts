@@ -234,12 +234,17 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
         log: (msg) => ctx.log?.info(msg),
       });
 
+      // Build tool map once for scheduled job execution (avoids leaking
+      // client manager instances on every tick).
+      const { createAllTools } = await import("../mcp/tool-registry.js");
+      const toolMap = new Map(
+        createAllTools({ pluginConfig: pluginCfg }).map((t) => [t.name, t]),
+      );
+
       const jobScheduler = new JobScheduler({
         store: jobStore,
         executeTool: async (toolName, params, runId) => {
-          const { createAllTools } = await import("../mcp/tool-registry.js");
-          const tools = createAllTools({ pluginConfig: pluginCfg });
-          const tool = tools.find((t) => t.name === toolName);
+          const tool = toolMap.get(toolName);
           if (!tool) throw new Error(`Tool '${toolName}' not found`);
           await tool.execute(runId, params);
         },

@@ -23,6 +23,7 @@ export interface PluginConfig {
   factor75_email?: string;
   factor75_password?: string;
   nutrition_db_path?: string;
+  jobs_db_path?: string;
   slack_tokens_path?: string;
   slack_workspace?: string;
   vercel_token?: string;

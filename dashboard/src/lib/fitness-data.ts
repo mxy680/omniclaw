@@ -105,6 +105,9 @@ export interface MealPlanSlot {
   protein: number | null;
   carbs: number | null;
   fat: number | null;
+  fiber: number | null;
+  sodium: number | null;
+  potassium: number | null;
   notes: string | null;
 }
 
@@ -114,6 +117,9 @@ export interface DailyMealPlan {
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
+  totalFiber: number;
+  totalSodium: number;
+  totalPotassium: number;
 }
 
 export interface PantryItem {

@@ -4,7 +4,6 @@ import type {
   DailyNutrition,
   DailyMealPlan,
   PantryItem,
-  Meal,
   MacroTarget,
   WorkoutSession,
   WorkoutPlan,
@@ -58,27 +57,6 @@ function buildNutrition(ws: WsFitnessDay): DailyNutrition {
     return { current, target: targetVal ?? fallback, unit };
   }
 
-  // Group food entries by meal
-  const mealMap = new Map<string, typeof ws.food_entries>();
-  for (const entry of ws.food_entries) {
-    const key = entry.meal ?? "Other";
-    const list = mealMap.get(key) ?? [];
-    list.push(entry);
-    mealMap.set(key, list);
-  }
-
-  const meals: Meal[] = Array.from(mealMap.entries()).map(([name, items]) => ({
-    name,
-    totalCalories: items.reduce((s, i) => s + i.calories, 0),
-    items: items.map((i) => ({
-      name: i.food_name,
-      calories: i.calories,
-      protein: i.protein_g,
-      carbs: i.carbs_g,
-      fat: i.fat_g,
-    })),
-  }));
-
   return {
     calories: macro(t?.calories ?? 0, tgt?.calories, DEFAULT_TARGETS.calories, "kcal"),
     protein: macro(t?.protein_g ?? 0, tgt?.protein_g, DEFAULT_TARGETS.protein_g, "g"),
@@ -86,8 +64,8 @@ function buildNutrition(ws: WsFitnessDay): DailyNutrition {
     fat: macro(t?.fat_g ?? 0, tgt?.fat_g, DEFAULT_TARGETS.fat_g, "g"),
     fiber: macro(t?.fiber_g ?? 0, tgt?.fiber_g, DEFAULT_TARGETS.fiber_g, "g"),
     sodium: macro(t?.sodium_mg ?? 0, tgt?.sodium_mg, DEFAULT_TARGETS.sodium_mg, "mg"),
-    potassium: macro(0, undefined, DEFAULT_TARGETS.potassium_mg, "mg"),
-    meals,
+    potassium: macro(t?.potassium_mg ?? 0, tgt?.potassium_mg, DEFAULT_TARGETS.potassium_mg, "mg"),
+    meals: [],
   };
 }
 
@@ -267,6 +245,9 @@ function buildMealPlan(ws: WsFitnessDay): DailyMealPlan | null {
     protein: e.protein_g,
     carbs: e.carbs_g,
     fat: e.fat_g,
+    fiber: e.fiber_g,
+    sodium: e.sodium_mg,
+    potassium: e.potassium_mg,
     notes: e.notes,
   }));
 
@@ -276,6 +257,9 @@ function buildMealPlan(ws: WsFitnessDay): DailyMealPlan | null {
     totalProtein: entries.reduce((s, e) => s + (e.protein ?? 0), 0),
     totalCarbs: entries.reduce((s, e) => s + (e.carbs ?? 0), 0),
     totalFat: entries.reduce((s, e) => s + (e.fat ?? 0), 0),
+    totalFiber: entries.reduce((s, e) => s + (e.fiber ?? 0), 0),
+    totalSodium: entries.reduce((s, e) => s + (e.sodium ?? 0), 0),
+    totalPotassium: entries.reduce((s, e) => s + (e.potassium ?? 0), 0),
   };
 }
 

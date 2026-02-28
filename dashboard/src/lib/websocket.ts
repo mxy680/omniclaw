@@ -62,6 +62,7 @@ export type WsFitnessDay = {
     fat_g: number;
     fiber_g: number;
     sodium_mg: number;
+    potassium_mg: number;
   } | null;
   targets: {
     calories?: number;
@@ -70,6 +71,7 @@ export type WsFitnessDay = {
     fat_g?: number;
     fiber_g?: number;
     sodium_mg?: number;
+    potassium_mg?: number;
   } | null;
   exercises: Array<{
     id: number;
@@ -117,6 +119,9 @@ export type WsMealPlanEntry = {
   protein_g: number | null;
   carbs_g: number | null;
   fat_g: number | null;
+  fiber_g: number | null;
+  sodium_mg: number | null;
+  potassium_mg: number | null;
   notes: string | null;
 };
 

@@ -2,8 +2,7 @@ import { Type } from "@sinclair/typebox";
 import { Cron } from "croner";
 import { getJobStore, getJobScheduler } from "../channel/channel-plugin.js";
 import { getWsServer } from "../channel/send.js";
-import type { JobRow } from "../channel/job-store.js";
-import type { WsJob } from "../channel/types.js";
+import { toWsJob } from "../channel/types.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -19,33 +18,6 @@ function requireStore() {
   const store = getJobStore();
   if (!store) throw new Error("Job store not initialized — iOS channel not running");
   return store;
-}
-
-function toWsJob(row: JobRow): WsJob {
-  let toolParams: unknown = null;
-  if (row.tool_params) {
-    try {
-      toolParams = JSON.parse(row.tool_params);
-    } catch {
-      toolParams = row.tool_params;
-    }
-  }
-  return {
-    id: row.id,
-    name: row.name,
-    cron: row.cron,
-    timezone: row.timezone,
-    mode: row.mode,
-    toolName: row.tool_name,
-    toolParams,
-    prompt: row.prompt,
-    enabled: Boolean(row.enabled),
-    nextRunAt: row.next_run_at,
-    lastRunAt: row.last_run_at,
-    lastStatus: row.last_status,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
 }
 
 function broadcastJobUpdate(job: ReturnType<typeof toWsJob>) {

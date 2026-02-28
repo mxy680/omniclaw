@@ -1,5 +1,5 @@
 import type { WsTask } from "./task-types.js";
-import type { JobRunStatus } from "./job-store.js";
+import type { JobRunStatus, JobRow, JobRunRow } from "./job-store.js";
 
 /** Resolved account configuration for the iOS WebSocket channel. */
 export type ResolvedIosAccount = {
@@ -37,7 +37,10 @@ export type WsClientMessage =
   | { type: "task_list" }
   | { type: "task_execute"; taskId: string }
   | { type: "task_approve"; taskId: string }
-  | { type: "task_delete"; taskId: string };
+  | { type: "task_delete"; taskId: string }
+  | { type: "job_list" }
+  | { type: "job_toggle"; jobId: string }
+  | { type: "job_runs"; jobId: string; limit?: number };
 
 /** Server → Client messages */
 export type WsServerMessage =
@@ -70,7 +73,9 @@ export type WsServerMessage =
   | { type: "task_deleted"; taskId: string }
   | { type: "job_created"; job: WsJob }
   | { type: "job_updated"; job: WsJob }
-  | { type: "job_deleted"; jobId: string };
+  | { type: "job_deleted"; jobId: string }
+  | { type: "job_list"; jobs: WsJob[] }
+  | { type: "job_runs"; jobId: string; runs: WsJobRun[] };
 
 /** Job as sent over the wire (camelCase). */
 export type WsJob = {
@@ -89,6 +94,56 @@ export type WsJob = {
   createdAt: number;
   updatedAt: number;
 };
+
+/** Job run as sent over the wire (camelCase). */
+export type WsJobRun = {
+  id: string;
+  jobId: string;
+  startedAt: number;
+  completedAt: number | null;
+  status: JobRunStatus;
+  result: string | null;
+};
+
+/** Convert a JobRow (snake_case DB row) to a WsJob (camelCase wire format). */
+export function toWsJob(row: JobRow): WsJob {
+  let toolParams: unknown = null;
+  if (row.tool_params) {
+    try {
+      toolParams = JSON.parse(row.tool_params);
+    } catch {
+      toolParams = row.tool_params;
+    }
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    cron: row.cron,
+    timezone: row.timezone,
+    mode: row.mode,
+    toolName: row.tool_name,
+    toolParams,
+    prompt: row.prompt,
+    enabled: Boolean(row.enabled),
+    nextRunAt: row.next_run_at,
+    lastRunAt: row.last_run_at,
+    lastStatus: row.last_status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/** Convert a JobRunRow (snake_case DB row) to a WsJobRun (camelCase wire format). */
+export function toWsJobRun(row: JobRunRow): WsJobRun {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    status: row.status,
+    result: row.result,
+  };
+}
 
 /** Conversation as sent over the wire. */
 export type WsConversation = {

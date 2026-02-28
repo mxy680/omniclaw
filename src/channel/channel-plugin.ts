@@ -16,6 +16,7 @@ import { handleConversationMessage } from "./conversation-handlers.js";
 import { handleFitnessMessage } from "./fitness-handlers.js";
 import { handleProjectMessage } from "./project-handlers.js";
 import { handleTaskMessage } from "./task-handlers.js";
+import { handleJobMessage } from "./job-handlers.js";
 import { handleIosInbound } from "./inbound.js";
 import { getChannelRuntime } from "./runtime.js";
 import { sendMessageIos, setWsServer } from "./send.js";
@@ -191,6 +192,12 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
           // Route task messages
           if (msg.type === "task_list" || msg.type === "task_approve" || msg.type === "task_delete" || msg.type === "task_execute") {
             handleTaskMessage(connId, msg, taskStore, wsServer);
+            return;
+          }
+
+          // Route job messages
+          if (msg.type === "job_list" || msg.type === "job_toggle" || msg.type === "job_runs") {
+            handleJobMessage(connId, msg, jobStore, wsServer);
             return;
           }
 

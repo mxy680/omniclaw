@@ -31,6 +31,7 @@
 | X (Twitter) | 44 | `x` | `docs/plans/2026-02-27-x-twitter-design.md` | Browser session auth, GraphQL + REST API |
 | TikTok | 10 | `tiktok` | `docs/tiktok.md` | Playwright browser auth, read-only |
 | Devpost | 12 | `devpost` | `docs/plans/2026-02-28-devpost-design.md` | Playwright browser auth, hybrid JSON API + scraping |
+| HCM (CWRU PeopleSoft) | 6 | `hcm` | `docs/plans/2026-02-28-hcm-case-design.md` | Playwright browser auth, CWRU SSO + Duo MFA |
 
 ## In Progress
 

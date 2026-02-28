@@ -4,11 +4,9 @@ import { useState } from "react";
 import { Apple, Clock, UtensilsCrossed, Leaf } from "lucide-react";
 import { SectionHeader } from "@/components/section-header";
 import { DateNavigator } from "@/components/fitness/date-navigator";
-import { MealCard } from "@/components/fitness/meal-card";
 import { NutritionStatsBar } from "@/components/nutrition/nutrition-stats-bar";
 import { MicronutrientsCard } from "@/components/nutrition/micronutrients-card";
 import { MacroRatioRing } from "@/components/nutrition/macro-ratio-ring";
-import { PlanVsActualCard } from "@/components/nutrition/plan-vs-actual-card";
 import { useNutrition } from "@/hooks/use-nutrition";
 import type { MealPlanSlot } from "@/lib/fitness-data";
 
@@ -40,7 +38,6 @@ function PlannedMealsTimeline({
 }) {
   return (
     <div className="relative mt-4">
-      {/* Vertical connector line */}
       {entries.length > 1 && (
         <div
           className="absolute left-[4.75rem] top-4 bottom-4 w-px bg-border"
@@ -54,7 +51,6 @@ function PlannedMealsTimeline({
             key={entry.id}
             className="relative flex items-start gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-muted/30"
           >
-            {/* Time */}
             <div className="flex w-14 shrink-0 items-center gap-1.5 pt-0.5">
               <Clock className="h-3 w-3 text-muted-foreground/50" />
               <span className="text-xs font-medium tabular-nums text-muted-foreground">
@@ -62,7 +58,6 @@ function PlannedMealsTimeline({
               </span>
             </div>
 
-            {/* Timeline dot */}
             <div className="relative z-10 flex flex-col items-center pt-1.5">
               <div
                 className="h-2.5 w-2.5 rounded-full ring-2 ring-card/40"
@@ -70,7 +65,6 @@ function PlannedMealsTimeline({
               />
             </div>
 
-            {/* Content */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium leading-tight">
@@ -83,7 +77,6 @@ function PlannedMealsTimeline({
               </span>
             </div>
 
-            {/* Macros */}
             {entry.calories != null && (
               <div className="shrink-0 text-right">
                 <span className="text-xs font-medium">{entry.calories}</span>
@@ -123,7 +116,7 @@ export default function NutritionPage() {
           icon={Apple}
           color={COLOR}
           title="Nutrition"
-          tagline="Food diary, macros, and meal planning"
+          tagline="Meal plan & macros"
         />
         <DateNavigator
           date={date}
@@ -138,23 +131,23 @@ export default function NutritionPage() {
         </div>
       ) : (
         <>
-          {/* Quick stats */}
+          {/* Quick stats bar */}
           <NutritionStatsBar
             nutrition={nutrition.dailyNutrition}
             color={COLOR}
           />
 
-          {/* Two-column grid: planned meals + food log */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* Left column — Planned meals timeline */}
-            <div className="rounded-xl border border-border bg-card/40 p-5">
+          {/* Two-column: meals timeline + stats sidebar */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left — Planned meals timeline */}
+            <div className="rounded-xl border border-border bg-card/40 p-5 lg:col-span-7">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Planned Meals
                 </h2>
                 {nutrition.mealPlan && (
                   <span className="text-xs text-muted-foreground">
-                    {nutrition.mealPlan.totalCalories.toLocaleString()} kcal planned
+                    {nutrition.mealPlan.totalCalories.toLocaleString()} kcal
                   </span>
                 )}
               </div>
@@ -193,33 +186,11 @@ export default function NutritionPage() {
               )}
             </div>
 
-            {/* Right column — Food log */}
-            <div className="rounded-xl border border-border bg-card/40 p-5">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Food Log
-              </h2>
-              <div className="mt-4 space-y-2">
-                {nutrition.dailyNutrition.meals.length > 0 ? (
-                  nutrition.dailyNutrition.meals.map((meal) => (
-                    <MealCard key={meal.name} meal={meal} />
-                  ))
-                ) : (
-                  <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-                    No meals logged
-                  </div>
-                )}
-              </div>
+            {/* Right — Stats sidebar */}
+            <div className="space-y-6 lg:col-span-5">
+              <MacroRatioRing nutrition={nutrition.dailyNutrition} />
+              <MicronutrientsCard nutrition={nutrition.dailyNutrition} />
             </div>
-          </div>
-
-          {/* Bottom row: Micro + Macro Ratio + Plan vs Actual */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <MicronutrientsCard nutrition={nutrition.dailyNutrition} />
-            <MacroRatioRing nutrition={nutrition.dailyNutrition} />
-            <PlanVsActualCard
-              nutrition={nutrition.dailyNutrition}
-              mealPlan={nutrition.mealPlan}
-            />
           </div>
         </>
       )}

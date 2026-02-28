@@ -72,60 +72,37 @@ function buildNutrition(ws: WsFitnessDay): DailyNutrition {
 // ── Workout ─────────────────────────────────────────────────────────
 
 function buildWorkout(ws: WsFitnessDay): WorkoutSession {
-  if (ws.exercises.length === 0) {
+  const plan = ws.workout_plan;
+  if (!plan || plan.workout_type === "rest") {
     return { name: "Rest Day", type: "rest", status: "rest" };
   }
 
-  const first = ws.exercises[0];
-
-  // Determine type from first exercise
-  const details = first.details as Record<string, unknown> | null;
-  const hasSets = details && Array.isArray(details.sets) && details.sets.length > 0;
-  const hasDuration = first.duration_min != null && first.duration_min > 0;
-
-  if (hasSets) {
-    // Strength workout — gather exercises with sets
+  if (plan.workout_type === "strength") {
     return {
-      name: first.name,
+      name: plan.workout_name,
       type: "strength",
-      status: "completed",
-      exercises: ws.exercises
-        .filter((e) => {
-          const d = e.details as Record<string, unknown> | null;
-          return d && Array.isArray(d.sets);
-        })
-        .map((e) => {
-          const d = e.details as { sets: Array<{ reps: number; weight: number }> };
-          return {
-            name: e.name,
-            sets: d.sets.map((s) => ({ reps: s.reps, weight: s.weight })),
-          };
-        }),
+      status: "scheduled",
+      exercises: plan.exercises.map((e) => ({
+        name: e.exercise_name,
+        sets: e.target_sets ?? [],
+      })),
     };
   }
 
-  if (hasDuration) {
-    // Cardio workout
-    const totalDuration = ws.exercises.reduce((s, e) => s + (e.duration_min ?? 0), 0);
-    const totalBurned = ws.exercises.reduce((s, e) => s + (e.calories_burned ?? 0), 0);
+  if (plan.workout_type === "cardio") {
+    const totalDuration = plan.exercises.reduce((s, e) => s + (e.duration_min ?? 0), 0);
     return {
-      name: first.name,
+      name: plan.workout_name,
       type: "cardio",
-      status: "completed",
+      status: "scheduled",
       cardio: {
         duration: totalDuration,
-        caloriesBurned: totalBurned,
+        caloriesBurned: 0,
       },
     };
   }
 
-  // Fallback — treat as completed strength with no set details
-  return {
-    name: first.name,
-    type: "strength",
-    status: "completed",
-    exercises: ws.exercises.map((e) => ({ name: e.name, sets: [] })),
-  };
+  return { name: "Rest Day", type: "rest", status: "rest" };
 }
 
 // ── Body ────────────────────────────────────────────────────────────
@@ -191,13 +168,11 @@ function buildBody(ws: WsFitnessDay): FitnessDay["body"] {
 // ── Week Overview ───────────────────────────────────────────────────
 
 function buildWeekOverview(ws: WsFitnessDay, date: Date): WeekDay[] {
-  // Monday of the current week
   const monday = new Date(date);
   const day = monday.getDay();
   const diffToMon = day === 0 ? -6 : 1 - day;
   monday.setDate(monday.getDate() + diffToMon);
 
-  const exerciseDates = new Set(ws.week_exercises.map((e) => e.date));
   const planDates = new Set(
     (ws.week_workout_plans ?? []).map((p) => p.date),
   );
@@ -207,20 +182,8 @@ function buildWeekOverview(ws: WsFitnessDay, date: Date): WeekDay[] {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     const dateStr = d.toISOString().slice(0, 10);
-    const isPast = d <= date;
-    const hasExercise = exerciseDates.has(dateStr);
 
-    let status: "completed" | "scheduled" | "rest";
-    if (hasExercise) {
-      status = "completed";
-    } else if (!isPast && planDates.has(dateStr)) {
-      status = "scheduled";
-    } else if (isPast) {
-      status = "rest";
-    } else {
-      status = "rest";
-    }
-
+    const status: "scheduled" | "rest" = planDates.has(dateStr) ? "scheduled" : "rest";
     return { date: fmtDate(dateStr), label, status };
   });
 }

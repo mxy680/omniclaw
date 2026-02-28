@@ -17,6 +17,7 @@ export class JobScheduler {
   private dispatchAgentPrompt: JobSchedulerConfig["dispatchAgentPrompt"];
   private tickIntervalMs: number;
   private timer: ReturnType<typeof setInterval> | null = null;
+  private runningJobs = new Set<string>();
 
   constructor(config: JobSchedulerConfig) {
     this.store = config.store;
@@ -95,6 +96,9 @@ export class JobScheduler {
    * Never throws — errors are recorded in the run row and the job is updated.
    */
   private async executeJob(job: JobRow): Promise<void> {
+    if (this.runningJobs.has(job.id)) return;
+    this.runningJobs.add(job.id);
+
     const run = this.store.createRun(job.id);
 
     try {
@@ -133,6 +137,8 @@ export class JobScheduler {
       this.store.updateJob(job.id, { next_run_at: nextRun });
     } catch {
       this.store.updateJob(job.id, { enabled: false });
+    } finally {
+      this.runningJobs.delete(job.id);
     }
   }
 }

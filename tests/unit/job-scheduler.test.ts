@@ -47,6 +47,7 @@ describe("JobScheduler", () => {
     store.close();
     rmSync(tmpDir, { recursive: true, force: true });
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   // ── Test 1: tool-mode job execution ─────────────────────────────────

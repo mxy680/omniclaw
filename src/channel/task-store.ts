@@ -3,6 +3,8 @@ import { join } from "path";
 import { mkdirSync } from "fs";
 import { homedir } from "os";
 
+export const TASK_SYSTEM_VERSION = "1.0.0";
+
 // ── Types ───────────────────────────────────────────────────────────
 
 export type TaskStatus =

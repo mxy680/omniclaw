@@ -30,6 +30,9 @@ export interface PluginConfig {
   tiktok_tokens_path?: string;
   tiktok_username?: string;
   tiktok_password?: string;
+  devpost_tokens_path?: string;
+  devpost_email?: string;
+  devpost_password?: string;
   dispatch_max_concurrency?: number;
   dispatch_timeout_ms?: number;
 }

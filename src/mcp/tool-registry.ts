@@ -222,6 +222,27 @@ import { createXMuteTool, createXUnmuteTool, createXBlockTool, createXUnblockToo
 import { createXPostMediaTweetTool, createXQuoteTweetTool, createXPostThreadTool, createXPostPollTool } from "../tools/x-tweet-extended.js";
 import { createXDmInboxTool, createXDmConversationTool, createXDmSendTool } from "../tools/x-dms.js";
 import { createXGetListsTool, createXGetListTweetsTool, createXGetListMembersTool, createXCreateListTool, createXDeleteListTool, createXUpdateListTool, createXListAddMemberTool, createXListRemoveMemberTool } from "../tools/x-lists.js";
+import { DevpostClientManager } from "../auth/devpost-client-manager.js";
+import { createDevpostAuthTool } from "../tools/devpost-auth-tool.js";
+import {
+  createDevpostSearchHackathonsTool,
+  createDevpostGetHackathonTool,
+  createDevpostHackathonProjectsTool,
+} from "../tools/devpost-hackathons.js";
+import {
+  createDevpostSearchProjectsTool,
+  createDevpostGetProjectTool,
+} from "../tools/devpost-projects.js";
+import {
+  createDevpostGetProfileTool,
+  createDevpostMyHackathonsTool,
+  createDevpostMyProjectsTool,
+} from "../tools/devpost-profile.js";
+import {
+  createDevpostRegisterHackathonTool,
+  createDevpostCreateSubmissionTool,
+  createDevpostUpdateSubmissionTool,
+} from "../tools/devpost-submissions.js";
 import { createNutritionLogFoodTool } from "../tools/nutrition-log-food.js";
 import { createNutritionDiaryTool } from "../tools/nutrition-diary.js";
 import { createNutritionDeleteFoodTool } from "../tools/nutrition-delete-food.js";
@@ -706,6 +727,29 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createYouTubeChannelInfoTool(clientManager));
     add(createYouTubeVideoCommentsTool(clientManager));
   }
+
+  // Devpost tools — register unconditionally
+  const devpostTokensPath =
+    config.devpost_tokens_path ??
+    path.join(
+      config.tokens_path ? path.dirname(config.tokens_path) : defaultTokensDir,
+      "omniclaw-devpost-tokens.json",
+    );
+
+  const devpostManager = new DevpostClientManager(devpostTokensPath);
+
+  add(createDevpostAuthTool(devpostManager, config));
+  add(createDevpostSearchHackathonsTool(devpostManager));
+  add(createDevpostGetHackathonTool(devpostManager));
+  add(createDevpostHackathonProjectsTool(devpostManager));
+  add(createDevpostSearchProjectsTool(devpostManager));
+  add(createDevpostGetProjectTool(devpostManager));
+  add(createDevpostGetProfileTool(devpostManager));
+  add(createDevpostMyHackathonsTool(devpostManager));
+  add(createDevpostMyProjectsTool(devpostManager));
+  add(createDevpostRegisterHackathonTool(devpostManager));
+  add(createDevpostCreateSubmissionTool(devpostManager));
+  add(createDevpostUpdateSubmissionTool(devpostManager));
 
   return tools;
 }

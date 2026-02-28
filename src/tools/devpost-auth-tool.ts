@@ -46,8 +46,8 @@ export function createDevpostAuthTool(
       params: { email?: string; password?: string; account?: string },
     ) {
       const account = params.account ?? "default";
-      const resolvedEmail = params.email ?? (config as Record<string, unknown>).devpost_email as string | undefined;
-      const resolvedPassword = params.password ?? (config as Record<string, unknown>).devpost_password as string | undefined;
+      const resolvedEmail = params.email ?? config.devpost_email;
+      const resolvedPassword = params.password ?? config.devpost_password;
 
       // Check if we already have a valid session
       if (devpostManager.hasCredentials(account)) {

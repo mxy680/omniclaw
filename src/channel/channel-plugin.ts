@@ -9,6 +9,8 @@ import { listIosAccountIds, resolveIosAccount } from "./accounts.js";
 import { ConversationStore } from "./conversation-store.js";
 import { ProjectStore } from "./project-store.js";
 import { TaskStore } from "./task-store.js";
+import { JobStore } from "./job-store.js";
+import { JobScheduler } from "./job-scheduler.js";
 import { DispatchManager } from "./dispatch-manager.js";
 import { handleConversationMessage } from "./conversation-handlers.js";
 import { handleFitnessMessage } from "./fitness-handlers.js";
@@ -26,6 +28,8 @@ import { startUploadServer } from "./upload-server.js";
 let activeDispatchManager: DispatchManager | null = null;
 let activeProjectStore: ProjectStore | null = null;
 let activeTaskStore: TaskStore | null = null;
+let activeJobStore: JobStore | null = null;
+let activeJobScheduler: JobScheduler | null = null;
 
 export function getDispatchManager(): DispatchManager | null {
   return activeDispatchManager;
@@ -37,6 +41,14 @@ export function getProjectStore(): ProjectStore | null {
 
 export function getTaskStore(): TaskStore | null {
   return activeTaskStore;
+}
+
+export function getJobStore(): JobStore | null {
+  return activeJobStore;
+}
+
+export function getJobScheduler(): JobScheduler | null {
+  return activeJobScheduler;
 }
 
 export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
@@ -140,6 +152,10 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
       });
       activeDispatchManager = dispatchManager;
 
+      const jobDbPath = pluginCfg.jobs_db_path ?? undefined;
+      const jobStore = new JobStore(jobDbPath);
+      activeJobStore = jobStore;
+
       const wsServer = startWsServer({
         port: account.port,
         authToken: account.authToken,
@@ -218,6 +234,41 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
         log: (msg) => ctx.log?.info(msg),
       });
 
+      const jobScheduler = new JobScheduler({
+        store: jobStore,
+        executeTool: async (toolName, params, runId) => {
+          const { createAllTools } = await import("../mcp/tool-registry.js");
+          const tools = createAllTools({ pluginConfig: pluginCfg });
+          const tool = tools.find((t) => t.name === toolName);
+          if (!tool) throw new Error(`Tool '${toolName}' not found`);
+          await tool.execute(runId, params);
+        },
+        dispatchAgentPrompt: async (prompt, runId) => {
+          await dispatchManager.submit({
+            conversationId: `job-${runId}`,
+            connId: "job-scheduler",
+            priority: "background",
+            fn: async () => {
+              await handleIosInbound({
+                text: prompt,
+                messageId: runId,
+                conversationId: `job-${runId}`,
+                connId: "job-scheduler",
+                account,
+                config: cfg,
+                runtime,
+                store,
+                wsServer,
+                statusSink: (patch) =>
+                  ctx.log?.info(`[job-scheduler] status: ${JSON.stringify(patch)}`),
+              });
+            },
+          });
+        },
+      });
+      activeJobScheduler = jobScheduler;
+      jobScheduler.start();
+
       ctx.setStatus({
         accountId: ctx.accountId,
         running: true,
@@ -231,9 +282,13 @@ export const iosChannelPlugin: ChannelPlugin<ResolvedIosAccount> = {
           store.close();
           projectStore.close();
           taskStore.close();
+          jobScheduler.stop();
+          jobStore.close();
           activeDispatchManager = null;
           activeProjectStore = null;
           activeTaskStore = null;
+          activeJobStore = null;
+          activeJobScheduler = null;
           setWsServer(null as unknown as ReturnType<typeof startWsServer>);
           ctx.setStatus({
             accountId: ctx.accountId,

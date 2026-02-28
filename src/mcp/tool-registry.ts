@@ -293,6 +293,14 @@ import {
   createTaskExecuteTool,
 } from "../tools/task-tools.js";
 import {
+  createJobCreateTool,
+  createJobListTool,
+  createJobGetTool,
+  createJobUpdateTool,
+  createJobDeleteTool,
+  createJobRunNowTool,
+} from "../tools/job-tools.js";
+import {
   createMemorySaveTool,
   createMemoryReadTool,
   createMemoryListTool,
@@ -339,6 +347,14 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
   add(createTaskUpdateTool());
   add(createTaskDeleteTool());
   add(createTaskExecuteTool());
+
+  // Job tools — register unconditionally, use lazy store access
+  add(createJobCreateTool());
+  add(createJobListTool());
+  add(createJobGetTool());
+  add(createJobUpdateTool());
+  add(createJobDeleteTool());
+  add(createJobRunNowTool());
 
   // Memory tools — local filesystem, no auth required
   add(createMemorySaveTool());

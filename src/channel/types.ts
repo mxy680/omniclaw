@@ -1,4 +1,5 @@
 import type { WsTask } from "./task-types.js";
+import type { JobRunStatus } from "./job-store.js";
 
 /** Resolved account configuration for the iOS WebSocket channel. */
 export type ResolvedIosAccount = {
@@ -66,7 +67,28 @@ export type WsServerMessage =
   | { type: "task_list"; tasks: WsTask[] }
   | { type: "task_created"; task: WsTask }
   | { type: "task_updated"; task: WsTask }
-  | { type: "task_deleted"; taskId: string };
+  | { type: "task_deleted"; taskId: string }
+  | { type: "job_created"; job: WsJob }
+  | { type: "job_updated"; job: WsJob }
+  | { type: "job_deleted"; jobId: string };
+
+/** Job as sent over the wire (camelCase). */
+export type WsJob = {
+  id: string;
+  name: string;
+  cron: string;
+  timezone: string;
+  mode: "tool" | "agent";
+  toolName: string | null;
+  toolParams: unknown;
+  prompt: string | null;
+  enabled: boolean;
+  nextRunAt: number;
+  lastRunAt: number | null;
+  lastStatus: JobRunStatus | null;
+  createdAt: number;
+  updatedAt: number;
+};
 
 /** Conversation as sent over the wire. */
 export type WsConversation = {

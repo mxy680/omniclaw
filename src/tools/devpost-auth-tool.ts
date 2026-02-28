@@ -167,16 +167,23 @@ async function runDevpostLoginFlow(
       await page.waitForTimeout(1000);
 
       username = await page.evaluate(() => {
-        const profileLink = document.querySelector('a[href*="devpost.com/"][class*="profile"], a[href^="/"][class*="user"]');
-        if (profileLink) {
-          const href = (profileLink as HTMLAnchorElement).href;
-          const match = href.match(/devpost\.com\/([^/?#]+)/);
+        // Primary: the global nav screen name link (most reliable)
+        const navLink = document.querySelector('#global-nav-screen-name');
+        if (navLink) {
+          const href = (navLink as HTMLAnchorElement).href;
+          const match = href.match(/devpost\.com\/([^/?#&]+)/);
           if (match) return match[1];
         }
-        const meta = document.querySelector('meta[name="user-login"], meta[property="profile:username"]');
-        if (meta) return meta.getAttribute("content") ?? "";
-        const nav = document.querySelector('.user-name, .username, [data-username]');
-        if (nav) return nav.textContent?.trim() ?? "";
+        // Fallback: any link with class "user" pointing to a profile
+        const userLink = document.querySelector('a.user[href*="devpost.com/"]');
+        if (userLink) {
+          const href = (userLink as HTMLAnchorElement).href;
+          const match = href.match(/devpost\.com\/([^/?#&]+)/);
+          if (match) return match[1];
+        }
+        // Fallback: user avatar alt text
+        const avatar = document.querySelector('img.user-avatar[alt]');
+        if (avatar) return avatar.getAttribute("alt") ?? "";
         return "";
       }) || "unknown";
     } catch {

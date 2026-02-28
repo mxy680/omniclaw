@@ -33,6 +33,9 @@ export interface PluginConfig {
   devpost_tokens_path?: string;
   devpost_email?: string;
   devpost_password?: string;
+  hcm_tokens_path?: string;
+  hcm_case_id?: string;
+  hcm_password?: string;
   dispatch_max_concurrency?: number;
   dispatch_timeout_ms?: number;
 }

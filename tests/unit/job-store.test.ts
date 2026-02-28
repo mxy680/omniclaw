@@ -119,8 +119,8 @@ describe("JobStore", () => {
     expect(updated.name).toBe("Renamed Job");
     expect(updated.cron).toBe("0 * * * *");
     expect(updated.enabled).toBe(0);
-    // next_run_at must have been recomputed (hourly > minutely so it's >= old)
-    expect(updated.next_run_at).toBeGreaterThanOrEqual(oldNextRun);
+    // next_run_at must have been recomputed (hourly is further out than minutely)
+    expect(updated.next_run_at).toBeGreaterThan(oldNextRun);
     expect(updated.updated_at).toBeGreaterThanOrEqual(job.updated_at);
   });
 

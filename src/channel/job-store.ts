@@ -273,15 +273,16 @@ export class JobStore {
   }
 
   deleteJob(id: string): void {
-    // Remove child runs first (no CASCADE by default in SQLite without PRAGMA)
-    this.db.prepare("DELETE FROM job_runs WHERE job_id = ?").run(id);
-    this.db.prepare("DELETE FROM jobs WHERE id = ?").run(id);
+    this.db.transaction(() => {
+      this.db.prepare("DELETE FROM job_runs WHERE job_id = ?").run(id);
+      this.db.prepare("DELETE FROM jobs WHERE id = ?").run(id);
+    })();
   }
 
   getDueJobs(): JobRow[] {
     return this.db
       .prepare(
-        "SELECT * FROM jobs WHERE enabled = 1 AND next_run_at <= ?",
+        "SELECT * FROM jobs WHERE enabled = 1 AND next_run_at <= ? ORDER BY next_run_at ASC",
       )
       .all(Date.now()) as JobRow[];
   }

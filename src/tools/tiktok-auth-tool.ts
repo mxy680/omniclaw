@@ -52,17 +52,14 @@ export function createTikTokAuthTool(
       // Check if we already have a valid session
       if (tiktokManager.hasCredentials(account)) {
         try {
-          const data = (await tiktokManager.get(
-            account,
-            "https://www.tiktok.com/api/user/detail/?uniqueId=me",
-          )) as { userInfo?: { user?: { uniqueId?: string; nickname?: string } } };
+          const data = await tiktokManager.getUserDetail(account, "me");
           const user = data?.userInfo?.user;
           if (user?.uniqueId) {
             return jsonResult({
               status: "already_authenticated",
               account,
-              username: user.uniqueId,
-              nickname: user.nickname ?? "unknown",
+              username: user.uniqueId as string,
+              nickname: (user.nickname as string) ?? "unknown",
               message: "Existing session is still valid. No re-authentication needed.",
             });
           }
@@ -77,17 +74,14 @@ export function createTikTokAuthTool(
         tiktokManager.setCredentials(account, session);
 
         try {
-          const data = (await tiktokManager.get(
-            account,
-            "https://www.tiktok.com/api/user/detail/?uniqueId=me",
-          )) as { userInfo?: { user?: { uniqueId?: string; nickname?: string } } };
+          const data = await tiktokManager.getUserDetail(account, "me");
           const user = data?.userInfo?.user;
 
           return jsonResult({
             status: "authenticated",
             account,
-            username: user?.uniqueId ?? "unknown",
-            nickname: user?.nickname ?? "unknown",
+            username: (user?.uniqueId as string) ?? "unknown",
+            nickname: (user?.nickname as string) ?? "unknown",
           });
         } catch {
           return jsonResult({

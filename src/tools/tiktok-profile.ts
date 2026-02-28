@@ -38,10 +38,7 @@ export function createTikTokProfileTool(tiktokManager: TikTokClientManager): any
         return jsonResult(AUTH_REQUIRED);
       }
       try {
-        const data = (await tiktokManager.get(
-          account,
-          "https://www.tiktok.com/api/user/detail/?uniqueId=me",
-        )) as { userInfo?: { user?: Record<string, unknown>; stats?: Record<string, unknown> } };
+        const data = await tiktokManager.getUserDetail(account, "me");
 
         const user = data?.userInfo?.user;
         const stats = data?.userInfo?.stats;
@@ -93,10 +90,7 @@ export function createTikTokGetUserTool(tiktokManager: TikTokClientManager): any
       }
       try {
         const username = params.username.replace(/^@/, "");
-        const data = (await tiktokManager.get(
-          account,
-          `https://www.tiktok.com/api/user/detail/?uniqueId=${encodeURIComponent(username)}`,
-        )) as { userInfo?: { user?: Record<string, unknown>; stats?: Record<string, unknown> } };
+        const data = await tiktokManager.getUserDetail(account, username);
 
         const user = data?.userInfo?.user;
         const stats = data?.userInfo?.stats;

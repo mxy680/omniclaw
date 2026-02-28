@@ -1,6 +1,5 @@
 import { Type } from "@sinclair/typebox";
 import type { TikTokClientManager } from "../auth/tiktok-client-manager.js";
-import { formatVideo } from "./tiktok-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -53,25 +52,8 @@ export function createTikTokUserVideosTool(tiktokManager: TikTokClientManager): 
         const username = params.username.replace(/^@/, "");
         const count = Math.min(params.count ?? 12, 30);
 
-        // First resolve username to secUid
-        const userDetail = (await tiktokManager.get(
-          account,
-          `https://www.tiktok.com/api/user/detail/?uniqueId=${encodeURIComponent(username)}`,
-        )) as { userInfo?: { user?: { secUid?: string } } };
-
-        const secUid = userDetail?.userInfo?.user?.secUid;
-        if (!secUid) {
-          return jsonResult({ error: `Could not resolve user "${username}".` });
-        }
-
-        const data = (await tiktokManager.get(
-          account,
-          "https://www.tiktok.com/api/post/item_list/",
-          { secUid, count: String(count), cursor: "0" },
-        )) as { itemList?: Array<Record<string, unknown>> };
-
-        const items = data?.itemList ?? [];
-        const videos = items.slice(0, count).map(formatVideo);
+        const data = await tiktokManager.getUserVideos(account, username, count);
+        const videos = data?.itemList ?? [];
 
         return jsonResult({ username, count: videos.length, videos });
       } catch (err) {

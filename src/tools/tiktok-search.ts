@@ -50,12 +50,7 @@ export function createTikTokSearchVideosTool(tiktokManager: TikTokClientManager)
       }
       try {
         const count = Math.min(params.count ?? 12, 30);
-
-        const data = (await tiktokManager.get(
-          account,
-          "https://www.tiktok.com/api/search/general/full/",
-          { keyword: params.query, offset: "0", count: String(count) },
-        )) as { data?: Array<Record<string, unknown>> };
+        const data = await tiktokManager.searchVideos(account, params.query);
 
         const rawItems = data?.data ?? [];
         const videos = rawItems
@@ -108,23 +103,22 @@ export function createTikTokSearchUsersTool(tiktokManager: TikTokClientManager):
       }
       try {
         const count = Math.min(params.count ?? 10, 30);
-
-        const data = (await tiktokManager.get(
-          account,
-          "https://www.tiktok.com/api/search/user/full/",
-          { keyword: params.query, offset: "0", count: String(count) },
-        )) as { user_list?: Array<Record<string, unknown>> };
+        const data = await tiktokManager.searchUsers(account, params.query);
 
         const rawUsers = data?.user_list ?? [];
-        const users = rawUsers.slice(0, count).map((item) => {
-          const userInfo = item.user_info as Record<string, unknown> | undefined;
-          if (!userInfo) return null;
-          return {
-            ...formatUser(userInfo),
-            signature: userInfo.signature,
-            followerCount: userInfo.follower_count ?? (item as Record<string, unknown>).follower_count,
-          };
-        }).filter(Boolean);
+        const users = rawUsers
+          .slice(0, count)
+          .map((item) => {
+            const userInfo = item.user_info as Record<string, unknown> | undefined;
+            if (!userInfo) return null;
+            return {
+              ...formatUser(userInfo),
+              signature: userInfo.signature,
+              followerCount:
+                userInfo.follower_count ?? (item as Record<string, unknown>).follower_count,
+            };
+          })
+          .filter(Boolean);
 
         return jsonResult({ query: params.query, count: users.length, users });
       } catch (err) {

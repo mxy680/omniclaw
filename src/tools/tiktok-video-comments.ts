@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { TikTokClientManager } from "../auth/tiktok-client-manager.js";
-import { formatTimestamp, formatUser, parseTikTokVideoId } from "./tiktok-utils.js";
+import { parseTikTokVideoId } from "./tiktok-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentToolResult = any;
@@ -50,26 +50,23 @@ export function createTikTokVideoCommentsTool(tiktokManager: TikTokClientManager
         return jsonResult(AUTH_REQUIRED);
       }
       try {
-        const videoId = parseTikTokVideoId(params.video);
+        const videoInput = params.video.includes("tiktok.com")
+          ? params.video
+          : parseTikTokVideoId(params.video);
         const count = Math.min(params.count ?? 20, 50);
 
-        const data = (await tiktokManager.get(
-          account,
-          "https://www.tiktok.com/api/comment/list/",
-          { aweme_id: videoId, count: String(count), cursor: "0" },
-        )) as { comments?: Array<Record<string, unknown>> };
-
-        const rawComments = data?.comments ?? [];
-        const comments = rawComments.slice(0, count).map((c) => ({
-          id: c.cid,
+        const data = await tiktokManager.getVideoComments(account, videoInput);
+        const comments = (data?.comments ?? []).slice(0, count).map((c) => ({
           text: c.text,
-          createTime: formatTimestamp(c.create_time as number | undefined),
-          diggCount: c.digg_count,
-          replyCount: c.reply_comment_total,
-          user: formatUser(c.user as Record<string, unknown> | undefined),
+          diggCount: c.digg_count ?? c.diggCount,
+          user: c.user as Record<string, unknown> | undefined,
         }));
 
-        return jsonResult({ videoId, count: comments.length, comments });
+        return jsonResult({
+          videoId: videoInput,
+          count: comments.length,
+          comments,
+        });
       } catch (err) {
         return jsonResult({ error: err instanceof Error ? err.message : String(err) });
       }

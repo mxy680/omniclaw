@@ -45,13 +45,11 @@ export function createTikTokVideoDetailsTool(tiktokManager: TikTokClientManager)
         return jsonResult(AUTH_REQUIRED);
       }
       try {
-        const videoId = parseTikTokVideoId(params.video);
+        const videoInput = params.video.includes("tiktok.com")
+          ? params.video
+          : parseTikTokVideoId(params.video);
 
-        const data = (await tiktokManager.get(
-          account,
-          "https://www.tiktok.com/api/item/detail/",
-          { itemId: videoId },
-        )) as { itemInfo?: { itemStruct?: Record<string, unknown> } };
+        const data = await tiktokManager.getVideoDetail(account, videoInput);
 
         const item = data?.itemInfo?.itemStruct;
         if (!item) {

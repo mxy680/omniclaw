@@ -45,16 +45,9 @@ export function createTikTokFeedTool(tiktokManager: TikTokClientManager): any {
       }
       try {
         const count = Math.min(params.count ?? 10, 30);
-
-        const data = (await tiktokManager.get(
-          account,
-          "https://www.tiktok.com/api/recommend/item_list/",
-          { count: String(count) },
-        )) as { itemList?: Array<Record<string, unknown>> };
-
+        const data = await tiktokManager.getFeed(account);
         const items = data?.itemList ?? [];
         const videos = items.slice(0, count).map(formatVideo);
-
         return jsonResult({ count: videos.length, videos });
       } catch (err) {
         return jsonResult({ error: err instanceof Error ? err.message : String(err) });

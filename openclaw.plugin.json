@@ -94,6 +94,18 @@
         "type": "string",
         "description": "Vercel Personal Access Token. Get one at https://vercel.com/account/tokens"
       },
+      "hcm_tokens_path": {
+        "type": "string",
+        "description": "Path to store HCM session cookies. Defaults to ~/.openclaw/omniclaw-hcm-tokens.json."
+      },
+      "hcm_case_id": {
+        "type": "string",
+        "description": "CWRU Case ID for automatic HCM login."
+      },
+      "hcm_password": {
+        "type": "string",
+        "description": "CWRU password for automatic HCM login."
+      },
       "dispatch_max_concurrency": {
         "type": "number",
         "description": "Maximum number of concurrent agent dispatches. Each active dispatch handles one conversation at a time. Default: 3.",

@@ -32,6 +32,7 @@
 | TikTok | 10 | `tiktok` | `docs/tiktok.md` | Playwright browser auth, read-only |
 | Devpost | 12 | `devpost` | `docs/plans/2026-02-28-devpost-design.md` | Playwright browser auth, hybrid JSON API + scraping |
 | HCM (CWRU PeopleSoft) | 6 | `hcm` | `docs/plans/2026-02-28-hcm-case-design.md` | Playwright browser auth, CWRU SSO + Duo MFA |
+| Jobs (Cron) | 6 | `jobs` | `docs/plans/2026-02-28-jobs-cron-design.md` | In-process scheduler, tool + agent modes |
 
 ## In Progress
 

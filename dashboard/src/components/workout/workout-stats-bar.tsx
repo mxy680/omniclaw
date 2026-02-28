@@ -62,7 +62,7 @@ function buildStats(workout: WorkoutSession): StatItem[] {
       0,
     );
     return [
-      { icon: Dumbbell, label: "Workout", value: workout.name, sub: "Completed" },
+      { icon: Dumbbell, label: "Workout", value: workout.name, sub: "Planned" },
       { icon: ListChecks, label: "Exercises", value: `${workout.exercises.length}`, sub: "exercises" },
       { icon: Layers, label: "Total Sets", value: `${totalSets}`, sub: "sets" },
       { icon: Weight, label: "Volume", value: totalVolume.toLocaleString(), sub: "lb" },
@@ -72,7 +72,7 @@ function buildStats(workout: WorkoutSession): StatItem[] {
   if (workout.type === "cardio" && workout.cardio) {
     const c = workout.cardio;
     const stats: StatItem[] = [
-      { icon: Dumbbell, label: "Workout", value: workout.name, sub: "Completed" },
+      { icon: Dumbbell, label: "Workout", value: workout.name, sub: "Planned" },
       { icon: Clock, label: "Duration", value: `${c.duration}`, sub: "min" },
       { icon: Flame, label: "Calories", value: `${c.caloriesBurned}`, sub: "cal" },
     ];

@@ -57,93 +57,42 @@ interface SummaryRow {
   colorClass?: string;
 }
 
-function buildRows(workout: WorkoutSession, workoutPlan: WorkoutPlan | null): SummaryRow[] {
-  // Plan-only: rest day but plan exists — show planned stats
-  if (workout.type === "rest" && workoutPlan && workoutPlan.workoutType !== "rest") {
-    if (workoutPlan.workoutType === "strength") {
-      const plannedVolume = workoutPlan.exercises.reduce(
-        (s, e) => s + (e.targetSets?.reduce((v, set) => v + set.weight * set.reps, 0) ?? 0),
-        0,
-      );
-      const plannedReps = workoutPlan.exercises.reduce(
-        (s, e) => s + (e.targetSets?.reduce((v, set) => v + set.reps, 0) ?? 0),
-        0,
-      );
-      return [
-        { label: "Planned Volume", value: plannedVolume.toLocaleString(), unit: "lb" },
-        { label: "Planned Reps", value: `${plannedReps}` },
-        { label: "Exercises", value: `${workoutPlan.exercises.length}` },
-      ];
-    }
-    if (workoutPlan.workoutType === "cardio") {
-      const totalDuration = workoutPlan.exercises.reduce(
-        (s, e) => s + (e.durationMin ?? 0),
-        0,
-      );
-      const rows: SummaryRow[] = [];
-      if (totalDuration > 0) {
-        rows.push({ label: "Planned Duration", value: `${totalDuration}`, unit: "min" });
-      }
-      rows.push({ label: "Exercises", value: `${workoutPlan.exercises.length}` });
-      return rows;
-    }
+function buildRows(_workout: WorkoutSession, workoutPlan: WorkoutPlan | null): SummaryRow[] {
+  if (!workoutPlan || workoutPlan.workoutType === "rest") {
+    return [];
   }
 
-  if (workout.type === "strength" && workout.exercises) {
-    const allSets = workout.exercises.flatMap((e) => e.sets);
-    const totalVolume = allSets.reduce((s, set) => s + set.weight * set.reps, 0);
-    const totalReps = allSets.reduce((s, set) => s + set.reps, 0);
-    const heaviest = Math.max(...allSets.map((s) => s.weight));
-    const avgWeight =
-      allSets.length > 0
-        ? allSets.reduce((s, set) => s + set.weight, 0) / allSets.length
-        : 0;
-
-    const rows: SummaryRow[] = [];
-
-    // Add plan comparison when plan has exercises with target sets
-    const planExercisesWithSets = workoutPlan?.exercises.filter((e) => e.targetSets && e.targetSets.length > 0) ?? [];
-    if (planExercisesWithSets.length > 0) {
-      const plannedVolume = planExercisesWithSets.reduce(
-        (s, e) => s + (e.targetSets?.reduce((v, set) => v + set.weight * set.reps, 0) ?? 0),
-        0,
-      );
-      const pct = plannedVolume > 0 ? Math.round((totalVolume / plannedVolume) * 100) : null;
-
-      rows.push({ label: "Planned Volume", value: plannedVolume.toLocaleString(), unit: "lb" });
-      rows.push({ label: "Total Volume", value: totalVolume.toLocaleString(), unit: "lb" });
-
-      if (pct !== null) {
-        let colorClass = "text-emerald-500";
-        if (pct < 80) colorClass = "text-red-400";
-        else if (pct < 100) colorClass = "text-amber-500";
-        rows.push({ label: "Completion", value: `${pct}%`, colorClass });
-      }
-    } else {
-      rows.push({ label: "Total Volume", value: totalVolume.toLocaleString(), unit: "lb" });
-    }
-
-    rows.push(
-      { label: "Total Reps", value: `${totalReps}` },
-      { label: "Heaviest Lift", value: `${heaviest}`, unit: "lb" },
-      { label: "Avg Weight", value: avgWeight.toFixed(1), unit: "lb" },
+  if (workoutPlan.workoutType === "strength") {
+    const plannedVolume = workoutPlan.exercises.reduce(
+      (s, e) => s + (e.targetSets?.reduce((v, set) => v + set.weight * set.reps, 0) ?? 0),
+      0,
     );
-
-    return rows;
+    const plannedReps = workoutPlan.exercises.reduce(
+      (s, e) => s + (e.targetSets?.reduce((v, set) => v + set.reps, 0) ?? 0),
+      0,
+    );
+    const plannedSets = workoutPlan.exercises.reduce(
+      (s, e) => s + (e.targetSets?.length ?? 0),
+      0,
+    );
+    return [
+      { label: "Planned Volume", value: plannedVolume.toLocaleString(), unit: "lb" },
+      { label: "Total Sets", value: `${plannedSets}` },
+      { label: "Total Reps", value: `${plannedReps}` },
+      { label: "Exercises", value: `${workoutPlan.exercises.length}` },
+    ];
   }
 
-  if (workout.type === "cardio" && workout.cardio) {
-    const c = workout.cardio;
-    const rows: SummaryRow[] = [
-      { label: "Duration", value: `${c.duration}`, unit: "min" },
-    ];
-    if (c.distance != null) {
-      rows.push({ label: "Distance", value: `${c.distance}`, unit: "mi" });
+  if (workoutPlan.workoutType === "cardio") {
+    const totalDuration = workoutPlan.exercises.reduce(
+      (s, e) => s + (e.durationMin ?? 0),
+      0,
+    );
+    const rows: SummaryRow[] = [];
+    if (totalDuration > 0) {
+      rows.push({ label: "Planned Duration", value: `${totalDuration}`, unit: "min" });
     }
-    if (c.heartRate != null) {
-      rows.push({ label: "Avg HR", value: `${c.heartRate}`, unit: "bpm" });
-    }
-    rows.push({ label: "Calories Burned", value: `${c.caloriesBurned}`, unit: "cal" });
+    rows.push({ label: "Exercises", value: `${workoutPlan.exercises.length}` });
     return rows;
   }
 

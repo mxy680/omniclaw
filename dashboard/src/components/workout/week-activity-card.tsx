@@ -7,7 +7,7 @@ interface WeekActivityCardProps {
 
 export function WeekActivityCard({ weekOverview, color }: WeekActivityCardProps) {
   const activeDays = weekOverview.filter(
-    (d) => d.status === "completed",
+    (d) => d.status === "scheduled",
   ).length;
 
   return (
@@ -17,7 +17,7 @@ export function WeekActivityCard({ weekOverview, color }: WeekActivityCardProps)
           This Week
         </h2>
         <span className="text-xs text-muted-foreground">
-          {activeDays}/7 days active
+          {activeDays}/7 days planned
         </span>
       </div>
 
@@ -36,19 +36,11 @@ export function WeekActivityCard({ weekOverview, color }: WeekActivityCardProps)
 }
 
 function WeekDot({ status, color }: { status: string; color: string }) {
-  if (status === "completed") {
+  if (status === "scheduled") {
     return (
       <div
         className="h-3 w-3 rounded-full"
         style={{ backgroundColor: color }}
-      />
-    );
-  }
-  if (status === "scheduled") {
-    return (
-      <div
-        className="h-3 w-3 rounded-full border-[1.5px]"
-        style={{ borderColor: color }}
       />
     );
   }

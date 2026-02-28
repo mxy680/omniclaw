@@ -1,11 +1,12 @@
 // src/tools/hcm-timesheet.ts
 import { Type } from "@sinclair/typebox";
 import type { HcmClientManager } from "../auth/hcm-client-manager.js";
-import { launchHcmBrowser, navigateToTimeTile } from "./hcm-browser.js";
+import type { PluginConfig } from "../types/plugin-config.js";
+import { launchHcmBrowser, navigateToTimeTile, resolveLoginConfig } from "./hcm-browser.js";
 import { jsonResult, AUTH_REQUIRED } from "./hcm-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createHcmGetTimesheetTool(manager: HcmClientManager): any {
+export function createHcmGetTimesheetTool(manager: HcmClientManager, config: PluginConfig): any {
   return {
     name: "hcm_get_timesheet",
     label: "HCM Get Timesheet",
@@ -30,14 +31,16 @@ export function createHcmGetTimesheetTool(manager: HcmClientManager): any {
       params: { period?: string; account?: string },
     ) {
       const account = params.account ?? "default";
+      const loginConfig = resolveLoginConfig(config);
+      const canLogin = manager.hasCredentials(account) || (!!loginConfig.caseId && !!loginConfig.password);
 
-      if (!manager.hasCredentials(account)) {
+      if (!canLogin) {
         return jsonResult(AUTH_REQUIRED);
       }
 
       let hcm;
       try {
-        hcm = await launchHcmBrowser(manager, account);
+        hcm = await launchHcmBrowser(manager, account, loginConfig);
       } catch (err) {
         if (err instanceof Error && err.message.includes("session expired")) {
           return jsonResult(AUTH_REQUIRED);
@@ -116,7 +119,7 @@ export function createHcmGetTimesheetTool(manager: HcmClientManager): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createHcmEnterHoursTool(manager: HcmClientManager): any {
+export function createHcmEnterHoursTool(manager: HcmClientManager, config: PluginConfig): any {
   return {
     name: "hcm_enter_hours",
     label: "HCM Enter Hours",
@@ -155,14 +158,16 @@ export function createHcmEnterHoursTool(manager: HcmClientManager): any {
       },
     ) {
       const account = params.account ?? "default";
+      const loginConfig = resolveLoginConfig(config);
+      const canLogin = manager.hasCredentials(account) || (!!loginConfig.caseId && !!loginConfig.password);
 
-      if (!manager.hasCredentials(account)) {
+      if (!canLogin) {
         return jsonResult(AUTH_REQUIRED);
       }
 
       let hcm;
       try {
-        hcm = await launchHcmBrowser(manager, account);
+        hcm = await launchHcmBrowser(manager, account, loginConfig);
       } catch (err) {
         if (err instanceof Error && err.message.includes("session expired")) {
           return jsonResult(AUTH_REQUIRED);
@@ -252,7 +257,7 @@ export function createHcmEnterHoursTool(manager: HcmClientManager): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createHcmSubmitTimesheetTool(manager: HcmClientManager): any {
+export function createHcmSubmitTimesheetTool(manager: HcmClientManager, config: PluginConfig): any {
   return {
     name: "hcm_submit_timesheet",
     label: "HCM Submit Timesheet",
@@ -272,14 +277,16 @@ export function createHcmSubmitTimesheetTool(manager: HcmClientManager): any {
       params: { period?: string; account?: string },
     ) {
       const account = params.account ?? "default";
+      const loginConfig = resolveLoginConfig(config);
+      const canLogin = manager.hasCredentials(account) || (!!loginConfig.caseId && !!loginConfig.password);
 
-      if (!manager.hasCredentials(account)) {
+      if (!canLogin) {
         return jsonResult(AUTH_REQUIRED);
       }
 
       let hcm;
       try {
-        hcm = await launchHcmBrowser(manager, account);
+        hcm = await launchHcmBrowser(manager, account, loginConfig);
       } catch (err) {
         if (err instanceof Error && err.message.includes("session expired")) {
           return jsonResult(AUTH_REQUIRED);

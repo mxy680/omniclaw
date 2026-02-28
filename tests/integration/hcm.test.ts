@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { join } from "path";
-import { tmpdir } from "os";
-import { mkdirSync } from "fs";
+import { tmpdir, homedir } from "os";
+import { mkdirSync, readFileSync, existsSync } from "fs";
 import { HcmClientManager } from "../../src/auth/hcm-client-manager.js";
 import { createHcmAuthTool } from "../../src/tools/hcm-auth-tool.js";
 import {
@@ -15,16 +15,24 @@ import {
 } from "../../src/tools/hcm-paystubs.js";
 import type { PluginConfig } from "../../src/types/plugin-config.js";
 
-const HCM_CASE_ID = process.env.HCM_CASE_ID;
-const HCM_PASSWORD = process.env.HCM_PASSWORD;
-const DUO_TOTP_SECRET = process.env.DUO_TOTP_SECRET;
+// Load config from openclaw config file (same credentials as Canvas/Slack)
+function loadOpenclawConfig(): PluginConfig {
+  const configPath = join(homedir(), ".openclaw", "openclaw.json");
+  if (!existsSync(configPath)) return { client_secret_path: "" } as PluginConfig;
+  try {
+    const raw = JSON.parse(readFileSync(configPath, "utf-8"));
+    return (raw?.plugins?.entries?.omniclaw?.config ?? { client_secret_path: "" }) as PluginConfig;
+  } catch {
+    return { client_secret_path: "" } as PluginConfig;
+  }
+}
+
+const pluginConfig = loadOpenclawConfig();
+const hasCredentials = !!pluginConfig.canvas_username;
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
-const skip = !HCM_CASE_ID;
-
-describe.skipIf(skip)("HCM Integration Tests", () => {
+describe.skipIf(!hasCredentials)("HCM Integration Tests", () => {
   let manager: HcmClientManager;
-  let config: PluginConfig;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let authTool: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,19 +52,12 @@ describe.skipIf(skip)("HCM Integration Tests", () => {
     const tokensPath = join(dir, "tokens.json");
     manager = new HcmClientManager(tokensPath);
 
-    config = {
-      client_secret_path: "",
-      hcm_case_id: HCM_CASE_ID,
-      hcm_password: HCM_PASSWORD,
-      duo_totp_secret: DUO_TOTP_SECRET,
-    } as PluginConfig;
-
-    authTool = createHcmAuthTool(manager, config);
-    getTimesheetTool = createHcmGetTimesheetTool(manager);
-    enterHoursTool = createHcmEnterHoursTool(manager);
-    submitTimesheetTool = createHcmSubmitTimesheetTool(manager);
-    getPaystubsTool = createHcmGetPaystubsTool(manager);
-    getPaystubDetailsTool = createHcmGetPaystubDetailsTool(manager);
+    authTool = createHcmAuthTool(manager, pluginConfig);
+    getTimesheetTool = createHcmGetTimesheetTool(manager, pluginConfig);
+    enterHoursTool = createHcmEnterHoursTool(manager, pluginConfig);
+    submitTimesheetTool = createHcmSubmitTimesheetTool(manager, pluginConfig);
+    getPaystubsTool = createHcmGetPaystubsTool(manager, pluginConfig);
+    getPaystubDetailsTool = createHcmGetPaystubDetailsTool(manager, pluginConfig);
   });
 
   it("authenticates via CWRU SSO", async () => {

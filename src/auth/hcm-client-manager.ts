@@ -1,9 +1,20 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname } from "path";
 
+export interface HcmCookieDetail {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: "Strict" | "Lax" | "None";
+  expires?: number;
+}
+
 export interface HcmSession {
   cookies: Record<string, string>;
-  cookie_details: Array<{ name: string; value: string; domain: string; path: string }>;
+  cookie_details: HcmCookieDetail[];
   employee_name: string;
 }
 

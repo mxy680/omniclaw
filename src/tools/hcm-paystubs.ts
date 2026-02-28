@@ -1,11 +1,12 @@
 // src/tools/hcm-paystubs.ts
 import { Type } from "@sinclair/typebox";
 import type { HcmClientManager } from "../auth/hcm-client-manager.js";
-import { launchHcmBrowser } from "./hcm-browser.js";
+import type { PluginConfig } from "../types/plugin-config.js";
+import { launchHcmBrowser, dumpPageInfo, resolveLoginConfig } from "./hcm-browser.js";
 import { jsonResult, AUTH_REQUIRED } from "./hcm-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createHcmGetPaystubsTool(manager: HcmClientManager): any {
+export function createHcmGetPaystubsTool(manager: HcmClientManager, config: PluginConfig): any {
   return {
     name: "hcm_get_paystubs",
     label: "HCM Get Paystubs",
@@ -22,14 +23,16 @@ export function createHcmGetPaystubsTool(manager: HcmClientManager): any {
       params: { account?: string },
     ) {
       const account = params.account ?? "default";
+      const loginConfig = resolveLoginConfig(config);
+      const canLogin = manager.hasCredentials(account) || (!!loginConfig.caseId && !!loginConfig.password);
 
-      if (!manager.hasCredentials(account)) {
+      if (!canLogin) {
         return jsonResult(AUTH_REQUIRED);
       }
 
       let hcm;
       try {
-        hcm = await launchHcmBrowser(manager, account);
+        hcm = await launchHcmBrowser(manager, account, loginConfig);
       } catch (err) {
         if (err instanceof Error && err.message.includes("session expired")) {
           return jsonResult(AUTH_REQUIRED);
@@ -40,42 +43,23 @@ export function createHcmGetPaystubsTool(manager: HcmClientManager): any {
       try {
         const page = hcm.page;
 
-        const payrollTile = page.locator(
-          'div:has-text("Payroll"):visible, a:has-text("Payroll"):visible, ' +
-          'span:has-text("Payroll"):visible, div:has-text("Pay"):visible, ' +
-          '[id*="PAYROLL"]:visible, [id*="PAY_"]:visible',
-        );
+        // Dump page info to see actual PeopleSoft DOM
+        await dumpPageInfo(page);
 
-        try {
-          await payrollTile.first().waitFor({ state: "visible", timeout: 10000 });
-          await payrollTile.first().click();
-          console.log("[hcm] Clicked Payroll tile.");
-          await page.waitForTimeout(2000);
-        } catch {
-          console.log("[hcm] Payroll tile not found. Trying NavBar...");
-          const navBar = page.locator('#PT_ACTION_MENU, button[title="NavBar"]');
-          await navBar.first().click();
-          await page.waitForTimeout(1000);
-
-          const selfService = page.locator('a:has-text("Employee Self Service")');
-          await selfService.first().click();
-          await page.waitForTimeout(1000);
-
-          const payroll = page.locator('a:has-text("Payroll"), a:has-text("Pay")');
-          await payroll.first().click();
-          await page.waitForTimeout(1000);
-        }
-
-        const viewPaycheck = page.locator(
-          'a:has-text("View Paycheck"), a:has-text("Pay Stub"), a:has-text("Paystub"), ' +
-          'span:has-text("View Paycheck"), [id*="PAYCHECK"]:visible',
-        );
-        try {
-          await viewPaycheck.first().waitFor({ state: "visible", timeout: 5000 });
-          await viewPaycheck.first().click();
-          await page.waitForTimeout(2000);
-        } catch {
-          console.log("[hcm] View Paycheck link not found — may already be on the page.");
+        // Try to find payroll/pay-related navigation
+        const clickedPayroll = await page.evaluate(() => {
+          const candidates = Array.from(document.querySelectorAll("a, button, div[role='button'], [onclick]"));
+          const el = candidates.find(
+            (c) => /Payroll|Pay\s*Stub|Paycheck|View\s*Pay/i.test(c.textContent?.trim() || ""),
+          ) as HTMLElement | undefined;
+          if (el) { el.click(); return el.textContent?.trim().slice(0, 80); }
+          return null;
+        });
+        if (clickedPayroll) {
+          console.log(`[hcm] Clicked payroll element: "${clickedPayroll}"`);
+          await page.waitForTimeout(3000);
+        } else {
+          console.log("[hcm] No payroll element found on landing page.");
         }
 
         const paystubs = await page.evaluate(() => {
@@ -122,7 +106,7 @@ export function createHcmGetPaystubsTool(manager: HcmClientManager): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createHcmGetPaystubDetailsTool(manager: HcmClientManager): any {
+export function createHcmGetPaystubDetailsTool(manager: HcmClientManager, config: PluginConfig): any {
   return {
     name: "hcm_get_paystub_details",
     label: "HCM Get Paystub Details",
@@ -142,14 +126,16 @@ export function createHcmGetPaystubDetailsTool(manager: HcmClientManager): any {
       params: { index: number; account?: string },
     ) {
       const account = params.account ?? "default";
+      const loginConfig = resolveLoginConfig(config);
+      const canLogin = manager.hasCredentials(account) || (!!loginConfig.caseId && !!loginConfig.password);
 
-      if (!manager.hasCredentials(account)) {
+      if (!canLogin) {
         return jsonResult(AUTH_REQUIRED);
       }
 
       let hcm;
       try {
-        hcm = await launchHcmBrowser(manager, account);
+        hcm = await launchHcmBrowser(manager, account, loginConfig);
       } catch (err) {
         if (err instanceof Error && err.message.includes("session expired")) {
           return jsonResult(AUTH_REQUIRED);
@@ -160,35 +146,17 @@ export function createHcmGetPaystubDetailsTool(manager: HcmClientManager): any {
       try {
         const page = hcm.page;
 
-        const payrollTile = page.locator(
-          'div:has-text("Payroll"):visible, a:has-text("Payroll"):visible, ' +
-          'span:has-text("Payroll"):visible, [id*="PAYROLL"]:visible',
-        );
-        try {
-          await payrollTile.first().waitFor({ state: "visible", timeout: 10000 });
-          await payrollTile.first().click();
-          await page.waitForTimeout(2000);
-        } catch {
-          const navBar = page.locator('#PT_ACTION_MENU, button[title="NavBar"]');
-          await navBar.first().click();
-          await page.waitForTimeout(1000);
-          const selfService = page.locator('a:has-text("Employee Self Service")');
-          await selfService.first().click();
-          await page.waitForTimeout(1000);
-          const payroll = page.locator('a:has-text("Payroll"), a:has-text("Pay")');
-          await payroll.first().click();
-          await page.waitForTimeout(1000);
-        }
-
-        const viewPaycheck = page.locator(
-          'a:has-text("View Paycheck"), a:has-text("Pay Stub"), [id*="PAYCHECK"]:visible',
-        );
-        try {
-          await viewPaycheck.first().waitFor({ state: "visible", timeout: 5000 });
-          await viewPaycheck.first().click();
-          await page.waitForTimeout(2000);
-        } catch {
-          // May already be on the page
+        // Try to navigate to payroll page
+        const clickedPayroll = await page.evaluate(() => {
+          const candidates = Array.from(document.querySelectorAll("a, button, div[role='button'], [onclick]"));
+          const el = candidates.find(
+            (c) => /Payroll|Pay\s*Stub|Paycheck|View\s*Pay/i.test(c.textContent?.trim() || ""),
+          ) as HTMLElement | undefined;
+          if (el) { el.click(); return true; }
+          return false;
+        });
+        if (clickedPayroll) {
+          await page.waitForTimeout(3000);
         }
 
         const rows = page.locator(

@@ -15,8 +15,8 @@ export function handleFitnessMessage(
 
   const date = msg.date; // YYYY-MM-DD
 
-  // Food entries + daily totals for the requested date
-  const { entries, daily_totals } = db.getFoodEntries(date, date);
+  // Food entries for the requested date
+  const foodEntries = db.getFoodEntries(date, date).entries;
 
   // Active macro targets
   const targets = db.getActiveTargets();
@@ -62,11 +62,9 @@ export function handleFitnessMessage(
   }
   const week_workout_plans: Array<{ date: string }> = Array.from(planDates).map((d) => ({ date: d }));
 
-  const totalsForDate = daily_totals.find((t) => t.date === date) ?? null;
-
   const data: WsFitnessDay = {
     date,
-    food_entries: entries.map((e) => ({
+    food_entries: foodEntries.map((e) => ({
       id: e.id,
       meal: e.meal ?? null,
       food_name: e.food_name,
@@ -78,14 +76,15 @@ export function handleFitnessMessage(
       fiber_g: e.fiber_g ?? null,
       sodium_mg: e.sodium_mg ?? null,
     })),
-    daily_totals: totalsForDate
+    daily_totals: mealPlanEntries.length > 0
       ? {
-          calories: totalsForDate.calories,
-          protein_g: totalsForDate.protein_g,
-          carbs_g: totalsForDate.carbs_g,
-          fat_g: totalsForDate.fat_g,
-          fiber_g: totalsForDate.fiber_g,
-          sodium_mg: totalsForDate.sodium_mg,
+          calories: mealPlanEntries.reduce((s, e) => s + (e.calories ?? 0), 0),
+          protein_g: mealPlanEntries.reduce((s, e) => s + (e.protein_g ?? 0), 0),
+          carbs_g: mealPlanEntries.reduce((s, e) => s + (e.carbs_g ?? 0), 0),
+          fat_g: mealPlanEntries.reduce((s, e) => s + (e.fat_g ?? 0), 0),
+          fiber_g: mealPlanEntries.reduce((s, e) => s + (e.fiber_g ?? 0), 0),
+          sodium_mg: mealPlanEntries.reduce((s, e) => s + (e.sodium_mg ?? 0), 0),
+          potassium_mg: mealPlanEntries.reduce((s, e) => s + (e.potassium_mg ?? 0), 0),
         }
       : null,
     targets,
@@ -116,6 +115,9 @@ export function handleFitnessMessage(
       protein_g: e.protein_g ?? null,
       carbs_g: e.carbs_g ?? null,
       fat_g: e.fat_g ?? null,
+      fiber_g: e.fiber_g ?? null,
+      sodium_mg: e.sodium_mg ?? null,
+      potassium_mg: e.potassium_mg ?? null,
       notes: e.notes ?? null,
     })),
     pantry_items: pantryItems.map((p) => ({

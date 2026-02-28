@@ -53,9 +53,7 @@ export default function FitnessPage() {
             {/* Left: Exercise breakdown */}
             <div className="rounded-xl border border-border bg-card/40 p-5">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {workout.workoutPlan && workout.workout.type === "rest"
-                  ? "Planned Workout"
-                  : "Exercise Breakdown"}
+Planned Workout
               </h2>
               <ExerciseTimeline workout={workout.workout} workoutPlan={workout.workoutPlan} color={COLOR} />
             </div>

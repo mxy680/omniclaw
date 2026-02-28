@@ -15,6 +15,7 @@ import {
   Activity,
   Puzzle,
   ListTodo,
+  Clock,
 } from "lucide-react";
 
 export interface NavItem {
@@ -69,6 +70,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Chat", url: "/chat", icon: MessageSquare },
       { title: "Tasks", url: "/tasks", icon: ListTodo },
+      { title: "Jobs", url: "/jobs", icon: Clock },
       { title: "Operations", url: "/operations", icon: Activity },
       { title: "Integrations", url: "/integrations", icon: Puzzle },
     ],

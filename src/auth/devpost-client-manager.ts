@@ -161,7 +161,7 @@ export class DevpostClientManager {
 
   static async searchProjects(
     params?: Record<string, string>,
-  ): Promise<string> {
+  ): Promise<{ software: Array<Record<string, unknown>>; total_count: number }> {
     const url = new URL("https://devpost.com/software/search");
     if (params) {
       for (const [k, v] of Object.entries(params)) {
@@ -173,6 +173,7 @@ export class DevpostClientManager {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        Accept: "application/json",
       },
     });
 
@@ -180,6 +181,9 @@ export class DevpostClientManager {
       throw new Error(`Devpost search error: ${resp.status} ${resp.statusText}`);
     }
 
-    return resp.text();
+    return resp.json() as Promise<{
+      software: Array<Record<string, unknown>>;
+      total_count: number;
+    }>;
   }
 }

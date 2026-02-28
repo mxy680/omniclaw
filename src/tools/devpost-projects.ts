@@ -32,41 +32,25 @@ export function createDevpostSearchProjectsTool(manager: DevpostClientManager): 
         if (params.sort) queryParams.sort = params.sort;
         if (params.page) queryParams.page = String(params.page);
 
-        const html = await DevpostClientManager.searchProjects(queryParams);
+        const data = await DevpostClientManager.searchProjects(queryParams);
 
-        const projects: Array<Record<string, unknown>> = [];
-
-        const entryRegex =
-          /href="(https:\/\/devpost\.com\/software\/[^"]+)"[^>]*>\s*(?:<[^>]*>)*\s*<h5[^>]*>([^<]+)<\/h5>[\s\S]*?<p[^>]*>([^<]*)<\/p>/gi;
-        let match;
-        while ((match = entryRegex.exec(html)) !== null) {
-          projects.push({
-            url: match[1].trim(),
-            title: match[2].trim(),
-            tagline: match[3].trim(),
-            slug: match[1]
-              .replace("https://devpost.com/software/", "")
-              .replace(/\/$/, ""),
-          });
-        }
-
-        if (projects.length === 0) {
-          const simpleRegex =
-            /href="(https:\/\/devpost\.com\/software\/[^"]+)"[^>]*>[\s\S]*?<h5[^>]*>([^<]+)<\/h5>/gi;
-          while ((match = simpleRegex.exec(html)) !== null) {
-            projects.push({
-              url: match[1].trim(),
-              title: match[2].trim(),
-              slug: match[1]
-                .replace("https://devpost.com/software/", "")
-                .replace(/\/$/, ""),
-            });
-          }
-        }
+        const projects = data.software.map((s) => ({
+          url: s.url,
+          title: (s.name as string)?.trim(),
+          tagline: (s.tagline as string)?.trim(),
+          slug: s.slug,
+          members: s.members,
+          tags: s.tags,
+          winner: s.winner,
+          has_video: s.has_video,
+          like_count: s.like_count,
+          comment_count: s.comment_count,
+        }));
 
         return jsonResult({
           query: params.query,
           page: params.page ?? 1,
+          total: data.total_count,
           count: projects.length,
           projects,
         });

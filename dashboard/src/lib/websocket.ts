@@ -25,7 +25,10 @@ export type ClientMessage =
   | { type: "task_list" }
   | { type: "task_execute"; taskId: string }
   | { type: "task_approve"; taskId: string }
-  | { type: "task_delete"; taskId: string };
+  | { type: "task_delete"; taskId: string }
+  | { type: "job_list" }
+  | { type: "job_toggle"; jobId: string }
+  | { type: "job_runs"; jobId: string; limit?: number };
 
 export type WsConversation = {
   id: string;
@@ -180,6 +183,32 @@ export type WsTask = {
   completedAt: number | null;
 };
 
+export type WsJob = {
+  id: string;
+  name: string;
+  cron: string;
+  timezone: string;
+  mode: "tool" | "agent";
+  toolName: string | null;
+  toolParams: unknown;
+  prompt: string | null;
+  enabled: boolean;
+  nextRunAt: number;
+  lastRunAt: number | null;
+  lastStatus: string | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type WsJobRun = {
+  id: string;
+  jobId: string;
+  startedAt: number;
+  completedAt: number | null;
+  status: string;
+  result: string | null;
+};
+
 export type WsAttachment = {
   fileId: string;
   filename: string;
@@ -215,7 +244,12 @@ export type ServerMessage =
   | { type: "task_list"; tasks: WsTask[] }
   | { type: "task_created"; task: WsTask }
   | { type: "task_updated"; task: WsTask }
-  | { type: "task_deleted"; taskId: string };
+  | { type: "task_deleted"; taskId: string }
+  | { type: "job_list"; jobs: WsJob[] }
+  | { type: "job_created"; job: WsJob }
+  | { type: "job_updated"; job: WsJob }
+  | { type: "job_deleted"; jobId: string }
+  | { type: "job_runs"; jobId: string; runs: WsJobRun[] };
 
 // ── Event callbacks ────────────────────────────────────────────────
 

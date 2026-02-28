@@ -125,6 +125,9 @@ export class NutritionDbManager {
         protein_g REAL,
         carbs_g REAL,
         fat_g REAL,
+        fiber_g REAL,
+        sodium_mg REAL,
+        potassium_mg REAL,
         notes TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
@@ -145,6 +148,9 @@ export class NutritionDbManager {
       );
       CREATE INDEX IF NOT EXISTS idx_workout_plan_date ON workout_plan_entries(date);
     `);
+    try { this.db.exec(`ALTER TABLE meal_plan_entries ADD COLUMN fiber_g REAL`); } catch {}
+    try { this.db.exec(`ALTER TABLE meal_plan_entries ADD COLUMN sodium_mg REAL`); } catch {}
+    try { this.db.exec(`ALTER TABLE meal_plan_entries ADD COLUMN potassium_mg REAL`); } catch {}
   }
 
   addFoodEntries(entries: FoodEntryInput[]): FoodEntry[] {
@@ -440,8 +446,8 @@ export class NutritionDbManager {
       this.db.prepare(`DELETE FROM meal_plan_entries WHERE date = ?`).run(date);
 
       const insert = this.db.prepare(
-        `INSERT INTO meal_plan_entries (date, time_slot, meal_label, source, source_id, item_name, calories, protein_g, carbs_g, fat_g, notes)
-         VALUES (@date, @time_slot, @meal_label, @source, @source_id, @item_name, @calories, @protein_g, @carbs_g, @fat_g, @notes)`,
+        `INSERT INTO meal_plan_entries (date, time_slot, meal_label, source, source_id, item_name, calories, protein_g, carbs_g, fat_g, fiber_g, sodium_mg, potassium_mg, notes)
+         VALUES (@date, @time_slot, @meal_label, @source, @source_id, @item_name, @calories, @protein_g, @carbs_g, @fat_g, @fiber_g, @sodium_mg, @potassium_mg, @notes)`,
       );
 
       for (const e of entries) {
@@ -456,6 +462,9 @@ export class NutritionDbManager {
           protein_g: e.protein_g ?? null,
           carbs_g: e.carbs_g ?? null,
           fat_g: e.fat_g ?? null,
+          fiber_g: e.fiber_g ?? null,
+          sodium_mg: e.sodium_mg ?? null,
+          potassium_mg: e.potassium_mg ?? null,
           notes: e.notes ?? null,
         });
         results.push({
@@ -470,6 +479,9 @@ export class NutritionDbManager {
           protein_g: e.protein_g ?? null,
           carbs_g: e.carbs_g ?? null,
           fat_g: e.fat_g ?? null,
+          fiber_g: e.fiber_g ?? null,
+          sodium_mg: e.sodium_mg ?? null,
+          potassium_mg: e.potassium_mg ?? null,
           notes: e.notes ?? null,
           created_at: new Date().toISOString(),
         });

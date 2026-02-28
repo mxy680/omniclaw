@@ -115,6 +115,9 @@ export interface MealPlanEntryInput {
   protein_g?: number;
   carbs_g?: number;
   fat_g?: number;
+  fiber_g?: number;
+  sodium_mg?: number;
+  potassium_mg?: number;
   notes?: string;
 }
 
@@ -130,6 +133,9 @@ export interface MealPlanEntry {
   protein_g: number | null;
   carbs_g: number | null;
   fat_g: number | null;
+  fiber_g: number | null;
+  sodium_mg: number | null;
+  potassium_mg: number | null;
   notes: string | null;
   created_at: string;
 }

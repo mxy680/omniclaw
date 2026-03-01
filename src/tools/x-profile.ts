@@ -132,7 +132,7 @@ export function createXUpdateProfileTool(manager: XClientManager) {
       }
 
       try {
-        const resp = await fetch("https://api.x.com/1.1/account/update_profile.json", {
+        const resp = await fetch("https://twitter.com/i/api/1.1/account/update_profile.json", {
           method: "POST",
           headers: restHeaders(session),
           body: body.toString(),

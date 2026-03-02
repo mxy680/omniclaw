@@ -174,26 +174,25 @@ final class ChatService: ObservableObject {
 
     private func startReceiving() {
         receiveTask = Task { [weak self] in
+            guard let self else { return }
             while !Task.isCancelled {
-                guard let self, let webSocket = await self.webSocket else { break }
+                guard let webSocket = self.webSocket else { break }
                 do {
                     let message = try await webSocket.receive()
                     switch message {
                     case .string(let text):
-                        await self.handleMessage(text)
+                        self.handleMessage(text)
                     case .data(let data):
                         if let text = String(data: data, encoding: .utf8) {
-                            await self.handleMessage(text)
+                            self.handleMessage(text)
                         }
                     @unknown default:
                         break
                     }
                 } catch {
                     if !Task.isCancelled {
-                        await MainActor.run { [weak self] in
-                            self?.isConnected = false
-                            self?.isStreaming = false
-                        }
+                        self.isConnected = false
+                        self.isStreaming = false
                     }
                     break
                 }

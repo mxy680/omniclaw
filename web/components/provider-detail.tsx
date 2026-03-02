@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ServiceTestPanel } from "@/components/service-test-panel";
+import { ServiceTestPanel, type ServiceTestPanelHandle } from "@/components/service-test-panel";
 import { AccountRow } from "@/components/account-row";
 import { ConnectDialog } from "@/components/connect-dialog";
 import { RevokeDialog } from "@/components/revoke-dialog";
@@ -53,10 +53,8 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
   const [revoking, setRevoking] = useState(false);
   const [serviceTools, setServiceTools] = useState<Record<string, ServiceToolsData>>({});
   const [toolsLoading, setToolsLoading] = useState(false);
-
-  // Refs for "Test All Services" — stores test functions from child panels
-  const panelTestAllRefs = useRef<Map<string, () => Promise<void>>>(new Map());
   const [testingAllServices, setTestingAllServices] = useState(false);
+  const panelRefs = useRef<Map<string, ServiceTestPanelHandle>>(new Map());
 
   const fetchAccounts = useCallback(async () => {
     if (!provider.available) {
@@ -140,7 +138,6 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
   }
 
   const Icon = PROVIDER_ICONS[provider.icon];
-  const connected = accounts.length > 0;
 
   if (!provider.available) {
     return (
@@ -235,8 +232,8 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
                   onClick={async () => {
                     setTestingAllServices(true);
                     for (const service of provider.services) {
-                      const testFn = panelTestAllRefs.current.get(service.id);
-                      if (testFn) await testFn();
+                      const panel = panelRefs.current.get(service.id);
+                      if (panel) await panel.testAll();
                     }
                     setTestingAllServices(false);
                   }}
@@ -273,6 +270,13 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
                   return (
                     <ServiceTestPanel
                       key={service.id}
+                      ref={(handle) => {
+                        if (handle) {
+                          panelRefs.current.set(service.id, handle);
+                        } else {
+                          panelRefs.current.delete(service.id);
+                        }
+                      }}
                       serviceId={service.id}
                       serviceName={data.name}
                       tools={data.tools}

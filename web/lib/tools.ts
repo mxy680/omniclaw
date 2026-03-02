@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { getConfig } from "./config";
 
 interface ToolInfo {
@@ -17,6 +18,14 @@ interface ToolRegistry {
   execute: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
 }
 
+interface OmniclawTool {
+  name: string;
+  label: string;
+  description: string;
+  parameters: unknown;
+  execute: (toolCallId: string, params: Record<string, unknown>) => Promise<unknown>;
+}
+
 const SERVICE_NAMES: Record<string, string> = {
   gmail: "Gmail",
   calendar: "Calendar",
@@ -32,16 +41,22 @@ let cached: ToolRegistry | null = null;
 export async function getToolRegistry(): Promise<ToolRegistry> {
   if (cached) return cached;
 
-  // Dynamic import of compiled tool registry (webpack external)
-  const mod = await import("../../dist/mcp/tool-registry.js");
-  const { createAllTools } = mod;
+  // Resolve absolute path to compiled tool registry
+  // process.cwd() = web/, so go up one level to project root
+  const registryPath = resolve(process.cwd(), "..", "dist", "mcp", "tool-registry.js");
+
+  // Dynamic import with webpackIgnore comment to prevent bundling
+  const mod = await import(/* webpackIgnore: true */ registryPath);
+  const { createAllTools } = mod as {
+    createAllTools: (opts: { pluginConfig: { client_secret_path: string; tokens_path?: string; oauth_port?: number } }) => OmniclawTool[];
+  };
 
   const config = getConfig();
   const tools = createAllTools({ pluginConfig: config });
 
   // Build service map, filtering out auth_setup tools
   const services: Record<string, ServiceTools> = {};
-  const toolMap = new Map<string, (typeof tools)[number]>();
+  const toolMap = new Map<string, OmniclawTool>();
 
   for (const tool of tools) {
     if (tool.name.endsWith("_auth_setup")) continue;

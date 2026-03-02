@@ -1,21 +1,9 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
 import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
+import { jsonResult, authRequired } from "./shared.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
-
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
-}
-
-const AUTH_REQUIRED = {
-  error: "auth_required",
-  action: "Call drive_auth_setup to authenticate.",
-};
+const AUTH_REQUIRED = authRequired("drive");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createDriveSearchTool(clientManager: OAuthClientManager): any {
@@ -35,6 +23,9 @@ export function createDriveSearchTool(clientManager: OAuthClientManager): any {
           default: 20,
         }),
       ),
+      page_token: Type.Optional(
+        Type.String({ description: "Page token for next page of results." }),
+      ),
       account: Type.Optional(
         Type.String({
           description: "Account name to use. Defaults to 'default'.",
@@ -44,7 +35,7 @@ export function createDriveSearchTool(clientManager: OAuthClientManager): any {
     }),
     async execute(
       _toolCallId: string,
-      params: { query: string; max_results?: number; account?: string },
+      params: { query: string; max_results?: number; page_token?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -58,8 +49,11 @@ export function createDriveSearchTool(clientManager: OAuthClientManager): any {
       const res = await drive.files.list({
         q,
         pageSize: params.max_results ?? 20,
-        fields: "files(id,name,mimeType,size,modifiedTime,parents)",
+        fields: "nextPageToken,files(id,name,mimeType,size,modifiedTime,parents)",
         orderBy: "modifiedTime desc",
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+        pageToken: params.page_token,
       });
 
       const files = (res.data.files ?? []).map((f) => ({
@@ -70,7 +64,7 @@ export function createDriveSearchTool(clientManager: OAuthClientManager): any {
         modifiedTime: f.modifiedTime ?? "",
       }));
 
-      return jsonResult(files);
+      return jsonResult({ files, nextPageToken: res.data.nextPageToken ?? null });
     },
   };
 }

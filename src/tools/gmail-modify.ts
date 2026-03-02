@@ -1,21 +1,9 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
 import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
+import { jsonResult, authRequired } from "./shared.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
-
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
-}
-
-const AUTH_REQUIRED = {
-  error: "auth_required",
-  action: "Call gmail_auth_setup to authenticate.",
-};
+const AUTH_REQUIRED = authRequired("gmail");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createGmailModifyTool(clientManager: OAuthClientManager): any {
@@ -23,7 +11,7 @@ export function createGmailModifyTool(clientManager: OAuthClientManager): any {
     name: "gmail_modify",
     label: "Gmail Modify",
     description:
-      "Change the state of a Gmail message: mark as read/unread, archive (remove from inbox), or move to trash.",
+      "Change the state of a Gmail message: mark as read/unread, archive (remove from inbox), move to trash, untrash, star/unstar, or add/remove specific labels.",
     parameters: Type.Object({
       id: Type.String({ description: "The Gmail message ID to modify." }),
       action: Type.Union(
@@ -32,11 +20,21 @@ export function createGmailModifyTool(clientManager: OAuthClientManager): any {
           Type.Literal("mark_unread"),
           Type.Literal("archive"),
           Type.Literal("trash"),
+          Type.Literal("untrash"),
+          Type.Literal("star"),
+          Type.Literal("unstar"),
+          Type.Literal("add_labels"),
+          Type.Literal("remove_labels"),
         ],
         {
           description:
-            "Action to perform: 'mark_read', 'mark_unread', 'archive' (remove from inbox), or 'trash'.",
+            "Action to perform: 'mark_read', 'mark_unread', 'archive' (remove from inbox), 'trash', 'untrash', 'star', 'unstar', 'add_labels', or 'remove_labels'.",
         },
+      ),
+      label_ids: Type.Optional(
+        Type.Array(Type.String(), {
+          description: "Label IDs to add or remove. Required for add_labels/remove_labels actions.",
+        }),
       ),
       account: Type.Optional(
         Type.String({
@@ -49,7 +47,17 @@ export function createGmailModifyTool(clientManager: OAuthClientManager): any {
       _toolCallId: string,
       params: {
         id: string;
-        action: "mark_read" | "mark_unread" | "archive" | "trash";
+        action:
+          | "mark_read"
+          | "mark_unread"
+          | "archive"
+          | "trash"
+          | "untrash"
+          | "star"
+          | "unstar"
+          | "add_labels"
+          | "remove_labels";
+        label_ids?: string[];
         account?: string;
       },
     ) {
@@ -89,6 +97,42 @@ export function createGmailModifyTool(clientManager: OAuthClientManager): any {
 
         case "trash":
           await gmail.users.messages.trash({ userId: "me", id: params.id });
+          break;
+
+        case "untrash":
+          await gmail.users.messages.untrash({ userId: "me", id: params.id });
+          break;
+
+        case "star":
+          await gmail.users.messages.modify({
+            userId: "me",
+            id: params.id,
+            requestBody: { addLabelIds: ["STARRED"] },
+          });
+          break;
+
+        case "unstar":
+          await gmail.users.messages.modify({
+            userId: "me",
+            id: params.id,
+            requestBody: { removeLabelIds: ["STARRED"] },
+          });
+          break;
+
+        case "add_labels":
+          await gmail.users.messages.modify({
+            userId: "me",
+            id: params.id,
+            requestBody: { addLabelIds: params.label_ids ?? [] },
+          });
+          break;
+
+        case "remove_labels":
+          await gmail.users.messages.modify({
+            userId: "me",
+            id: params.id,
+            requestBody: { removeLabelIds: params.label_ids ?? [] },
+          });
           break;
       }
 

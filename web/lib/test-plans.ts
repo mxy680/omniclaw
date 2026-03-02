@@ -73,6 +73,30 @@ const gmailTest: ServiceTestFn = async (execute) => {
   const s3 = await runStep("Search messages", "gmail_search", { query: "in:inbox", max_results: 1 }, execute);
   steps.push(s3.result);
 
+  // List labels
+  const s4 = await runStep("List labels", "gmail_labels_list", {}, execute);
+  steps.push(s4.result);
+
+  // List threads
+  const s5 = await runStep("List threads", "gmail_thread_list", { max_results: 1 }, execute);
+  steps.push(s5.result);
+
+  // Round-trip: create draft → delete draft
+  const s6 = await runStep("Create test draft", "gmail_draft_create", {
+    to: "test@example.com",
+    subject: "Omniclaw Smoke Test Draft",
+    body: "This draft will be deleted immediately.",
+  }, execute);
+  steps.push(s6.result);
+
+  const draftParsed = extractResult(s6.data) as Record<string, unknown> | undefined;
+  const draftId = draftParsed?.id as string | undefined;
+
+  if (draftId) {
+    const s7 = await runStep("Delete test draft", "gmail_draft_delete", { draft_id: draftId }, execute, true);
+    steps.push(s7.result);
+  }
+
   return steps;
 };
 
@@ -84,6 +108,19 @@ const calendarTest: ServiceTestFn = async (execute) => {
 
   const s2 = await runStep("List events", "calendar_events", { max_results: 2 }, execute);
   steps.push(s2.result);
+
+  // Search events
+  const s2b = await runStep("Search events", "calendar_search", { query: "test", max_results: 1 }, execute);
+  steps.push(s2b.result);
+
+  // Check free/busy
+  const fbStart = new Date().toISOString();
+  const fbEnd = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const s2c = await runStep("Check free/busy", "calendar_freebusy", {
+    time_min: fbStart,
+    time_max: fbEnd,
+  }, execute);
+  steps.push(s2c.result);
 
   // Round-trip: create → get → delete
   const now = new Date();
@@ -108,6 +145,20 @@ const calendarTest: ServiceTestFn = async (execute) => {
     steps.push(s5.result);
   }
 
+  // Quick add → delete
+  const s6 = await runStep("Quick add event", "calendar_quick_add", {
+    text: "Omniclaw smoke test tomorrow at 9am",
+  }, execute);
+  steps.push(s6.result);
+
+  const quickParsed = extractResult(s6.data) as Record<string, unknown> | undefined;
+  const quickEventId = quickParsed?.id as string | undefined;
+
+  if (quickEventId) {
+    const s7 = await runStep("Delete quick-add event", "calendar_delete", { event_id: quickEventId }, execute, true);
+    steps.push(s7.result);
+  }
+
   return steps;
 };
 
@@ -117,7 +168,13 @@ const driveTest: ServiceTestFn = async (execute) => {
   const s1 = await runStep("List files", "drive_list", { max_results: 2 }, execute);
   steps.push(s1.result);
 
-  // Round-trip: create folder → delete
+  const s1b = await runStep("Search files", "drive_search", {
+    query: "mimeType != 'application/vnd.google-apps.folder'",
+    max_results: 1,
+  }, execute);
+  steps.push(s1b.result);
+
+  // Round-trip: create folder → copy → list permissions → delete both
   const folderName = `omniclaw-smoke-test-${Date.now()}`;
   const s2 = await runStep("Create test folder", "drive_create_folder", { name: folderName }, execute);
   steps.push(s2.result);
@@ -126,8 +183,12 @@ const driveTest: ServiceTestFn = async (execute) => {
   const folderId = parsed?.id as string | undefined;
 
   if (folderId) {
-    const s3 = await runStep("Delete test folder", "drive_delete", { file_id: folderId, permanent: true }, execute, true);
+    // List permissions on the folder
+    const s3 = await runStep("List permissions", "drive_permissions_list", { file_id: folderId }, execute);
     steps.push(s3.result);
+
+    const s4 = await runStep("Delete test folder", "drive_delete", { file_id: folderId, permanent: true }, execute, true);
+    steps.push(s4.result);
   }
 
   return steps;
@@ -136,19 +197,38 @@ const driveTest: ServiceTestFn = async (execute) => {
 const docsTest: ServiceTestFn = async (execute) => {
   const steps: TestStepResult[] = [];
 
-  // Round-trip: create → get → delete via Drive
-  const s1 = await runStep("Create test document", "docs_create", { title: "Omniclaw Smoke Test" }, execute);
+  // Round-trip: create → append → insert → get (markdown) → delete via Drive
+  const s1 = await runStep("Create test document", "docs_create", {
+    title: "Omniclaw Smoke Test",
+    content: "Initial content.",
+  }, execute);
   steps.push(s1.result);
 
   const parsed = extractResult(s1.data) as Record<string, unknown> | undefined;
   const docId = parsed?.id as string | undefined;
 
   if (docId) {
-    const s2 = await runStep("Get test document", "docs_get", { document_id: docId }, execute);
+    const s2 = await runStep("Append text", "docs_append", {
+      document_id: docId,
+      text: " Appended text.",
+    }, execute);
     steps.push(s2.result);
 
-    const s3 = await runStep("Delete test document", "drive_delete", { file_id: docId, permanent: true }, execute, true);
+    const s3 = await runStep("Get document (markdown)", "docs_get", {
+      document_id: docId,
+      format: "markdown",
+    }, execute);
     steps.push(s3.result);
+
+    const s4 = await runStep("Replace text", "docs_replace_text", {
+      document_id: docId,
+      find: "Appended text",
+      replace: "Replaced text",
+    }, execute);
+    steps.push(s4.result);
+
+    const s5 = await runStep("Delete test document", "drive_delete", { file_id: docId, permanent: true }, execute, true);
+    steps.push(s5.result);
   }
 
   return steps;
@@ -164,11 +244,43 @@ const sheetsTest: ServiceTestFn = async (execute) => {
   const sheetId = parsed?.id as string | undefined;
 
   if (sheetId) {
-    const s2 = await runStep("Get test spreadsheet", "sheets_get", { spreadsheet_id: sheetId, range: "Sheet1!A1:A1" }, execute);
+    // Get spreadsheet info (sheets/tabs metadata)
+    const s1b = await runStep("Get spreadsheet info", "sheets_info", { spreadsheet_id: sheetId }, execute);
+    steps.push(s1b.result);
+
+    // Write some data
+    const s2 = await runStep("Update cells", "sheets_update", {
+      spreadsheet_id: sheetId,
+      range: "Sheet1!A1:B2",
+      values: [["smoke", "test"], ["pass", "ok"]],
+    }, execute);
     steps.push(s2.result);
 
-    const s3 = await runStep("Delete test spreadsheet", "drive_delete", { file_id: sheetId, permanent: true }, execute, true);
+    // Read it back
+    const s3 = await runStep("Get test spreadsheet", "sheets_get", { spreadsheet_id: sheetId, range: "Sheet1!A1:B2" }, execute);
     steps.push(s3.result);
+
+    // Add a new sheet tab
+    const s4 = await runStep("Add sheet tab", "sheets_add_sheet", {
+      spreadsheet_id: sheetId,
+      title: "SmokeTab",
+    }, execute);
+    steps.push(s4.result);
+
+    // Delete the added sheet tab
+    const tabParsed = extractResult(s4.data) as Record<string, unknown> | undefined;
+    const tabSheetId = tabParsed?.sheetId as number | undefined;
+
+    if (tabSheetId !== undefined) {
+      const s5 = await runStep("Delete sheet tab", "sheets_delete_sheet", {
+        spreadsheet_id: sheetId,
+        sheet_id: tabSheetId,
+      }, execute, true);
+      steps.push(s5.result);
+    }
+
+    const s6 = await runStep("Delete test spreadsheet", "drive_delete", { file_id: sheetId, permanent: true }, execute, true);
+    steps.push(s6.result);
   }
 
   return steps;
@@ -184,11 +296,55 @@ const slidesTest: ServiceTestFn = async (execute) => {
   const presId = parsed?.id as string | undefined;
 
   if (presId) {
-    const s2 = await runStep("Get test presentation", "slides_get", { presentation_id: presId }, execute);
+    // Append a slide with specific layout
+    const s2 = await runStep("Append slide", "slides_append_slide", {
+      presentation_id: presId,
+      title: "Test Slide",
+      body: "Smoke test body text.",
+      layout: "TITLE_AND_BODY",
+    }, execute);
     steps.push(s2.result);
 
-    const s3 = await runStep("Delete test presentation", "drive_delete", { file_id: presId, permanent: true }, execute, true);
+    // Get presentation with enhanced output (tables, images)
+    const s3 = await runStep("Get presentation", "slides_get", { presentation_id: presId }, execute);
     steps.push(s3.result);
+
+    // Extract a slide objectId for notes and duplication
+    const getParsed = extractResult(s3.data) as Record<string, unknown> | undefined;
+    const slides = (getParsed as { slides?: { objectId?: string }[] })?.slides;
+    const slideObjectId = slides?.[0]?.objectId;
+
+    if (slideObjectId) {
+      // Write speaker notes
+      const s4 = await runStep("Write speaker notes", "slides_write_notes", {
+        presentation_id: presId,
+        slide_id: slideObjectId,
+        notes: "These are smoke test speaker notes.",
+      }, execute);
+      steps.push(s4.result);
+
+      // Duplicate the slide
+      const s5 = await runStep("Duplicate slide", "slides_duplicate_slide", {
+        presentation_id: presId,
+        slide_id: slideObjectId,
+      }, execute);
+      steps.push(s5.result);
+
+      // Delete the duplicated slide
+      const dupParsed = extractResult(s5.data) as Record<string, unknown> | undefined;
+      const dupSlideId = dupParsed?.newSlideId as string | undefined;
+
+      if (dupSlideId) {
+        const s6 = await runStep("Delete duplicated slide", "slides_delete_slide", {
+          presentation_id: presId,
+          slide_id: dupSlideId,
+        }, execute, true);
+        steps.push(s6.result);
+      }
+    }
+
+    const s7 = await runStep("Delete test presentation", "drive_delete", { file_id: presId, permanent: true }, execute, true);
+    steps.push(s7.result);
   }
 
   return steps;
@@ -210,7 +366,18 @@ const youtubeTest: ServiceTestFn = async (execute) => {
 
     const s3 = await runStep("Get transcript", "youtube_get_transcript", { video: videoId }, execute);
     steps.push(s3.result);
+
+    const s4 = await runStep("Get video comments", "youtube_video_comments", { video: videoId, max_results: 2 }, execute);
+    steps.push(s4.result);
   }
+
+  // Channel info
+  const s5 = await runStep("Get channel info", "youtube_channel_info", { channel: "@Google" }, execute);
+  steps.push(s5.result);
+
+  // List playlists (authenticated user)
+  const s6 = await runStep("List playlists", "youtube_playlists_list", { max_results: 2 }, execute);
+  steps.push(s6.result);
 
   return steps;
 };

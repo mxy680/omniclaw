@@ -1,21 +1,18 @@
+import { randomUUID } from "crypto";
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
 import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
+import { jsonResult, authRequired } from "./shared.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
+const AUTH_REQUIRED = authRequired("gmail");
 
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
+/** Returns `{ date }` for all-day (YYYY-MM-DD) or `{ dateTime }` for timed events. */
+function toEventTime(input: string): { date: string } | { dateTime: string } {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    return { date: input };
+  }
+  return { dateTime: input };
 }
-
-const AUTH_REQUIRED = {
-  error: "auth_required",
-  action: "Call gmail_auth_setup to authenticate.",
-};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createCalendarCreateTool(clientManager: OAuthClientManager): any {
@@ -23,21 +20,27 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
     name: "calendar_create",
     label: "Calendar Create Event",
     description:
-      "Create a new Google Calendar event. Provide a title, start and end times as ISO 8601 datetimes (e.g. '2026-03-01T14:00:00-05:00'), and optionally a description, location, and list of attendee email addresses.",
+      "Create a new Google Calendar event. Provide a title, start and end times. Use ISO 8601 datetime for timed events (e.g. '2026-03-01T14:00:00-05:00') or YYYY-MM-DD for all-day events (e.g. '2026-03-01').",
     parameters: Type.Object({
       summary: Type.String({ description: "Event title." }),
       start: Type.String({
         description:
-          "Event start time as an ISO 8601 datetime string (e.g. '2026-03-01T14:00:00-05:00').",
+          "Event start: ISO 8601 datetime (e.g. '2026-03-01T14:00:00-05:00') or YYYY-MM-DD for all-day events.",
       }),
       end: Type.String({
         description:
-          "Event end time as an ISO 8601 datetime string (e.g. '2026-03-01T15:00:00-05:00').",
+          "Event end: ISO 8601 datetime (e.g. '2026-03-01T15:00:00-05:00') or YYYY-MM-DD for all-day events.",
       }),
       description: Type.Optional(Type.String({ description: "Event description or agenda." })),
       location: Type.Optional(Type.String({ description: "Location or meeting room." })),
       attendees: Type.Optional(
         Type.Array(Type.String(), { description: "List of attendee email addresses to invite." }),
+      ),
+      recurrence: Type.Optional(
+        Type.Array(Type.String(), { description: "Recurrence rules as RRULE strings, e.g. ['RRULE:FREQ=WEEKLY;COUNT=10']." }),
+      ),
+      conference: Type.Optional(
+        Type.Boolean({ description: "Create a Google Meet link for this event. Defaults to false.", default: false }),
       ),
       calendar_id: Type.Optional(
         Type.String({
@@ -61,6 +64,8 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
         description?: string;
         location?: string;
         attendees?: string[];
+        recurrence?: string[];
+        conference?: boolean;
         calendar_id?: string;
         account?: string;
       },
@@ -76,13 +81,23 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
       const res = await calendar.events.insert({
         calendarId: params.calendar_id ?? "primary",
         sendUpdates: "all",
+        conferenceDataVersion: 1,
         requestBody: {
           summary: params.summary,
           description: params.description,
           location: params.location,
-          start: { dateTime: params.start },
-          end: { dateTime: params.end },
+          start: toEventTime(params.start),
+          end: toEventTime(params.end),
           attendees: params.attendees?.map((email) => ({ email })),
+          ...(params.recurrence ? { recurrence: params.recurrence } : {}),
+          ...(params.conference ? {
+            conferenceData: {
+              createRequest: {
+                requestId: randomUUID(),
+                conferenceSolutionKey: { type: "hangoutsMeet" },
+              },
+            },
+          } : {}),
         },
       });
 
@@ -93,6 +108,7 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
         start: ev.start?.dateTime ?? ev.start?.date ?? "",
         end: ev.end?.dateTime ?? ev.end?.date ?? "",
         htmlLink: ev.htmlLink ?? "",
+        conferenceLink: ev.conferenceData?.entryPoints?.find((e: any) => e.entryPointType === "video")?.uri ?? "",
         success: true,
       });
     },

@@ -7,22 +7,33 @@ import type { PluginConfig } from "../types/plugin-config.js";
 import { createCalendarCreateTool } from "../tools/calendar-create.js";
 import { createCalendarDeleteTool } from "../tools/calendar-delete.js";
 import { createCalendarEventsTool } from "../tools/calendar-events.js";
+import { createCalendarFreeBusyTool } from "../tools/calendar-freebusy.js";
 import { createCalendarGetTool } from "../tools/calendar-get.js";
 import { createCalendarListCalendarsTool } from "../tools/calendar-list-calendars.js";
+import { createCalendarQuickAddTool } from "../tools/calendar-quick-add.js";
 import { createCalendarRespondTool } from "../tools/calendar-respond.js";
+import { createCalendarSearchTool } from "../tools/calendar-search.js";
 import { createCalendarUpdateTool } from "../tools/calendar-update.js";
 import { createDocsAppendTool } from "../tools/docs-append.js";
 import { createDocsCreateTool } from "../tools/docs-create.js";
+import { createDocsDeleteTextTool } from "../tools/docs-delete-text.js";
 import { createDocsExportTool } from "../tools/docs-download.js";
 import { createDocsGetTool } from "../tools/docs-get.js";
+import { createDocsInsertTool } from "../tools/docs-insert.js";
 import { createDocsReplaceTextTool } from "../tools/docs-replace-text.js";
 import { createDriveCreateFolderTool } from "../tools/drive-create-folder.js";
+import { createDriveCopyTool } from "../tools/drive-copy.js";
 import { createDriveDeleteTool } from "../tools/drive-delete.js";
 import { createDriveDownloadTool } from "../tools/drive-download.js";
 import { createDriveGetTool } from "../tools/drive-get.js";
 import { createDriveListTool } from "../tools/drive-list.js";
 import { createDriveMoveTool } from "../tools/drive-move.js";
+import {
+  createDrivePermissionsListTool,
+  createDrivePermissionsDeleteTool,
+} from "../tools/drive-permissions.js";
 import { createDriveReadTool } from "../tools/drive-read.js";
+import { createDriveRestoreTool } from "../tools/drive-restore.js";
 import { createDriveSearchTool } from "../tools/drive-search.js";
 import { createDriveShareTool } from "../tools/drive-share.js";
 import { createDriveUploadTool } from "../tools/drive-upload.js";
@@ -44,16 +55,43 @@ import {
   createGmailReplyTool,
   createGmailForwardTool,
 } from "../tools/gmail-send.js";
+import {
+  createGmailDraftListTool,
+  createGmailDraftCreateTool,
+  createGmailDraftUpdateTool,
+  createGmailDraftDeleteTool,
+  createGmailDraftSendTool,
+} from "../tools/gmail-drafts.js";
+import {
+  createGmailLabelsListTool,
+  createGmailLabelCreateTool,
+  createGmailLabelDeleteTool,
+} from "../tools/gmail-labels.js";
+import {
+  createGmailThreadListTool,
+  createGmailThreadGetTool,
+} from "../tools/gmail-threads.js";
 import { createSheetsAppendTool } from "../tools/sheets-append.js";
 import { createSheetsClearTool } from "../tools/sheets-clear.js";
 import { createSheetsCreateTool } from "../tools/sheets-create.js";
 import { createSheetsExportTool } from "../tools/sheets-download.js";
 import { createSheetsGetTool } from "../tools/sheets-get.js";
+import { createSheetsInfoTool } from "../tools/sheets-info.js";
+import {
+  createSheetsAddSheetTool,
+  createSheetsDeleteSheetTool,
+  createSheetsRenameSheetTool,
+} from "../tools/sheets-manage.js";
 import { createSheetsUpdateTool } from "../tools/sheets-update.js";
 import { createSlidesAppendSlideTool } from "../tools/slides-append-slide.js";
 import { createSlidesCreateTool } from "../tools/slides-create.js";
 import { createSlidesExportTool } from "../tools/slides-download.js";
 import { createSlidesGetTool } from "../tools/slides-get.js";
+import {
+  createSlidesDeleteSlideTool,
+  createSlidesDuplicateSlideTool,
+} from "../tools/slides-manage.js";
+import { createSlidesWriteNotesTool } from "../tools/slides-notes.js";
 import { createSlidesReplaceTextTool } from "../tools/slides-replace-text.js";
 import { createYouTubeSearchTool, createYouTubeVideoDetailsTool } from "../tools/youtube-search.js";
 import {
@@ -61,6 +99,11 @@ import {
   createYouTubeVideoCommentsTool,
 } from "../tools/youtube-social.js";
 import { createYouTubeDownloadThumbnailTool } from "../tools/youtube-download-thumbnail.js";
+import {
+  createYouTubePlaylistsListTool,
+  createYouTubePlaylistItemsTool,
+  createYouTubePlaylistCreateTool,
+} from "../tools/youtube-playlists.js";
 import { createYouTubeTranscriptTool } from "../tools/youtube-transcript.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,6 +149,16 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createGmailForwardTool(clientManager));
     add(createGmailModifyTool(clientManager));
     add(createGmailAccountsTool(clientManager));
+    add(createGmailDraftListTool(clientManager));
+    add(createGmailDraftCreateTool(clientManager));
+    add(createGmailDraftUpdateTool(clientManager));
+    add(createGmailDraftDeleteTool(clientManager));
+    add(createGmailDraftSendTool(clientManager));
+    add(createGmailLabelsListTool(clientManager));
+    add(createGmailLabelCreateTool(clientManager));
+    add(createGmailLabelDeleteTool(clientManager));
+    add(createGmailThreadListTool(clientManager));
+    add(createGmailThreadGetTool(clientManager));
 
     add(createCalendarAuthTool(clientManager, config));
     add(createCalendarListCalendarsTool(clientManager));
@@ -115,6 +168,9 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createCalendarUpdateTool(clientManager));
     add(createCalendarDeleteTool(clientManager));
     add(createCalendarRespondTool(clientManager));
+    add(createCalendarSearchTool(clientManager));
+    add(createCalendarFreeBusyTool(clientManager));
+    add(createCalendarQuickAddTool(clientManager));
 
     add(createDriveAuthTool(clientManager, config));
     add(createDriveListTool(clientManager));
@@ -127,6 +183,10 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createDriveMoveTool(clientManager));
     add(createDriveDeleteTool(clientManager));
     add(createDriveShareTool(clientManager));
+    add(createDriveCopyTool(clientManager));
+    add(createDriveRestoreTool(clientManager));
+    add(createDrivePermissionsListTool(clientManager));
+    add(createDrivePermissionsDeleteTool(clientManager));
 
     add(createDocsAuthTool(clientManager, config));
     add(createDocsCreateTool(clientManager));
@@ -134,6 +194,8 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createDocsAppendTool(clientManager));
     add(createDocsReplaceTextTool(clientManager));
     add(createDocsExportTool(clientManager));
+    add(createDocsInsertTool(clientManager));
+    add(createDocsDeleteTextTool(clientManager));
 
     add(createSlidesAuthTool(clientManager, config));
     add(createSlidesCreateTool(clientManager));
@@ -141,6 +203,9 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createSlidesAppendSlideTool(clientManager));
     add(createSlidesReplaceTextTool(clientManager));
     add(createSlidesExportTool(clientManager));
+    add(createSlidesDeleteSlideTool(clientManager));
+    add(createSlidesDuplicateSlideTool(clientManager));
+    add(createSlidesWriteNotesTool(clientManager));
 
     add(createSheetsAuthTool(clientManager, config));
     add(createSheetsCreateTool(clientManager));
@@ -149,12 +214,19 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createSheetsAppendTool(clientManager));
     add(createSheetsClearTool(clientManager));
     add(createSheetsExportTool(clientManager));
+    add(createSheetsInfoTool(clientManager));
+    add(createSheetsAddSheetTool(clientManager));
+    add(createSheetsDeleteSheetTool(clientManager));
+    add(createSheetsRenameSheetTool(clientManager));
 
     add(createYouTubeAuthTool(clientManager, config));
     add(createYouTubeSearchTool(clientManager));
     add(createYouTubeVideoDetailsTool(clientManager));
     add(createYouTubeChannelInfoTool(clientManager));
     add(createYouTubeVideoCommentsTool(clientManager));
+    add(createYouTubePlaylistsListTool(clientManager));
+    add(createYouTubePlaylistItemsTool(clientManager));
+    add(createYouTubePlaylistCreateTool(clientManager));
   }
 
   return tools;

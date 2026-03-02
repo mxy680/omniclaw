@@ -1,21 +1,17 @@
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
 import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
+import { jsonResult, authRequired } from "./shared.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
+const AUTH_REQUIRED = authRequired("gmail");
 
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
+/** Returns `{ date }` for all-day (YYYY-MM-DD) or `{ dateTime }` for timed events. */
+function toEventTime(input: string): { date: string } | { dateTime: string } {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    return { date: input };
+  }
+  return { dateTime: input };
 }
-
-const AUTH_REQUIRED = {
-  error: "auth_required",
-  action: "Call gmail_auth_setup to authenticate.",
-};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createCalendarUpdateTool(clientManager: OAuthClientManager): any {
@@ -28,13 +24,22 @@ export function createCalendarUpdateTool(clientManager: OAuthClientManager): any
       event_id: Type.String({ description: "The Google Calendar event ID to update." }),
       summary: Type.Optional(Type.String({ description: "New event title." })),
       start: Type.Optional(
-        Type.String({ description: "New start time as an ISO 8601 datetime string." }),
+        Type.String({ description: "New start: ISO 8601 datetime or YYYY-MM-DD for all-day." }),
       ),
       end: Type.Optional(
-        Type.String({ description: "New end time as an ISO 8601 datetime string." }),
+        Type.String({ description: "New end: ISO 8601 datetime or YYYY-MM-DD for all-day." }),
       ),
       description: Type.Optional(Type.String({ description: "New event description." })),
       location: Type.Optional(Type.String({ description: "New location." })),
+      attendees: Type.Optional(
+        Type.Array(Type.String(), { description: "Replace attendee list with these email addresses." }),
+      ),
+      add_attendees: Type.Optional(
+        Type.Array(Type.String(), { description: "Add these attendees without replacing existing ones." }),
+      ),
+      recurrence: Type.Optional(
+        Type.Array(Type.String(), { description: "Update recurrence rules." }),
+      ),
       calendar_id: Type.Optional(
         Type.String({
           description: "Calendar ID the event belongs to. Defaults to 'primary'.",
@@ -57,6 +62,9 @@ export function createCalendarUpdateTool(clientManager: OAuthClientManager): any
         end?: string;
         description?: string;
         location?: string;
+        attendees?: string[];
+        add_attendees?: string[];
+        recurrence?: string[];
         calendar_id?: string;
         account?: string;
       },
@@ -73,8 +81,19 @@ export function createCalendarUpdateTool(clientManager: OAuthClientManager): any
       if (params.summary !== undefined) patch.summary = params.summary;
       if (params.description !== undefined) patch.description = params.description;
       if (params.location !== undefined) patch.location = params.location;
-      if (params.start !== undefined) patch.start = { dateTime: params.start };
-      if (params.end !== undefined) patch.end = { dateTime: params.end };
+      if (params.start !== undefined) patch.start = toEventTime(params.start);
+      if (params.end !== undefined) patch.end = toEventTime(params.end);
+      if (params.attendees !== undefined) patch.attendees = params.attendees.map((email: string) => ({ email }));
+      if (params.add_attendees !== undefined) {
+        const current = await calendar.events.get({
+          calendarId: params.calendar_id ?? "primary",
+          eventId: params.event_id,
+        });
+        const existing = (current.data.attendees ?? []).map((a: any) => a.email).filter(Boolean);
+        const merged = [...new Set([...existing, ...params.add_attendees])];
+        patch.attendees = merged.map((email: string) => ({ email }));
+      }
+      if (params.recurrence !== undefined) patch.recurrence = params.recurrence;
 
       const res = await calendar.events.patch({
         calendarId: params.calendar_id ?? "primary",

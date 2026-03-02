@@ -1,6 +1,6 @@
-# Google Workspace MCP Server
+# Google Workspace & GitHub MCP Server
 
-This project is a Google Workspace-only MCP server. It provides tools for Gmail, Calendar, Drive, Docs, Sheets, Slides, and YouTube.
+This project is an MCP server providing tools for Gmail, Calendar, Drive, Docs, Sheets, Slides, YouTube, and GitHub.
 
 ## Integrations
 
@@ -13,6 +13,7 @@ This project is a Google Workspace-only MCP server. It provides tools for Gmail,
 | Google Sheets | 11 | `sheets` | `docs/google-workspace.md` |
 | Google Slides | 9 | `slides` | `docs/google-workspace.md` |
 | YouTube | 10 | `youtube` | `docs/youtube.md` |
+| GitHub | 95 | `github` | `docs/github.md` |
 
 ## Scheduler
 

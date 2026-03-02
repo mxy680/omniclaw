@@ -112,6 +112,128 @@ import { createScheduleUpdateTool } from "../tools/schedule-update.js";
 import { createScheduleDeleteTool } from "../tools/schedule-delete.js";
 import { ScheduleStore } from "../scheduler/schedule-store.js";
 import { loadAgentConfigs } from "./agent-config.js";
+import { GitHubClient } from "../auth/github-client.js";
+import { createGitHubAuthSetupTool } from "../tools/github-auth.js";
+import {
+  createGitHubRepoListTool,
+  createGitHubRepoGetTool,
+  createGitHubRepoCreateTool,
+  createGitHubRepoUpdateTool,
+  createGitHubRepoDeleteTool,
+  createGitHubRepoForkTool,
+  createGitHubRepoStarTool,
+  createGitHubRepoUnstarTool,
+  createGitHubRepoContentGetTool,
+  createGitHubRepoContentCreateTool,
+  createGitHubRepoContentDeleteTool,
+  createGitHubRepoTopicsTool,
+  createGitHubRepoContributorsTool,
+  createGitHubRepoLanguagesTool,
+} from "../tools/github-repos.js";
+import {
+  createGitHubIssueListTool,
+  createGitHubIssueGetTool,
+  createGitHubIssueCreateTool,
+  createGitHubIssueUpdateTool,
+  createGitHubIssueCommentListTool,
+  createGitHubIssueCommentCreateTool,
+  createGitHubIssueCommentUpdateTool,
+  createGitHubIssueCommentDeleteTool,
+  createGitHubIssueLabelListTool,
+  createGitHubIssueLabelCreateTool,
+  createGitHubIssueMilestoneListTool,
+  createGitHubIssueMilestoneCreateTool,
+} from "../tools/github-issues.js";
+import {
+  createGitHubPullListTool,
+  createGitHubPullGetTool,
+  createGitHubPullCreateTool,
+  createGitHubPullUpdateTool,
+  createGitHubPullMergeTool,
+  createGitHubPullFilesTool,
+  createGitHubPullDiffTool,
+  createGitHubPullReviewListTool,
+  createGitHubPullReviewCreateTool,
+  createGitHubPullReviewCommentsTool,
+  createGitHubPullRequestReviewersTool,
+  createGitHubPullChecksTool,
+} from "../tools/github-pulls.js";
+import {
+  createGitHubBranchListTool,
+  createGitHubBranchGetTool,
+  createGitHubBranchCreateTool,
+  createGitHubBranchDeleteTool,
+  createGitHubBranchProtectionGetTool,
+  createGitHubTagListTool,
+  createGitHubReleaseListTool,
+  createGitHubReleaseGetTool,
+  createGitHubReleaseCreateTool,
+  createGitHubReleaseDeleteTool,
+} from "../tools/github-branches.js";
+import {
+  createGitHubCommitListTool,
+  createGitHubCommitGetTool,
+  createGitHubCompareTool,
+  createGitHubRefListTool,
+  createGitHubTreeGetTool,
+} from "../tools/github-git.js";
+import {
+  createGitHubWorkflowListTool,
+  createGitHubWorkflowGetTool,
+  createGitHubWorkflowDispatchTool,
+  createGitHubRunListTool,
+  createGitHubRunGetTool,
+  createGitHubRunCancelTool,
+  createGitHubRunRerunTool,
+  createGitHubJobListTool,
+  createGitHubRunLogsTool,
+} from "../tools/github-actions.js";
+import {
+  createGitHubSearchReposTool,
+  createGitHubSearchCodeTool,
+  createGitHubSearchIssuesTool,
+  createGitHubSearchCommitsTool,
+  createGitHubSearchUsersTool,
+} from "../tools/github-search.js";
+import {
+  createGitHubUserGetTool,
+  createGitHubUserReposTool,
+  createGitHubOrgGetTool,
+  createGitHubOrgMembersTool,
+  createGitHubOrgReposTool,
+  createGitHubTeamListTool,
+} from "../tools/github-users.js";
+import {
+  createGitHubGistListTool,
+  createGitHubGistGetTool,
+  createGitHubGistCreateTool,
+  createGitHubGistUpdateTool,
+  createGitHubGistDeleteTool,
+} from "../tools/github-gists.js";
+import {
+  createGitHubNotificationListTool,
+  createGitHubNotificationMarkReadTool,
+  createGitHubNotificationThreadReadTool,
+  createGitHubNotificationThreadSubscribeTool,
+} from "../tools/github-notifications.js";
+import {
+  createGitHubProjectListTool,
+  createGitHubProjectGetTool,
+  createGitHubProjectColumnsTool,
+  createGitHubProjectCardsTool,
+} from "../tools/github-projects.js";
+import {
+  createGitHubWebhookListTool,
+  createGitHubWebhookCreateTool,
+  createGitHubWebhookUpdateTool,
+  createGitHubWebhookDeleteTool,
+} from "../tools/github-webhooks.js";
+import {
+  createGitHubDependabotAlertsTool,
+  createGitHubCodeScanningAlertsTool,
+  createGitHubSecretScanningAlertsTool,
+  createGitHubSecurityAdvisoriesTool,
+} from "../tools/github-security.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface OmniclawTool {
@@ -243,6 +365,133 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createYouTubePlaylistsListTool(clientManager));
     add(createYouTubePlaylistItemsTool(clientManager));
     add(createYouTubePlaylistCreateTool(clientManager));
+  }
+
+  // GitHub tools — gated on github_token being configured
+  {
+    const gh = new GitHubClient(config.github_token);
+
+    add(createGitHubAuthSetupTool(gh));
+
+    // Repos
+    add(createGitHubRepoListTool(gh));
+    add(createGitHubRepoGetTool(gh));
+    add(createGitHubRepoCreateTool(gh));
+    add(createGitHubRepoUpdateTool(gh));
+    add(createGitHubRepoDeleteTool(gh));
+    add(createGitHubRepoForkTool(gh));
+    add(createGitHubRepoStarTool(gh));
+    add(createGitHubRepoUnstarTool(gh));
+    add(createGitHubRepoContentGetTool(gh));
+    add(createGitHubRepoContentCreateTool(gh));
+    add(createGitHubRepoContentDeleteTool(gh));
+    add(createGitHubRepoTopicsTool(gh));
+    add(createGitHubRepoContributorsTool(gh));
+    add(createGitHubRepoLanguagesTool(gh));
+
+    // Issues
+    add(createGitHubIssueListTool(gh));
+    add(createGitHubIssueGetTool(gh));
+    add(createGitHubIssueCreateTool(gh));
+    add(createGitHubIssueUpdateTool(gh));
+    add(createGitHubIssueCommentListTool(gh));
+    add(createGitHubIssueCommentCreateTool(gh));
+    add(createGitHubIssueCommentUpdateTool(gh));
+    add(createGitHubIssueCommentDeleteTool(gh));
+    add(createGitHubIssueLabelListTool(gh));
+    add(createGitHubIssueLabelCreateTool(gh));
+    add(createGitHubIssueMilestoneListTool(gh));
+    add(createGitHubIssueMilestoneCreateTool(gh));
+
+    // Pull Requests
+    add(createGitHubPullListTool(gh));
+    add(createGitHubPullGetTool(gh));
+    add(createGitHubPullCreateTool(gh));
+    add(createGitHubPullUpdateTool(gh));
+    add(createGitHubPullMergeTool(gh));
+    add(createGitHubPullFilesTool(gh));
+    add(createGitHubPullDiffTool(gh));
+    add(createGitHubPullReviewListTool(gh));
+    add(createGitHubPullReviewCreateTool(gh));
+    add(createGitHubPullReviewCommentsTool(gh));
+    add(createGitHubPullRequestReviewersTool(gh));
+    add(createGitHubPullChecksTool(gh));
+
+    // Branches, Tags, Releases
+    add(createGitHubBranchListTool(gh));
+    add(createGitHubBranchGetTool(gh));
+    add(createGitHubBranchCreateTool(gh));
+    add(createGitHubBranchDeleteTool(gh));
+    add(createGitHubBranchProtectionGetTool(gh));
+    add(createGitHubTagListTool(gh));
+    add(createGitHubReleaseListTool(gh));
+    add(createGitHubReleaseGetTool(gh));
+    add(createGitHubReleaseCreateTool(gh));
+    add(createGitHubReleaseDeleteTool(gh));
+
+    // Git (commits, compare, refs, trees)
+    add(createGitHubCommitListTool(gh));
+    add(createGitHubCommitGetTool(gh));
+    add(createGitHubCompareTool(gh));
+    add(createGitHubRefListTool(gh));
+    add(createGitHubTreeGetTool(gh));
+
+    // Actions
+    add(createGitHubWorkflowListTool(gh));
+    add(createGitHubWorkflowGetTool(gh));
+    add(createGitHubWorkflowDispatchTool(gh));
+    add(createGitHubRunListTool(gh));
+    add(createGitHubRunGetTool(gh));
+    add(createGitHubRunCancelTool(gh));
+    add(createGitHubRunRerunTool(gh));
+    add(createGitHubJobListTool(gh));
+    add(createGitHubRunLogsTool(gh));
+
+    // Search
+    add(createGitHubSearchReposTool(gh));
+    add(createGitHubSearchCodeTool(gh));
+    add(createGitHubSearchIssuesTool(gh));
+    add(createGitHubSearchCommitsTool(gh));
+    add(createGitHubSearchUsersTool(gh));
+
+    // Users & Orgs
+    add(createGitHubUserGetTool(gh));
+    add(createGitHubUserReposTool(gh));
+    add(createGitHubOrgGetTool(gh));
+    add(createGitHubOrgMembersTool(gh));
+    add(createGitHubOrgReposTool(gh));
+    add(createGitHubTeamListTool(gh));
+
+    // Gists
+    add(createGitHubGistListTool(gh));
+    add(createGitHubGistGetTool(gh));
+    add(createGitHubGistCreateTool(gh));
+    add(createGitHubGistUpdateTool(gh));
+    add(createGitHubGistDeleteTool(gh));
+
+    // Notifications
+    add(createGitHubNotificationListTool(gh));
+    add(createGitHubNotificationMarkReadTool(gh));
+    add(createGitHubNotificationThreadReadTool(gh));
+    add(createGitHubNotificationThreadSubscribeTool(gh));
+
+    // Projects
+    add(createGitHubProjectListTool(gh));
+    add(createGitHubProjectGetTool(gh));
+    add(createGitHubProjectColumnsTool(gh));
+    add(createGitHubProjectCardsTool(gh));
+
+    // Webhooks
+    add(createGitHubWebhookListTool(gh));
+    add(createGitHubWebhookCreateTool(gh));
+    add(createGitHubWebhookUpdateTool(gh));
+    add(createGitHubWebhookDeleteTool(gh));
+
+    // Security
+    add(createGitHubDependabotAlertsTool(gh));
+    add(createGitHubCodeScanningAlertsTool(gh));
+    add(createGitHubSecretScanningAlertsTool(gh));
+    add(createGitHubSecurityAdvisoriesTool(gh));
   }
 
   return tools;

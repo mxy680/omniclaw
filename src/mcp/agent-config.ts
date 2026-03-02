@@ -39,6 +39,7 @@ export const VALID_SERVICES = [
   "slides",
   "youtube",
   "schedule",
+  "github",
 ] as const;
 
 const DEFAULT_AGENTS_FILE: AgentsFile = {

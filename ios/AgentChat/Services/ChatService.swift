@@ -57,13 +57,28 @@ final class ChatService: ObservableObject {
         let data = try JSONEncoder().encode(connectFrame)
         try await webSocket?.send(.string(String(data: data, encoding: .utf8)!))
 
-        // Wait for hello-ok response
-        let response = try await receiveOne()
-        guard let resData = response.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: resData) as? [String: Any],
-              let ok = json["ok"] as? Bool, ok else {
-            let errorMsg = extractErrorMessage(from: response) ?? "Connection rejected"
-            throw ChatError.connectionRejected(errorMsg)
+        // Wait for hello-ok response (skip events like connect.challenge)
+        var connected = false
+        for _ in 0..<10 {
+            let response = try await receiveOne()
+            guard let resData = response.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: resData) as? [String: Any] else {
+                continue
+            }
+            let type = json["type"] as? String
+            if type == "event" { continue } // Skip events (connect.challenge, health, etc.)
+            if type == "res" {
+                if let ok = json["ok"] as? Bool, ok {
+                    connected = true
+                    break
+                } else {
+                    let errorMsg = extractErrorMessage(json: json)
+                    throw ChatError.connectionRejected(errorMsg)
+                }
+            }
+        }
+        guard connected else {
+            throw ChatError.connectionRejected("No hello-ok received")
         }
 
         isConnected = true

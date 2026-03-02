@@ -32,7 +32,21 @@ struct ConversationListView: View {
                     ChatView(conversationId: conversationId, agent: agent)
                 }
             }
+            .refreshable {
+                await agentService.fetchAgents(host: host, port: mcpPort, authToken: authToken)
+                store.ensureDefaultConversations(for: agentService.agents)
+            }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        Task {
+                            await agentService.fetchAgents(host: host, port: mcpPort, authToken: authToken)
+                            store.ensureDefaultConversations(for: agentService.agents)
+                        }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showSettings = true
@@ -41,7 +55,12 @@ struct ConversationListView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showSettings) {
+            .sheet(isPresented: $showSettings, onDismiss: {
+                Task {
+                    await agentService.fetchAgents(host: host, port: mcpPort, authToken: authToken)
+                    store.ensureDefaultConversations(for: agentService.agents)
+                }
+            }) {
                 SettingsView()
             }
             .overlay {

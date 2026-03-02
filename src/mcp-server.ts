@@ -148,7 +148,9 @@ function createMcpServerAndTransport(agentId: string): {
 
 const app = express();
 app.use(express.json());
-app.use(bearerAuth(config.authToken));
+if (config.authToken) {
+  app.use(bearerAuth(config.authToken));
+}
 
 // Health check — no session needed
 app.get("/health", (_req: Request, res: Response) => {

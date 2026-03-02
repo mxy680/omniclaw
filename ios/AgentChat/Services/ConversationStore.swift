@@ -65,6 +65,7 @@ final class ConversationStore: ObservableObject {
     func clearConversation(_ conversationId: UUID) {
         guard let index = conversations.firstIndex(where: { $0.id == conversationId }) else { return }
         conversations[index].messages.removeAll()
+        conversations[index].sessionSuffix = UUID().uuidString
         conversations[index].updatedAt = Date()
         save()
     }

@@ -6,7 +6,7 @@ struct ConversationListView: View {
     @State private var showSettings = false
 
     @AppStorage("gatewayHost") private var host = ""
-    @AppStorage("mcpPort") private var mcpPort = 9850
+    @AppStorage("gatewayPort") private var port = 18789
     @AppStorage("authToken") private var authToken = ""
 
     var sortedConversations: [Conversation] {
@@ -32,7 +32,21 @@ struct ConversationListView: View {
                     ChatView(conversationId: conversationId, agent: agent)
                 }
             }
+            .refreshable {
+                await agentService.fetchAgents(host: host, port: port, authToken: authToken)
+                store.ensureDefaultConversations(for: agentService.agents)
+            }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        Task {
+                            await agentService.fetchAgents(host: host, port: port, authToken: authToken)
+                            store.ensureDefaultConversations(for: agentService.agents)
+                        }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showSettings = true
@@ -41,7 +55,12 @@ struct ConversationListView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showSettings) {
+            .sheet(isPresented: $showSettings, onDismiss: {
+                Task {
+                    await agentService.fetchAgents(host: host, port: port, authToken: authToken)
+                    store.ensureDefaultConversations(for: agentService.agents)
+                }
+            }) {
                 SettingsView()
             }
             .overlay {
@@ -57,7 +76,7 @@ struct ConversationListView: View {
             }
         }
         .task {
-            await agentService.fetchAgents(host: host, port: mcpPort, authToken: authToken)
+            await agentService.fetchAgents(host: host, port: port, authToken: authToken)
             store.ensureDefaultConversations(for: agentService.agents)
         }
     }

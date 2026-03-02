@@ -12,11 +12,7 @@ export interface McpServerConfig {
 }
 
 export function loadMcpConfig(): McpServerConfig {
-  const authToken = process.env.OMNICLAW_MCP_TOKEN;
-  if (!authToken) {
-    console.error("OMNICLAW_MCP_TOKEN is required. Set it as an environment variable.");
-    process.exit(1);
-  }
+  const authToken = process.env.OMNICLAW_MCP_TOKEN ?? "";
 
   const port = parseInt(process.env.OMNICLAW_MCP_PORT ?? "9850", 10);
   const host = process.env.OMNICLAW_MCP_HOST ?? "0.0.0.0";

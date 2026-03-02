@@ -7,6 +7,7 @@ final class ChatService: ObservableObject {
 
     private var webSocket: URLSessionWebSocketTask?
     private var currentRunId: String?
+    private var currentSessionKey: String?
     private var requestCounter = 0
     private var onDelta: ((String) -> Void)?
     private var onComplete: (() -> Void)?
@@ -95,6 +96,7 @@ final class ChatService: ObservableObject {
         isConnected = false
         isStreaming = false
         currentRunId = nil
+        currentSessionKey = nil
     }
 
     // MARK: - Chat
@@ -114,6 +116,7 @@ final class ChatService: ObservableObject {
         self.onDelta = onDelta
         self.onComplete = onComplete
         self.onError = onError
+        self.currentSessionKey = sessionKey
         self.isStreaming = true
 
         let chatFrame = ChatSendFrame(
@@ -141,13 +144,13 @@ final class ChatService: ObservableObject {
     }
 
     func abort() {
-        guard isConnected, let webSocket, let runId = currentRunId else { return }
+        guard isConnected, let webSocket, let runId = currentRunId, let sessionKey = currentSessionKey else { return }
 
         let abortFrame = ChatAbortFrame(
             type: "req",
             id: nextRequestId(),
             method: "chat.abort",
-            params: ChatAbortParams(sessionKey: "agent:main:ios-app", runId: runId)
+            params: ChatAbortParams(sessionKey: sessionKey, runId: runId)
         )
 
         Task {
@@ -171,26 +174,25 @@ final class ChatService: ObservableObject {
 
     private func startReceiving() {
         receiveTask = Task { [weak self] in
+            guard let self else { return }
             while !Task.isCancelled {
-                guard let self, let webSocket = await self.webSocket else { break }
+                guard let webSocket = self.webSocket else { break }
                 do {
                     let message = try await webSocket.receive()
                     switch message {
                     case .string(let text):
-                        await self.handleMessage(text)
+                        self.handleMessage(text)
                     case .data(let data):
                         if let text = String(data: data, encoding: .utf8) {
-                            await self.handleMessage(text)
+                            self.handleMessage(text)
                         }
                     @unknown default:
                         break
                     }
                 } catch {
                     if !Task.isCancelled {
-                        await MainActor.run { [weak self] in
-                            self?.isConnected = false
-                            self?.isStreaming = false
-                        }
+                        self.isConnected = false
+                        self.isStreaming = false
                     }
                     break
                 }

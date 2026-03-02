@@ -15,10 +15,6 @@ struct ChatView: View {
     @AppStorage("gatewayPort") private var port = 18789
     @AppStorage("authToken") private var authToken = ""
 
-    private var sessionKey: String {
-        "agent:main:ios-\(agent.id)"
-    }
-
     private var conversation: Conversation? {
         store.conversations.first { $0.id == conversationId }
     }
@@ -163,7 +159,7 @@ struct ChatView: View {
 
         chatService.sendMessage(
             text: text,
-            sessionKey: sessionKey,
+            sessionKey: conversation?.sessionKey ?? "agent:\(agent.id):ios-app",
             onDelta: { fullText in
                 latestContent = fullText
                 store.updateLastMessage(in: conversationId, content: fullText, isStreaming: true)

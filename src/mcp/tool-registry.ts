@@ -16,8 +16,10 @@ import { createCalendarSearchTool } from "../tools/calendar-search.js";
 import { createCalendarUpdateTool } from "../tools/calendar-update.js";
 import { createDocsAppendTool } from "../tools/docs-append.js";
 import { createDocsCreateTool } from "../tools/docs-create.js";
+import { createDocsDeleteTextTool } from "../tools/docs-delete-text.js";
 import { createDocsExportTool } from "../tools/docs-download.js";
 import { createDocsGetTool } from "../tools/docs-get.js";
+import { createDocsInsertTool } from "../tools/docs-insert.js";
 import { createDocsReplaceTextTool } from "../tools/docs-replace-text.js";
 import { createDriveCreateFolderTool } from "../tools/drive-create-folder.js";
 import { createDriveCopyTool } from "../tools/drive-copy.js";
@@ -74,11 +76,22 @@ import { createSheetsClearTool } from "../tools/sheets-clear.js";
 import { createSheetsCreateTool } from "../tools/sheets-create.js";
 import { createSheetsExportTool } from "../tools/sheets-download.js";
 import { createSheetsGetTool } from "../tools/sheets-get.js";
+import { createSheetsInfoTool } from "../tools/sheets-info.js";
+import {
+  createSheetsAddSheetTool,
+  createSheetsDeleteSheetTool,
+  createSheetsRenameSheetTool,
+} from "../tools/sheets-manage.js";
 import { createSheetsUpdateTool } from "../tools/sheets-update.js";
 import { createSlidesAppendSlideTool } from "../tools/slides-append-slide.js";
 import { createSlidesCreateTool } from "../tools/slides-create.js";
 import { createSlidesExportTool } from "../tools/slides-download.js";
 import { createSlidesGetTool } from "../tools/slides-get.js";
+import {
+  createSlidesDeleteSlideTool,
+  createSlidesDuplicateSlideTool,
+} from "../tools/slides-manage.js";
+import { createSlidesWriteNotesTool } from "../tools/slides-notes.js";
 import { createSlidesReplaceTextTool } from "../tools/slides-replace-text.js";
 import { createYouTubeSearchTool, createYouTubeVideoDetailsTool } from "../tools/youtube-search.js";
 import {
@@ -176,6 +189,8 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createDocsAppendTool(clientManager));
     add(createDocsReplaceTextTool(clientManager));
     add(createDocsExportTool(clientManager));
+    add(createDocsInsertTool(clientManager));
+    add(createDocsDeleteTextTool(clientManager));
 
     add(createSlidesAuthTool(clientManager, config));
     add(createSlidesCreateTool(clientManager));
@@ -183,6 +198,9 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createSlidesAppendSlideTool(clientManager));
     add(createSlidesReplaceTextTool(clientManager));
     add(createSlidesExportTool(clientManager));
+    add(createSlidesDeleteSlideTool(clientManager));
+    add(createSlidesDuplicateSlideTool(clientManager));
+    add(createSlidesWriteNotesTool(clientManager));
 
     add(createSheetsAuthTool(clientManager, config));
     add(createSheetsCreateTool(clientManager));
@@ -191,6 +209,10 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createSheetsAppendTool(clientManager));
     add(createSheetsClearTool(clientManager));
     add(createSheetsExportTool(clientManager));
+    add(createSheetsInfoTool(clientManager));
+    add(createSheetsAddSheetTool(clientManager));
+    add(createSheetsDeleteSheetTool(clientManager));
+    add(createSheetsRenameSheetTool(clientManager));
 
     add(createYouTubeAuthTool(clientManager, config));
     add(createYouTubeSearchTool(clientManager));

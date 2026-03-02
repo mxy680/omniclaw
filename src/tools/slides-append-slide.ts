@@ -16,6 +16,13 @@ export function createSlidesAppendSlideTool(clientManager: OAuthClientManager): 
       presentation_id: Type.String({ description: "The Google Slides presentation ID." }),
       title: Type.Optional(Type.String({ description: "Title text for the new slide." })),
       body: Type.Optional(Type.String({ description: "Body text for the new slide." })),
+      layout: Type.Optional(
+        Type.String({
+          description:
+            "Slide layout: 'BLANK', 'TITLE', 'TITLE_AND_BODY' (default), 'TITLE_AND_TWO_COLUMNS', 'TITLE_ONLY', 'SECTION_HEADER', 'CAPTION_ONLY', 'BIG_NUMBER'.",
+          default: "TITLE_AND_BODY",
+        }),
+      ),
       account: Type.Optional(
         Type.String({
           description: "Account name to use. Defaults to 'default'.",
@@ -25,7 +32,13 @@ export function createSlidesAppendSlideTool(clientManager: OAuthClientManager): 
     }),
     async execute(
       _toolCallId: string,
-      params: { presentation_id: string; title?: string; body?: string; account?: string },
+      params: {
+        presentation_id: string;
+        title?: string;
+        body?: string;
+        layout?: string;
+        account?: string;
+      },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -35,14 +48,16 @@ export function createSlidesAppendSlideTool(clientManager: OAuthClientManager): 
       const client = clientManager.getClient(account);
       const slidesApi = google.slides({ version: "v1", auth: client });
 
-      // Create the slide using TITLE_AND_BODY layout
+      // Create the slide using the specified layout (default: TITLE_AND_BODY)
       const createRes = await slidesApi.presentations.batchUpdate({
         presentationId: params.presentation_id,
         requestBody: {
           requests: [
             {
               createSlide: {
-                slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
+                slideLayoutReference: {
+                  predefinedLayout: params.layout ?? "TITLE_AND_BODY",
+                },
               },
             },
           ],

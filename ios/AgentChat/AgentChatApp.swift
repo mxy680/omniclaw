@@ -8,13 +8,27 @@ struct AgentChatApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ConversationListView()
-                .environmentObject(store)
-                .environmentObject(agentService)
-                .sheet(isPresented: .constant(host.isEmpty)) {
-                    SettingsView()
-                        .interactiveDismissDisabled(host.isEmpty)
+            TabView {
+                NavigationStack {
+                    ConversationListView()
                 }
+                .tabItem {
+                    Label("Messages", systemImage: "message.fill")
+                }
+
+                NavigationStack {
+                    ScheduleListView()
+                }
+                .tabItem {
+                    Label("Schedules", systemImage: "clock.fill")
+                }
+            }
+            .environmentObject(store)
+            .environmentObject(agentService)
+            .sheet(isPresented: .constant(host.isEmpty)) {
+                SettingsView()
+                    .interactiveDismissDisabled(host.isEmpty)
+            }
         }
     }
 }

@@ -8,9 +8,9 @@ import {
   Linkedin,
   Github,
   Instagram,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { IntegrationCard } from "@/components/integration-card";
 import { AccountRow } from "@/components/account-row";
@@ -106,31 +106,41 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
 
   if (!provider.available) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <ProviderHeader provider={provider} Icon={Icon} />
-        <Separator />
-        <div className="rounded-lg border border-dashed p-12 text-center">
-          <p className="text-lg font-medium text-muted-foreground">
-            Coming Soon
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground/70">
-            {provider.name} integration is not yet available.
-          </p>
+        <Separator className="opacity-50" />
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border/50 py-16">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <Lock className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-foreground/80">
+              Coming Soon
+            </p>
+            <p className="mt-1 max-w-xs text-[13px] text-muted-foreground">
+              {provider.name} integration is under development.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <ProviderHeader provider={provider} Icon={Icon} />
 
-      <Separator />
+      <Separator className="opacity-50" />
 
       {/* Connected Accounts */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Connected Accounts</h2>
+          <div>
+            <h2 className="text-sm font-semibold">Connected Accounts</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {accounts.length} account{accounts.length !== 1 ? "s" : ""} connected
+            </p>
+          </div>
           <ConnectDialog
             providerName={provider.name}
             existingAccounts={accounts.map((a) => a.name)}
@@ -138,10 +148,17 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
         </div>
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading accounts...</p>
+          <div className="space-y-2">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-14 animate-pulse rounded-lg bg-muted/50"
+              />
+            ))}
+          </div>
         ) : accounts.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <p className="text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border/50 p-8 text-center">
+            <p className="text-[13px] text-muted-foreground">
               No accounts connected. Click &ldquo;Connect Account&rdquo; to get started.
             </p>
           </div>
@@ -160,12 +177,17 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
 
       {provider.services.length > 0 && (
         <>
-          <Separator />
+          <Separator className="opacity-50" />
 
           {/* Services Grid */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold">Services</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div>
+              <h2 className="text-sm font-semibold">Services</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {provider.services.length} services available with this integration
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {provider.services.map((service) => (
                 <IntegrationCard
                   key={service.id}
@@ -203,31 +225,33 @@ function ProviderHeader({
     <div className="flex items-start gap-4">
       {Icon && (
         <div
-          className="flex h-12 w-12 items-center justify-center rounded-lg"
-          style={{ backgroundColor: `${provider.color}15` }}
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-border/50"
+          style={{ backgroundColor: `${provider.color}10` }}
         >
           <div style={{ color: provider.color }}>
-            <Icon className="h-6 w-6" />
+            <Icon className="h-5 w-5" />
           </div>
         </div>
       )}
       <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-xl font-bold tracking-tight">
             {provider.name}
           </h1>
-          <Badge
-            variant={provider.available ? "default" : "secondary"}
-            className={
-              provider.available
-                ? "bg-green-100 text-green-800 hover:bg-green-100"
-                : ""
-            }
-          >
-            {provider.available ? "Active" : "Coming Soon"}
-          </Badge>
+          {provider.available ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+              <span className="h-1 w-1 rounded-full bg-emerald-500" />
+              Active
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+              Coming Soon
+            </span>
+          )}
         </div>
-        <p className="text-muted-foreground">{provider.description}</p>
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
+          {provider.description}
+        </p>
       </div>
     </div>
   );

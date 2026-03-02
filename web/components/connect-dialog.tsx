@@ -46,8 +46,8 @@ export function ConnectDialog({ providerName = "Google", existingAccounts }: Con
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button size="sm" className="h-8 text-xs">
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
           Connect Account
         </Button>
       </DialogTrigger>
@@ -68,7 +68,7 @@ export function ConnectDialog({ providerName = "Google", existingAccounts }: Con
               placeholder="e.g. default, work, personal"
             />
             {existingAccounts.includes(accountName.trim()) && (
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-amber-600 dark:text-amber-400">
                 This will replace the existing &ldquo;{accountName.trim()}&rdquo; account.
               </p>
             )}

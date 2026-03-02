@@ -16,7 +16,7 @@ struct ChatView: View {
     @AppStorage("authToken") private var authToken = ""
 
     private var sessionKey: String {
-        "agent:main:ios-\(agent.id)"
+        "agent:\(agent.id):ios-app"
     }
 
     private var conversation: Conversation? {

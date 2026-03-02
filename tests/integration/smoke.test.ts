@@ -1,10 +1,11 @@
 /**
- * Hourly smoke tests — read-only health checks for all omniclaw integrations.
+ * Hourly smoke tests — health checks for all omniclaw integrations.
  *
  * Run via:  pnpm test:smoke
  *
- * Every check is read-only. No resources are created, modified, or deleted.
- * Designed to complete in under 60 seconds total.
+ * Includes both read-only checks and write-then-cleanup checks.
+ * Write tests create a resource, verify it, and immediately delete it.
+ * Designed to complete in under 90 seconds total.
  *
  * Environment variables (same as regular integration tests):
  *   CLIENT_SECRET_PATH   path to client_secret.json  (default: ~/.openclaw/client_secret.json)
@@ -12,8 +13,8 @@
  *   SMOKE_LOG_DIR        directory for JSON result logs (default: ~/.openclaw/smoke-logs)
  */
 
-import { existsSync, mkdirSync, appendFileSync } from "fs";
-import { homedir } from "os";
+import { existsSync, mkdirSync, appendFileSync, unlinkSync } from "fs";
+import { homedir, tmpdir } from "os";
 import { join } from "path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { OAuthClientManager } from "../../src/auth/oauth-client-manager.js";
@@ -35,6 +36,24 @@ import {
   createYouTubeVideoDetailsTool,
 } from "../../src/tools/youtube-search.js";
 import { createYouTubeChannelInfoTool } from "../../src/tools/youtube-social.js";
+
+// Write tool imports
+import { createGmailSendTool } from "../../src/tools/gmail-send.js";
+import { createGmailModifyTool } from "../../src/tools/gmail-modify.js";
+import { createCalendarCreateTool } from "../../src/tools/calendar-create.js";
+import { createCalendarDeleteTool } from "../../src/tools/calendar-delete.js";
+import { createDriveUploadTool } from "../../src/tools/drive-upload.js";
+import { createDriveDownloadTool } from "../../src/tools/drive-download.js";
+import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
+import { createDocsCreateTool } from "../../src/tools/docs-create.js";
+import { createDocsAppendTool } from "../../src/tools/docs-append.js";
+import { createDocsExportTool } from "../../src/tools/docs-download.js";
+import { createSheetsCreateTool } from "../../src/tools/sheets-create.js";
+import { createSheetsUpdateTool } from "../../src/tools/sheets-update.js";
+import { createSheetsExportTool } from "../../src/tools/sheets-download.js";
+import { createSlidesCreateTool } from "../../src/tools/slides-create.js";
+import { createSlidesAppendSlideTool } from "../../src/tools/slides-append-slide.js";
+import { createSlidesExportTool } from "../../src/tools/slides-download.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -164,7 +183,7 @@ function writeLogFile(): void {
 // ---------------------------------------------------------------------------
 let clientManager: OAuthClientManager;
 
-describe("Omniclaw Smoke Tests", { timeout: 60_000 }, () => {
+describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
   beforeAll(() => {
     if (credentialsExist) {
       const tokenStore = new TokenStore(TOKENS_PATH);
@@ -400,6 +419,283 @@ describe("Omniclaw Smoke Tests", { timeout: 60_000 }, () => {
       });
       expect(result.details).not.toHaveProperty("error");
       expect(typeof result.details.title).toBe("string");
+    });
+  });
+
+  // =========================================================================
+  // WRITE TESTS — create, verify, cleanup
+  // =========================================================================
+
+  // -------------------------------------------------------------------------
+  // Gmail write: send to self, then trash
+  // -------------------------------------------------------------------------
+  describe("Gmail (write)", () => {
+    it.skipIf(!credentialsExist)("gmail_send + gmail_modify — send and trash", async () => {
+      await smokeCheck("Gmail", "gmail_send+trash", async () => {
+        const accountsTool = createGmailAccountsTool(clientManager);
+        const sendTool = createGmailSendTool(clientManager);
+        const modifyTool = createGmailModifyTool(clientManager);
+
+        // Resolve the authenticated email address (Gmail API won't accept "me" as a To header)
+        const accountsResult = await accountsTool.execute();
+        const myEmail = accountsResult.details.accounts.find(
+          (a: { account: string; email: string | null }) => a.account === ACCOUNT,
+        )?.email;
+        expect(myEmail).toBeTruthy();
+
+        // Send a test email to self
+        const sendResult = await sendTool.execute("smoke", {
+          account: ACCOUNT,
+          to: myEmail,
+          subject: `[omniclaw-smoke] ${new Date().toISOString()}`,
+          body: "Automated smoke test — this message will be trashed immediately.",
+        });
+        expect(sendResult.details.success).toBe(true);
+        const messageId = sendResult.details.id;
+
+        // Trash it
+        const trashResult = await modifyTool.execute("smoke", {
+          account: ACCOUNT,
+          id: messageId,
+          action: "trash",
+        });
+        expect(trashResult.details.success).toBe(true);
+        return trashResult;
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Calendar write: create event, then delete
+  // -------------------------------------------------------------------------
+  describe("Calendar (write)", () => {
+    it.skipIf(!credentialsExist)("calendar_create + calendar_delete — create and delete event", async () => {
+      await smokeCheck("Calendar", "calendar_create+delete", async () => {
+        const createTool = createCalendarCreateTool(clientManager);
+        const deleteTool = createCalendarDeleteTool(clientManager);
+
+        // Create an event 1 week from now (avoids cluttering today)
+        const start = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const end = new Date(start.getTime() + 30 * 60 * 1000);
+
+        const createResult = await createTool.execute("smoke", {
+          account: ACCOUNT,
+          summary: "[omniclaw-smoke] test event",
+          start: start.toISOString(),
+          end: end.toISOString(),
+        });
+        expect(createResult.details.success).toBe(true);
+        const eventId = createResult.details.id;
+
+        // Delete it
+        const deleteResult = await deleteTool.execute("smoke", {
+          account: ACCOUNT,
+          event_id: eventId,
+        });
+        expect(deleteResult.details.success).toBe(true);
+        return deleteResult;
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Drive write: upload file, download, then permanently delete
+  // -------------------------------------------------------------------------
+  describe("Drive (write)", () => {
+    it.skipIf(!credentialsExist)("drive_upload + drive_download + drive_delete — full cycle", async () => {
+      await smokeCheck("Drive", "drive_upload+download+delete", async () => {
+        const uploadTool = createDriveUploadTool(clientManager);
+        const downloadTool = createDriveDownloadTool(clientManager);
+        const deleteTool = createDriveDeleteTool(clientManager);
+
+        // Upload a text file
+        const uploadResult = await uploadTool.execute("smoke", {
+          account: ACCOUNT,
+          name: `omniclaw-smoke-${Date.now()}.txt`,
+          content: "Automated smoke test — this file will be deleted immediately.",
+          mime_type: "text/plain",
+        });
+        expect(uploadResult.details.success).toBe(true);
+        const fileId = uploadResult.details.id;
+
+        // Download it
+        const saveDir = join(tmpdir(), `omniclaw-smoke-${Date.now()}`);
+        mkdirSync(saveDir, { recursive: true });
+        const downloadResult = await downloadTool.execute("smoke", {
+          account: ACCOUNT,
+          file_id: fileId,
+          save_dir: saveDir,
+        });
+        expect(downloadResult.details.success).toBe(true);
+
+        // Clean up local file
+        try { unlinkSync(downloadResult.details.path); } catch {}
+
+        // Permanently delete from Drive
+        const deleteResult = await deleteTool.execute("smoke", {
+          account: ACCOUNT,
+          file_id: fileId,
+          permanent: true,
+        });
+        expect(deleteResult.details.success).toBe(true);
+        return deleteResult;
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Docs write: create doc, append text, export PDF, then delete
+  // -------------------------------------------------------------------------
+  describe("Docs (write)", () => {
+    it.skipIf(!credentialsExist)("docs_create + docs_append + docs_export — full cycle", async () => {
+      await smokeCheck("Docs", "docs_create+append+export", async () => {
+        const createTool = createDocsCreateTool(clientManager);
+        const appendTool = createDocsAppendTool(clientManager);
+        const exportTool = createDocsExportTool(clientManager);
+        const deleteTool = createDriveDeleteTool(clientManager);
+
+        // Create
+        const createResult = await createTool.execute("smoke", {
+          account: ACCOUNT,
+          title: `[omniclaw-smoke] ${new Date().toISOString()}`,
+          content: "Smoke test document.",
+        });
+        expect(createResult.details.success).toBe(true);
+        const docId = createResult.details.id;
+
+        // Append
+        const appendResult = await appendTool.execute("smoke", {
+          account: ACCOUNT,
+          document_id: docId,
+          text: " Appended text.",
+        });
+        expect(appendResult.details.success).toBe(true);
+
+        // Export PDF
+        const saveDir = join(tmpdir(), `omniclaw-smoke-${Date.now()}`);
+        mkdirSync(saveDir, { recursive: true });
+        const exportResult = await exportTool.execute("smoke", {
+          account: ACCOUNT,
+          document_id: docId,
+          save_dir: saveDir,
+          format: "pdf",
+        });
+        expect(exportResult.details.success).toBe(true);
+        try { unlinkSync(exportResult.details.path); } catch {}
+
+        // Delete via Drive
+        const deleteResult = await deleteTool.execute("smoke", {
+          account: ACCOUNT,
+          file_id: docId,
+          permanent: true,
+        });
+        expect(deleteResult.details.success).toBe(true);
+        return deleteResult;
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Sheets write: create, update cells, export CSV, then delete
+  // -------------------------------------------------------------------------
+  describe("Sheets (write)", () => {
+    it.skipIf(!credentialsExist)("sheets_create + sheets_update + sheets_export — full cycle", async () => {
+      await smokeCheck("Sheets", "sheets_create+update+export", async () => {
+        const createTool = createSheetsCreateTool(clientManager);
+        const updateTool = createSheetsUpdateTool(clientManager);
+        const exportTool = createSheetsExportTool(clientManager);
+        const deleteTool = createDriveDeleteTool(clientManager);
+
+        // Create
+        const createResult = await createTool.execute("smoke", {
+          account: ACCOUNT,
+          title: `[omniclaw-smoke] ${new Date().toISOString()}`,
+        });
+        expect(createResult.details.success).toBe(true);
+        const spreadsheetId = createResult.details.id;
+
+        // Update cells
+        const updateResult = await updateTool.execute("smoke", {
+          account: ACCOUNT,
+          spreadsheet_id: spreadsheetId,
+          range: "Sheet1!A1:B2",
+          values: [["smoke", "test"], ["pass", "ok"]],
+        });
+        expect(updateResult.details.success).toBe(true);
+
+        // Export CSV
+        const saveDir = join(tmpdir(), `omniclaw-smoke-${Date.now()}`);
+        mkdirSync(saveDir, { recursive: true });
+        const exportResult = await exportTool.execute("smoke", {
+          account: ACCOUNT,
+          spreadsheet_id: spreadsheetId,
+          save_dir: saveDir,
+          format: "csv",
+        });
+        expect(exportResult.details.success).toBe(true);
+        try { unlinkSync(exportResult.details.path); } catch {}
+
+        // Delete via Drive
+        const deleteResult = await deleteTool.execute("smoke", {
+          account: ACCOUNT,
+          file_id: spreadsheetId,
+          permanent: true,
+        });
+        expect(deleteResult.details.success).toBe(true);
+        return deleteResult;
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Slides write: create, append slide, export PDF, then delete
+  // -------------------------------------------------------------------------
+  describe("Slides (write)", () => {
+    it.skipIf(!credentialsExist)("slides_create + slides_append + slides_export — full cycle", async () => {
+      await smokeCheck("Slides", "slides_create+append+export", async () => {
+        const createTool = createSlidesCreateTool(clientManager);
+        const appendTool = createSlidesAppendSlideTool(clientManager);
+        const exportTool = createSlidesExportTool(clientManager);
+        const deleteTool = createDriveDeleteTool(clientManager);
+
+        // Create
+        const createResult = await createTool.execute("smoke", {
+          account: ACCOUNT,
+          title: `[omniclaw-smoke] ${new Date().toISOString()}`,
+        });
+        expect(createResult.details.success).toBe(true);
+        const presId = createResult.details.id;
+
+        // Append a slide
+        const appendResult = await appendTool.execute("smoke", {
+          account: ACCOUNT,
+          presentation_id: presId,
+          title: "Smoke Test Slide",
+          body: "This presentation will be deleted immediately.",
+        });
+        expect(appendResult.details.success).toBe(true);
+
+        // Export PDF
+        const saveDir = join(tmpdir(), `omniclaw-smoke-${Date.now()}`);
+        mkdirSync(saveDir, { recursive: true });
+        const exportResult = await exportTool.execute("smoke", {
+          account: ACCOUNT,
+          presentation_id: presId,
+          save_dir: saveDir,
+          format: "pdf",
+        });
+        expect(exportResult.details.success).toBe(true);
+        try { unlinkSync(exportResult.details.path); } catch {}
+
+        // Delete via Drive
+        const deleteResult = await deleteTool.execute("smoke", {
+          account: ACCOUNT,
+          file_id: presId,
+          permanent: true,
+        });
+        expect(deleteResult.details.success).toBe(true);
+        return deleteResult;
+      });
     });
   });
 });

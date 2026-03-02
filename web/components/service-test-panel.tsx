@@ -139,9 +139,12 @@ export const ServiceTestPanel = forwardRef<ServiceTestPanelHandle, ServiceTestPa
     return (
       <div className="overflow-hidden rounded-lg border border-border/50">
         {/* Header */}
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setExpanded(!expanded)}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30"
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(!expanded); } }}
+          className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30"
         >
           <ChevronRight
             className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
@@ -218,7 +221,7 @@ export const ServiceTestPanel = forwardRef<ServiceTestPanelHandle, ServiceTestPa
               </>
             )}
           </Button>
-        </button>
+        </div>
 
         {/* Tool list */}
         {expanded && (

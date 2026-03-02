@@ -5,6 +5,7 @@ struct SettingsView: View {
 
     @AppStorage("gatewayHost") private var host = ""
     @AppStorage("gatewayPort") private var port = 18789
+    @AppStorage("mcpPort") private var mcpPort = 9850
     @AppStorage("authToken") private var authToken = ""
 
     @State private var connectionStatus: ConnectionStatus = .idle
@@ -33,7 +34,14 @@ struct SettingsView: View {
                     HStack {
                         Image(systemName: "number")
                             .foregroundStyle(.secondary)
-                        TextField("Port", value: $port, format: .number)
+                        TextField("Gateway Port", value: $port, format: .number)
+                            .keyboardType(.numberPad)
+                    }
+
+                    HStack {
+                        Image(systemName: "server.rack")
+                            .foregroundStyle(.secondary)
+                        TextField("MCP Port", value: $mcpPort, format: .number)
                             .keyboardType(.numberPad)
                     }
 
@@ -77,12 +85,22 @@ struct SettingsView: View {
                 }
 
                 Section("Info") {
-                    LabeledContent("Endpoint") {
+                    LabeledContent("Gateway") {
                         if host.isEmpty {
                             Text("Not configured")
                                 .foregroundStyle(.secondary)
                         } else {
                             Text("ws://\(host):\(port)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    LabeledContent("MCP Server") {
+                        if host.isEmpty {
+                            Text("Not configured")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("http://\(host):\(mcpPort)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

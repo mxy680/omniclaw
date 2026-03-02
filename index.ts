@@ -3,8 +3,8 @@ import { register } from "./src/plugin.js";
 const omniclawPlugin = {
   id: "omniclaw",
   name: "omniclaw",
-  description: "Google Workspace, GitHub, Gemini AI, Canvas LMS, YouTube, and LinkedIn tools",
-  version: "2026.2.23",
+  description: "Google Workspace and YouTube MCP server",
+  version: "2026.3.2",
   register,
 };
 

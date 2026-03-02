@@ -2,9 +2,8 @@
   "id": "omniclaw",
   "name": "omniclaw",
   "version": "0.1.0",
-  "description": "Gmail integration for OpenClaw via Google OAuth2",
+  "description": "Google Workspace and YouTube MCP server for OpenClaw",
   "skills": ["skills"],
-  "channels": ["omniclaw-ios"],
   "configSchema": {
     "type": "object",
     "properties": {
@@ -20,101 +19,6 @@
       "tokens_path": {
         "type": "string",
         "description": "Path to store OAuth tokens. Defaults to ~/.openclaw/omniclaw-tokens.json."
-      },
-      "canvas_tokens_path": {
-        "type": "string",
-        "description": "Path to store Canvas API tokens. Defaults to ~/.openclaw/omniclaw-canvas-tokens.json."
-      },
-      "canvas_auto_mfa": {
-        "type": "boolean",
-        "description": "Automatically fill Duo MFA passcode using a TOTP secret. Requires duo_totp_secret to be configured. Defaults to true.",
-        "default": true
-      },
-      "duo_totp_secret": {
-        "type": "string",
-        "description": "TOTP secret from Duo Mobile activation (hex or base32). Used to generate 6-digit passcodes for automatic Duo MFA."
-      },
-      "github_token": {
-        "type": "string",
-        "description": "GitHub Personal Access Token (PAT) for authenticating with the GitHub API."
-      },
-      "gemini_api_key": {
-        "type": "string",
-        "description": "Google Gemini API key. Get one at https://aistudio.google.com/apikey"
-      },
-      "linkedin_tokens_path": {
-        "type": "string",
-        "description": "Path to store LinkedIn session tokens. Defaults to ~/.openclaw/omniclaw-linkedin-tokens.json."
-      },
-      "linkedin_username": {
-        "type": "string",
-        "description": "LinkedIn email or username for automatic login."
-      },
-      "linkedin_password": {
-        "type": "string",
-        "description": "LinkedIn password for automatic login."
-      },
-      "instagram_tokens_path": {
-        "type": "string",
-        "description": "Path to store Instagram session tokens. Defaults to ~/.openclaw/omniclaw-instagram-tokens.json."
-      },
-      "instagram_username": {
-        "type": "string",
-        "description": "Instagram username for automatic login."
-      },
-      "instagram_password": {
-        "type": "string",
-        "description": "Instagram password for automatic login."
-      },
-      "bluebubbles_url": {
-        "type": "string",
-        "description": "BlueBubbles server URL (e.g. 'http://192.168.1.100:1234'). Enables cross-platform iMessage access."
-      },
-      "bluebubbles_password": {
-        "type": "string",
-        "description": "BlueBubbles server password for API authentication."
-      },
-      "bluebubbles_tokens_path": {
-        "type": "string",
-        "description": "Path to store BlueBubbles credentials. Defaults to ~/.openclaw/omniclaw-bluebubbles-tokens.json."
-      },
-      "factor75_tokens_path": {
-        "type": "string",
-        "description": "Path to store Factor75 session tokens. Defaults to ~/.openclaw/omniclaw-factor75-tokens.json."
-      },
-      "factor75_email": {
-        "type": "string",
-        "description": "Factor75 account email for automatic login."
-      },
-      "factor75_password": {
-        "type": "string",
-        "description": "Factor75 account password for automatic login."
-      },
-      "vercel_token": {
-        "type": "string",
-        "description": "Vercel Personal Access Token. Get one at https://vercel.com/account/tokens"
-      },
-      "hcm_tokens_path": {
-        "type": "string",
-        "description": "Path to store HCM session cookies. Defaults to ~/.openclaw/omniclaw-hcm-tokens.json."
-      },
-      "hcm_case_id": {
-        "type": "string",
-        "description": "CWRU Case ID for automatic HCM login."
-      },
-      "hcm_password": {
-        "type": "string",
-        "description": "CWRU password for automatic HCM login."
-      },
-      "dispatch_max_concurrency": {
-        "type": "number",
-        "description": "Maximum number of concurrent agent dispatches. Each active dispatch handles one conversation at a time. Default: 3.",
-        "default": 3
-      },
-      "dispatch_timeout_ms": {
-        "type": "number",
-        "description": "Maximum time in milliseconds for a single agent dispatch before it times out. Default: 300000 (5 minutes).",
-        "default": 300000
       }
     },
     "required": []

@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { createAllTools } from "../../src/mcp/tool-registry.js";
 
 describe("createAllTools", () => {
-  it("returns tools with correct shape (no Google OAuth)", () => {
+  it("returns YouTube tools with no OAuth config", () => {
     const tools = createAllTools({ pluginConfig: {} as any });
-    expect(tools.length).toBeGreaterThan(50);
+    // Without client_secret_path, only non-OAuth tools are registered (YouTube transcript + thumbnail)
+    expect(tools.length).toBe(2);
     for (const tool of tools) {
       expect(tool.name).toBeDefined();
       expect(typeof tool.name).toBe("string");
@@ -22,17 +23,15 @@ describe("createAllTools", () => {
     });
     const gmailTools = tools.filter((t) => t.name.startsWith("gmail_"));
     expect(gmailTools.length).toBeGreaterThan(0);
+    // With OAuth, should have 50+ tools
+    expect(tools.length).toBeGreaterThan(50);
   });
 
   it("has unique tool names", () => {
-    const tools = createAllTools({ pluginConfig: {} as any });
+    const tools = createAllTools({
+      pluginConfig: { client_secret_path: "/tmp/fake-secret.json" } as any,
+    });
     const names = tools.map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
-  });
-
-  it("does not include background_worker", () => {
-    const tools = createAllTools({ pluginConfig: {} as any });
-    const bgTool = tools.find((t) => t.name === "background_worker");
-    expect(bgTool).toBeUndefined();
   });
 });

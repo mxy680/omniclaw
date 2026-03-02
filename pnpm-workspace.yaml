@@ -1,6 +1,2 @@
 packages:
   - "."
-  - "dashboard"
-
-onlyBuiltDependencies:
-  - better-sqlite3

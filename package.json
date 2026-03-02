@@ -1,8 +1,8 @@
 {
   "name": "@openclaw/omniclaw",
-  "version": "2026.2.23",
+  "version": "2026.3.2",
   "private": true,
-  "description": "Google Workspace, GitHub, Gemini AI, Canvas LMS, and YouTube tools for OpenClaw",
+  "description": "Google Workspace and YouTube MCP server for OpenClaw",
   "type": "module",
   "scripts": {
     "build": "tsc",
@@ -19,27 +19,19 @@
     ]
   },
   "dependencies": {
-    "@google/genai": "^1.42.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@sinclair/typebox": "0.34.48",
-    "better-sqlite3": "^11.0.0",
-    "croner": "^10.0.1",
     "express": "^5.2.1",
     "google-auth-library": "^10.5.0",
     "googleapis": "^144.0.0",
     "mime-types": "^3.0.2",
     "open": "^10.1.0",
-    "otpauth": "^9.4.2",
-    "playwright": "^1.50.0",
-    "ws": "^8.19.0",
     "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.0",
     "@types/express": "^5.0.6",
     "@types/mime-types": "^3.0.1",
     "@types/node": "^20.0.0",
-    "@types/ws": "^8.18.1",
     "openclaw": "*",
     "tsx": "^4.21.0",
     "typescript": "^5.4.0",

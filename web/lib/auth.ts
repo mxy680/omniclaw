@@ -17,7 +17,7 @@ const SCOPES = [
   "https://www.googleapis.com/auth/userinfo.email",
 ];
 
-const REDIRECT_URI = "http://localhost:3000/api/auth/callback";
+const REDIRECT_URI = "http://localhost:3100/api/auth/callback";
 
 interface TokenFile {
   [account: string]: Credentials;

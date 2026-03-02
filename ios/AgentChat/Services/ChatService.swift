@@ -50,6 +50,8 @@ final class ChatService: ObservableObject {
                     platform: "ios",
                     mode: "cli"
                 ),
+                role: "operator",
+                scopes: ["operator.read", "operator.write"],
                 auth: AuthInfo(token: config.authToken)
             )
         )
@@ -304,6 +306,8 @@ struct ConnectParams: Encodable {
     let minProtocol: Int
     let maxProtocol: Int
     let client: ClientInfo
+    let role: String
+    let scopes: [String]
     let auth: AuthInfo
 }
 

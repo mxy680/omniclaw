@@ -18,8 +18,4 @@ struct Conversation: Identifiable, Codable {
     var lastMessage: Message? {
         messages.last { $0.role != .system }
     }
-
-    var agent: Agent? {
-        Agent.agent(for: agentId)
-    }
 }

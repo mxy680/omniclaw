@@ -14,7 +14,6 @@ final class ConversationStore: ObservableObject {
 
     func load() {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            ensureDefaultConversations()
             return
         }
 
@@ -23,10 +22,8 @@ final class ConversationStore: ObservableObject {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             conversations = try decoder.decode([Conversation].self, from: data)
-            ensureDefaultConversations()
         } catch {
             print("Failed to load conversations: \(error)")
-            ensureDefaultConversations()
         }
     }
 
@@ -72,11 +69,16 @@ final class ConversationStore: ObservableObject {
         save()
     }
 
-    private func ensureDefaultConversations() {
-        for agent in Agent.allAgents {
+    func ensureDefaultConversations(for agents: [Agent]) {
+        var changed = false
+        for agent in agents {
             if !conversations.contains(where: { $0.agentId == agent.id }) {
                 conversations.append(Conversation(agentId: agent.id))
+                changed = true
             }
+        }
+        if changed {
+            save()
         }
     }
 }

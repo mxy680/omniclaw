@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
 import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
@@ -35,6 +36,12 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
       attendees: Type.Optional(
         Type.Array(Type.String(), { description: "List of attendee email addresses to invite." }),
       ),
+      recurrence: Type.Optional(
+        Type.Array(Type.String(), { description: "Recurrence rules as RRULE strings, e.g. ['RRULE:FREQ=WEEKLY;COUNT=10']." }),
+      ),
+      conference: Type.Optional(
+        Type.Boolean({ description: "Create a Google Meet link for this event. Defaults to false.", default: false }),
+      ),
       calendar_id: Type.Optional(
         Type.String({
           description: "Calendar to add the event to. Defaults to 'primary'.",
@@ -57,6 +64,8 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
         description?: string;
         location?: string;
         attendees?: string[];
+        recurrence?: string[];
+        conference?: boolean;
         calendar_id?: string;
         account?: string;
       },
@@ -72,6 +81,7 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
       const res = await calendar.events.insert({
         calendarId: params.calendar_id ?? "primary",
         sendUpdates: "all",
+        conferenceDataVersion: 1,
         requestBody: {
           summary: params.summary,
           description: params.description,
@@ -79,6 +89,15 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
           start: toEventTime(params.start),
           end: toEventTime(params.end),
           attendees: params.attendees?.map((email) => ({ email })),
+          ...(params.recurrence ? { recurrence: params.recurrence } : {}),
+          ...(params.conference ? {
+            conferenceData: {
+              createRequest: {
+                requestId: randomUUID(),
+                conferenceSolutionKey: { type: "hangoutsMeet" },
+              },
+            },
+          } : {}),
         },
       });
 
@@ -89,6 +108,7 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
         start: ev.start?.dateTime ?? ev.start?.date ?? "",
         end: ev.end?.dateTime ?? ev.end?.date ?? "",
         htmlLink: ev.htmlLink ?? "",
+        conferenceLink: ev.conferenceData?.entryPoints?.find((e: any) => e.entryPointType === "video")?.uri ?? "",
         success: true,
       });
     },

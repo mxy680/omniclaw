@@ -7,9 +7,12 @@ import type { PluginConfig } from "../types/plugin-config.js";
 import { createCalendarCreateTool } from "../tools/calendar-create.js";
 import { createCalendarDeleteTool } from "../tools/calendar-delete.js";
 import { createCalendarEventsTool } from "../tools/calendar-events.js";
+import { createCalendarFreeBusyTool } from "../tools/calendar-freebusy.js";
 import { createCalendarGetTool } from "../tools/calendar-get.js";
 import { createCalendarListCalendarsTool } from "../tools/calendar-list-calendars.js";
+import { createCalendarQuickAddTool } from "../tools/calendar-quick-add.js";
 import { createCalendarRespondTool } from "../tools/calendar-respond.js";
+import { createCalendarSearchTool } from "../tools/calendar-search.js";
 import { createCalendarUpdateTool } from "../tools/calendar-update.js";
 import { createDocsAppendTool } from "../tools/docs-append.js";
 import { createDocsCreateTool } from "../tools/docs-create.js";
@@ -141,6 +144,9 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createCalendarUpdateTool(clientManager));
     add(createCalendarDeleteTool(clientManager));
     add(createCalendarRespondTool(clientManager));
+    add(createCalendarSearchTool(clientManager));
+    add(createCalendarFreeBusyTool(clientManager));
+    add(createCalendarQuickAddTool(clientManager));
 
     add(createDriveAuthTool(clientManager, config));
     add(createDriveListTool(clientManager));

@@ -31,6 +31,15 @@ export function createCalendarUpdateTool(clientManager: OAuthClientManager): any
       ),
       description: Type.Optional(Type.String({ description: "New event description." })),
       location: Type.Optional(Type.String({ description: "New location." })),
+      attendees: Type.Optional(
+        Type.Array(Type.String(), { description: "Replace attendee list with these email addresses." }),
+      ),
+      add_attendees: Type.Optional(
+        Type.Array(Type.String(), { description: "Add these attendees without replacing existing ones." }),
+      ),
+      recurrence: Type.Optional(
+        Type.Array(Type.String(), { description: "Update recurrence rules." }),
+      ),
       calendar_id: Type.Optional(
         Type.String({
           description: "Calendar ID the event belongs to. Defaults to 'primary'.",
@@ -53,6 +62,9 @@ export function createCalendarUpdateTool(clientManager: OAuthClientManager): any
         end?: string;
         description?: string;
         location?: string;
+        attendees?: string[];
+        add_attendees?: string[];
+        recurrence?: string[];
         calendar_id?: string;
         account?: string;
       },
@@ -71,6 +83,17 @@ export function createCalendarUpdateTool(clientManager: OAuthClientManager): any
       if (params.location !== undefined) patch.location = params.location;
       if (params.start !== undefined) patch.start = toEventTime(params.start);
       if (params.end !== undefined) patch.end = toEventTime(params.end);
+      if (params.attendees !== undefined) patch.attendees = params.attendees.map((email: string) => ({ email }));
+      if (params.add_attendees !== undefined) {
+        const current = await calendar.events.get({
+          calendarId: params.calendar_id ?? "primary",
+          eventId: params.event_id,
+        });
+        const existing = (current.data.attendees ?? []).map((a: any) => a.email).filter(Boolean);
+        const merged = [...new Set([...existing, ...params.add_attendees])];
+        patch.attendees = merged.map((email: string) => ({ email }));
+      }
+      if (params.recurrence !== undefined) patch.recurrence = params.recurrence;
 
       const res = await calendar.events.patch({
         calendarId: params.calendar_id ?? "primary",

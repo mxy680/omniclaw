@@ -1,10 +1,13 @@
 "use client";
 
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useState } from "react";
 import {
   ChevronRight,
   Play,
   Loader2,
+  Check,
+  X,
+  Trash2,
   Mail,
   Calendar,
   HardDrive,
@@ -14,7 +17,6 @@ import {
   Youtube,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ToolRow } from "@/components/tool-row";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   gmail: Mail,
@@ -36,18 +38,13 @@ const COLOR_MAP: Record<string, string> = {
   youtube: "#FF0000",
 };
 
-interface ToolInfo {
+interface StepResult {
   name: string;
-  label: string;
-  description: string;
-  parameters: unknown;
-}
-
-interface ToolState {
-  status: "idle" | "running" | "success" | "error";
-  duration?: number;
+  tool: string;
+  status: "success" | "error";
+  duration: number;
   error?: string;
-  result?: unknown;
+  cleanup?: boolean;
 }
 
 export interface ServiceTestPanelHandle {
@@ -57,84 +54,56 @@ export interface ServiceTestPanelHandle {
 interface ServiceTestPanelProps {
   serviceId: string;
   serviceName: string;
-  tools: ToolInfo[];
+  toolCount: number;
 }
 
 export const ServiceTestPanel = forwardRef<ServiceTestPanelHandle, ServiceTestPanelProps>(
-  function ServiceTestPanel({ serviceId, serviceName, tools }, ref) {
+  function ServiceTestPanel({ serviceId, serviceName, toolCount }, ref) {
     const [expanded, setExpanded] = useState(false);
-    const [toolStates, setToolStates] = useState<Record<string, ToolState>>({});
-    const [batchRunning, setBatchRunning] = useState(false);
-    const abortRef = useRef(false);
+    const [running, setRunning] = useState(false);
+    const [steps, setSteps] = useState<StepResult[]>([]);
+    const [totalDuration, setTotalDuration] = useState<number | null>(null);
 
     const Icon = ICON_MAP[serviceId];
     const color = COLOR_MAP[serviceId];
 
-    const executeTool = useCallback(async (toolName: string) => {
-      setToolStates((prev) => ({
-        ...prev,
-        [toolName]: { status: "running" },
-      }));
+    const runTest = useCallback(async () => {
+      setRunning(true);
+      setSteps([]);
+      setTotalDuration(null);
+      setExpanded(true);
 
       try {
-        const res = await fetch("/api/tools/execute", {
+        const res = await fetch("/api/tools/test-service", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tool: toolName, params: {} }),
+          body: JSON.stringify({ service: serviceId }),
         });
         const data = await res.json();
 
-        if (data.success) {
-          setToolStates((prev) => ({
-            ...prev,
-            [toolName]: {
-              status: "success",
-              duration: data.duration,
-              result: data.result,
-            },
-          }));
+        if (data.error) {
+          setSteps([{ name: "Test failed", tool: "", status: "error", duration: 0, error: data.error }]);
         } else {
-          setToolStates((prev) => ({
-            ...prev,
-            [toolName]: {
-              status: "error",
-              duration: data.duration,
-              error: data.error,
-            },
-          }));
+          setSteps(data.steps ?? []);
+          setTotalDuration(data.totalDuration ?? null);
         }
       } catch (err) {
-        setToolStates((prev) => ({
-          ...prev,
-          [toolName]: {
-            status: "error",
-            error: err instanceof Error ? err.message : "Network error",
-          },
-        }));
+        setSteps([{
+          name: "Network error",
+          tool: "",
+          status: "error",
+          duration: 0,
+          error: err instanceof Error ? err.message : "Failed to connect",
+        }]);
+      } finally {
+        setRunning(false);
       }
-    }, []);
+    }, [serviceId]);
 
-    const testAll = useCallback(async () => {
-      setBatchRunning(true);
-      abortRef.current = false;
-      setExpanded(true);
+    useImperativeHandle(ref, () => ({ testAll: runTest }), [runTest]);
 
-      for (const tool of tools) {
-        if (abortRef.current) break;
-        await executeTool(tool.name);
-      }
-
-      setBatchRunning(false);
-    }, [tools, executeTool]);
-
-    useImperativeHandle(ref, () => ({ testAll }), [testAll]);
-
-    // Aggregate status
-    const states = Object.values(toolStates);
-    const passed = states.filter((s) => s.status === "success").length;
-    const failed = states.filter((s) => s.status === "error").length;
-    const running = states.filter((s) => s.status === "running").length;
-    const tested = passed + failed;
+    const passed = steps.filter((s) => s.status === "success").length;
+    const failed = steps.filter((s) => s.status === "error").length;
 
     return (
       <div className="overflow-hidden rounded-lg border border-border/50">
@@ -166,80 +135,112 @@ export const ServiceTestPanel = forwardRef<ServiceTestPanelHandle, ServiceTestPa
           <span className="text-[13px] font-medium">{serviceName}</span>
 
           <span className="text-[11px] text-muted-foreground">
-            {tools.length} tool{tools.length !== 1 ? "s" : ""}
+            {toolCount} tool{toolCount !== 1 ? "s" : ""}
           </span>
 
-          {/* Aggregate status */}
-          {tested > 0 && (
+          {/* Test result summary */}
+          {steps.length > 0 && !running && (
             <span className="text-[11px] text-muted-foreground">
               <span className="text-emerald-600 dark:text-emerald-400">
-                {passed} passed
+                {passed}/{steps.length} passed
               </span>
               {failed > 0 && (
                 <>
-                  {", "}
+                  {" "}
                   <span className="text-red-600 dark:text-red-400">
-                    {failed} failed
+                    ({failed} failed)
                   </span>
                 </>
               )}
-              {running > 0 && (
-                <>
-                  {", "}
-                  <span>{running} running</span>
-                </>
+              {totalDuration !== null && (
+                <span className="ml-1 text-muted-foreground/70">
+                  {totalDuration}ms
+                </span>
               )}
             </span>
           )}
 
-          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Test All button */}
+          {/* Test button */}
           <Button
             variant="ghost"
             size="sm"
             className="h-7 gap-1.5 px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
-              if (batchRunning) {
-                abortRef.current = true;
-              } else {
-                testAll();
-              }
+              if (!running) runTest();
             }}
+            disabled={running}
           >
-            {batchRunning ? (
+            {running ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Stop
+                Testing...
               </>
             ) : (
               <>
                 <Play className="h-3 w-3" />
-                Test All
+                Test
               </>
             )}
           </Button>
         </div>
 
-        {/* Tool list */}
+        {/* Test steps */}
         {expanded && (
           <div className="border-t border-border/50 py-1">
-            {tools.map((tool) => {
-              const state = toolStates[tool.name] ?? { status: "idle" as const };
-              return (
-                <ToolRow
-                  key={tool.name}
-                  tool={tool}
-                  status={state.status}
-                  duration={state.duration}
-                  error={state.error}
-                  result={state.result}
-                  onTest={() => executeTool(tool.name)}
-                />
-              );
-            })}
+            {running && steps.length === 0 && (
+              <div className="flex items-center gap-3 px-3 py-3">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-[12px] text-muted-foreground">
+                  Running smoke test...
+                </span>
+              </div>
+            )}
+
+            {steps.map((step, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+                  {step.status === "success" ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-red-500" />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-[12px] font-medium ${step.cleanup ? "text-muted-foreground" : "text-foreground/90"}`}>
+                      {step.cleanup && <Trash2 className="mr-1 inline h-3 w-3" />}
+                      {step.name}
+                    </span>
+                    {step.tool && (
+                      <code className="text-[10px] text-muted-foreground/60">
+                        {step.tool}
+                      </code>
+                    )}
+                  </div>
+                  {step.status === "error" && step.error && (
+                    <p className="mt-0.5 truncate text-[11px] text-red-600 dark:text-red-400">
+                      {step.error}
+                    </p>
+                  )}
+                </div>
+
+                <span className="shrink-0 text-[11px] text-muted-foreground/60">
+                  {step.duration}ms
+                </span>
+              </div>
+            ))}
+
+            {!running && steps.length === 0 && (
+              <div className="px-3 py-4 text-center">
+                <p className="text-[12px] text-muted-foreground">
+                  Click Test to run a round-trip smoke test
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

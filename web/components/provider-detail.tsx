@@ -22,16 +22,9 @@ import { RevokeDialog } from "@/components/revoke-dialog";
 import type { Provider } from "@/lib/integrations";
 import type { AccountInfo } from "@/lib/auth";
 
-interface ToolInfo {
-  name: string;
-  label: string;
-  description: string;
-  parameters: unknown;
-}
-
 interface ServiceToolsData {
   name: string;
-  tools: ToolInfo[];
+  tools: { name: string }[];
 }
 
 const PROVIDER_ICONS: Record<string, LucideIcon> = {
@@ -279,7 +272,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
                       }}
                       serviceId={service.id}
                       serviceName={data.name}
-                      tools={data.tools}
+                      toolCount={data.tools.length}
                     />
                   );
                 })}

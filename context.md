@@ -45,21 +45,6 @@ Messaging Platforms (WhatsApp, Telegram, Discord, Slack, etc.)
 - Primary config: `~/.openclaw/openclaw.json`
 - Workspace root: `~/.openclaw/workspace`
 
-## OpenClaw CLI Commands
-
-```bash
-openclaw onboard                  # Interactive setup
-openclaw gateway                  # Start the Gateway daemon
-openclaw agent --message "..."    # Run one agent turn
-openclaw plugins list|install|enable|disable
-openclaw plugins config <name>    # Configure a plugin
-openclaw skills list|info|enable|disable
-openclaw config get|set|unset     # Config management
-openclaw doctor                   # Diagnostics
-openclaw security audit           # Security audit
-openclaw logs --follow            # Tail logs
-```
-
 ## Plugin System
 
 ### Plugin Manifest (`openclaw.plugin.json`)
@@ -92,13 +77,6 @@ export default {
 | `api.pluginConfig` | Plugin configuration from `openclaw.json` |
 | `api.logger.warn()` | Logging |
 | `api.registerTool(tool, opts)` | Register an agent tool |
-| `api.registerGatewayMethod()` | Create RPC methods |
-| `api.registerCli()` | Add CLI commands |
-| `api.registerCommand()` | Auto-reply slash commands |
-| `api.registerService()` | Background services with start/stop |
-| `api.registerHook()` | Event-driven automation hooks |
-| `api.registerChannel()` | Messaging channel adapters |
-| `api.registerProvider()` | Model provider auth flows |
 
 ### Tool Definition
 ```typescript
@@ -116,132 +94,65 @@ api.registerTool({
 }, { optional: true });
 ```
 
-- **required** tools: always available to the agent
-- **optional** tools (`{ optional: true }`): must be enabled in agent config
+### Skills System
 
-### Plugin Installation
-```bash
-openclaw plugins install @openclaw/voice-call     # npm
-openclaw plugins install ./local-plugin            # local dir
-openclaw plugins install -l ./extensions/my-plugin # link (dev)
-```
-
-### Plugin Config in `openclaw.json`
-```json
-{
-  "plugins": {
-    "entries": {
-      "omniclaw": {
-        "enabled": true,
-        "config": {
-          "client_secret_path": "/path/to/client_secret.json"
-        }
-      }
-    }
-  }
-}
-```
-
-Or set via CLI:
-```bash
-openclaw config set plugins.entries.omniclaw.config.client_secret_path "/path/to/client_secret.json"
-```
-
-## Skills System
-
-Skills are documentation bundles (Markdown "textbooks") that teach the agent how to combine tools. Each skill lives in a directory with a `SKILL.md` file.
-
-### SKILL.md Format
-```markdown
----
-name: my-skill
-description: Short description
-metadata:
-  openclaw:
-    emoji: "🔧"
-    requires:
-      bins: ["some-binary"]
-      env: ["SOME_API_KEY"]
----
-
-# My Skill
-
-Instructions, workflow steps, available tools, etc.
-```
-
-### How Skills Work at Runtime
-1. At session start, skill metadata is read and eligibility checked
-2. A compact XML list of eligible skills is injected into the system prompt
-3. The agent invokes skills during execution as needed
-
-### Skill Management
-```bash
-openclaw skills list
-openclaw skills enable <name>
-openclaw skills disable <name>
-openclaw skills install github:user/skill-name
-```
-
-### ClawHub (Community Skill Registry)
-- https://clawhub.ai
-- https://github.com/openclaw/clawhub
+Skills are documentation bundles (Markdown "textbooks") that teach the agent how to combine tools.
 
 ---
 
 ## This Project: omniclaw
 
-**omniclaw** is an OpenClaw plugin providing Gmail integration via Google OAuth2.
+**omniclaw** is a Google Workspace MCP server / OpenClaw plugin providing Gmail, Calendar, Drive, Docs, Sheets, Slides, and YouTube tools.
 
 ### File Structure
 ```
 omniclaw/
 ├── openclaw.plugin.json          # Plugin manifest
 ├── package.json                  # deps, build, test scripts
-├── tsconfig.json                 # TS → CommonJS, dist/
+├── tsconfig.json                 # TS → ESM, dist/
 ├── vitest.config.ts
 ├── src/
 │   ├── index.ts                  # Plugin entry point (default export)
 │   ├── plugin.ts                 # register() — creates oauth client, registers tools
+│   ├── mcp-server.ts             # Standalone MCP server entry point
+│   ├── mcp/
+│   │   ├── tool-registry.ts      # Master tool registry — creates all tool instances
+│   │   ├── auth-middleware.ts     # MCP auth middleware
+│   │   └── config.ts             # MCP config loader
 │   ├── auth/
-│   │   ├── gmail-auth.ts         # createOAuthClient(), getAuthUrl() [gmail.modify scope]
+│   │   ├── gmail-auth.ts         # createOAuthClient(), getAuthUrl()
+│   │   ├── oauth-client-manager.ts # Multi-account OAuth client manager
 │   │   ├── oauth-server.ts       # waitForOAuthCallback() — local HTTP server
 │   │   └── token-store.ts        # TokenStore class — file-based, multi-account
-│   ├── tools/
-│   │   ├── gmail-auth-tool.ts    # gmail_auth_setup
-│   │   ├── gmail-inbox.ts        # gmail_inbox, gmail_search
-│   │   ├── gmail-get.ts          # gmail_get
-│   │   ├── gmail-send.ts         # gmail_send, gmail_reply, gmail_forward
-│   │   └── gmail-modify.ts       # gmail_modify
+│   ├── tools/                    # ~43 Google Workspace tool files
 │   └── types/
 │       └── plugin-config.ts      # PluginConfig interface
-├── skills/
-│   └── gmail.SKILL.md            # Skill definition for agents
-├── scripts/
-│   └── reauth.ts                 # Standalone re-auth: npx tsx scripts/reauth.ts
+├── skills/                       # 7 SKILL.md files + index
+├── docs/
+│   ├── google-workspace.md
+│   └── youtube.md
 └── tests/
     ├── token-store.test.ts
-    ├── gmail-inbox.test.ts
-    ├── gmail-get.test.ts
-    ├── gmail-send.test.ts
-    ├── gmail-modify.test.ts
+    ├── unit/
+    │   ├── mcp-auth-middleware.test.ts
+    │   └── tool-registry.test.ts
     └── integration/
-        └── gmail.test.ts         # Live API tests (real credentials)
+        └── *.test.ts             # Live API tests
 ```
 
-### Tools (8 total)
-| Tool | Purpose |
+### Tools (~55 total)
+| Service | Tools |
 |---|---|
-| `gmail_auth_setup` | OAuth2 browser flow, saves token |
-| `gmail_inbox` | List recent inbox messages (id, subject, from, date, snippet) |
-| `gmail_search` | Search with Gmail query syntax |
-| `gmail_get` | Fetch full message body (text + HTML) by ID |
-| `gmail_send` | Compose and send a new email |
-| `gmail_reply` | Reply in-thread (In-Reply-To, References, threadId) |
-| `gmail_forward` | Forward with quoted original body |
-| `gmail_modify` | mark_read, mark_unread, archive, trash |
+| Gmail | 10 — inbox, search, read, send (with attachments), reply, forward, download attachments, manage |
+| Google Calendar | 8 — auth, list calendars, events, get, create, update, delete, RSVP |
+| Google Drive | 11 — auth, browse, search, read, upload, download, organize, share, delete |
+| Google Docs | 6 — auth, create, read, append, find-and-replace, export |
+| Google Sheets | 7 — auth, create, read, write, append, clear, export |
+| Google Slides | 6 — auth, create, read, add slides, find-and-replace, export |
+| YouTube | 7 — auth, search, video details, transcripts, channels, comments, download thumbnails |
 
 ### OAuth Setup
-- Scope: `gmail.modify` (read + send + label + archive + trash, but NOT permanent delete)
+- Scopes: gmail.modify, calendar, drive, docs, sheets, slides, youtube.readonly
 - Redirect: `http://localhost:9753/oauth/callback`
 - Tokens: `~/.openclaw/omniclaw-tokens.json`
 - Client secret: user-provided from Google Cloud Console
@@ -257,12 +168,6 @@ omniclaw/
 ```bash
 pnpm build                        # TypeScript → dist/
 pnpm test                         # Unit tests (mocked)
-pnpm test:integration             # Integration tests (real Gmail API)
-RUN_WRITE_TESTS=1 pnpm test:integration  # Include send/reply/forward tests
-npx tsx scripts/reauth.ts         # Re-authenticate (new scope, etc.)
+pnpm test:integration             # Integration tests (real API)
+OMNICLAW_MCP_TOKEN=dev pnpm mcp:dev  # Start MCP server locally
 ```
-
-### Current Credentials
-- Client secret: `/Users/markshteyn/Downloads/client_secret_772791512967-bb4nvpsu9umlr74nt12cjvloaq6hcale.apps.googleusercontent.com.json`
-- Tokens: `~/.openclaw/omniclaw-tokens.json` (account: `"default"`)
-- Token was issued with `gmail.readonly` scope — needs re-auth for `gmail.modify`

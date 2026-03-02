@@ -1,6 +1,6 @@
 ---
 name: omniclaw
-description: Omniclaw plugin skills — integrations for Gmail, Calendar, Drive, GitHub, nutrition tracking, workout planning, and more.
+description: Omniclaw plugin skills — Google Workspace integrations for Gmail, Calendar, Drive, Docs, Sheets, Slides, and YouTube.
 ---
 
 # Omniclaw Skills

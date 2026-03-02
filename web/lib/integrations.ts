@@ -1,0 +1,70 @@
+export interface Service {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+export interface Provider {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  available: boolean;
+  services: Service[];
+}
+
+export const PROVIDERS: Provider[] = [
+  {
+    id: "google-workspace",
+    name: "Google Workspace",
+    icon: "Chrome",
+    color: "#4285F4",
+    description:
+      "Gmail, Calendar, Drive, Docs, Sheets, Slides, and YouTube. Connect a Google account to enable all services.",
+    available: true,
+    services: [
+      { id: "gmail", name: "Gmail", icon: "Mail", color: "#EA4335" },
+      { id: "calendar", name: "Calendar", icon: "Calendar", color: "#4285F4" },
+      { id: "drive", name: "Drive", icon: "HardDrive", color: "#0F9D58" },
+      { id: "docs", name: "Docs", icon: "FileText", color: "#4285F4" },
+      { id: "sheets", name: "Sheets", icon: "Table", color: "#0F9D58" },
+      { id: "slides", name: "Slides", icon: "Presentation", color: "#F4B400" },
+      { id: "youtube", name: "YouTube", icon: "Youtube", color: "#FF0000" },
+    ],
+  },
+  {
+    id: "linkedin",
+    name: "LinkedIn",
+    icon: "Linkedin",
+    color: "#0A66C2",
+    description: "Post updates, manage connections, and access LinkedIn APIs.",
+    available: false,
+    services: [],
+  },
+  {
+    id: "github",
+    name: "GitHub",
+    icon: "Github",
+    color: "#24292F",
+    description: "Manage repositories, issues, pull requests, and more.",
+    available: false,
+    services: [],
+  },
+  {
+    id: "instagram",
+    name: "Instagram",
+    icon: "Instagram",
+    color: "#E4405F",
+    description: "Publish content, manage comments, and access insights.",
+    available: false,
+    services: [],
+  },
+];
+
+// Backward compat for IntegrationCard
+export type Integration = Service;
+export const INTEGRATIONS: Service[] = PROVIDERS.find(
+  (p) => p.id === "google-workspace",
+)!.services;

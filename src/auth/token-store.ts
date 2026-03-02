@@ -43,6 +43,14 @@ export class TokenStore {
     return this.get(account) !== null;
   }
 
+  delete(account: string): boolean {
+    const data = this.load();
+    if (!(account in data)) return false;
+    delete data[account];
+    this.save(data);
+    return true;
+  }
+
   list(): string[] {
     return Object.keys(this.load());
   }

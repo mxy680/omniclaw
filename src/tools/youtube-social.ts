@@ -2,21 +2,9 @@ import { Type } from "@sinclair/typebox";
 import { google } from "googleapis";
 import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
 import { parseVideoId } from "./youtube-utils.js";
+import { jsonResult, authRequired } from "./shared.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
-
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
-}
-
-const AUTH_REQUIRED = {
-  error: "auth_required",
-  action: "Call youtube_auth_setup to authenticate.",
-};
+const AUTH_REQUIRED = authRequired("youtube");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createYouTubeChannelInfoTool(clientManager: OAuthClientManager): any {

@@ -2,16 +2,7 @@ import { Type } from "@sinclair/typebox";
 import { statSync } from "fs";
 import { join } from "path";
 import { ensureDir, downloadUrl } from "./media-utils.js";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
-
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
-}
+import { jsonResult } from "./shared.js";
 
 const qualityMap: Record<string, string> = {
   default: "default",

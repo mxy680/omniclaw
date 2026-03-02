@@ -1,21 +1,9 @@
 import { Type } from "@sinclair/typebox";
 import { google, slides_v1 } from "googleapis";
 import type { OAuthClientManager } from "../auth/oauth-client-manager.js";
+import { jsonResult, authRequired } from "./shared.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
-
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
-}
-
-const AUTH_REQUIRED = {
-  error: "auth_required",
-  action: "Call slides_auth_setup to authenticate.",
-};
+const AUTH_REQUIRED = authRequired("slides");
 
 function extractShapeText(element: slides_v1.Schema$PageElement): string {
   return (element.shape?.text?.textElements ?? [])

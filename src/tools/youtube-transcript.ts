@@ -1,15 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { parseVideoId } from "./youtube-utils.js";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AgentToolResult = any;
-
-function jsonResult(payload: unknown): AgentToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-    details: payload,
-  };
-}
+import { jsonResult } from "./shared.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createYouTubeTranscriptTool(): any {

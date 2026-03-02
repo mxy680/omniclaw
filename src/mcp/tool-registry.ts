@@ -44,6 +44,22 @@ import {
   createGmailReplyTool,
   createGmailForwardTool,
 } from "../tools/gmail-send.js";
+import {
+  createGmailDraftListTool,
+  createGmailDraftCreateTool,
+  createGmailDraftUpdateTool,
+  createGmailDraftDeleteTool,
+  createGmailDraftSendTool,
+} from "../tools/gmail-drafts.js";
+import {
+  createGmailLabelsListTool,
+  createGmailLabelCreateTool,
+  createGmailLabelDeleteTool,
+} from "../tools/gmail-labels.js";
+import {
+  createGmailThreadListTool,
+  createGmailThreadGetTool,
+} from "../tools/gmail-threads.js";
 import { createSheetsAppendTool } from "../tools/sheets-append.js";
 import { createSheetsClearTool } from "../tools/sheets-clear.js";
 import { createSheetsCreateTool } from "../tools/sheets-create.js";
@@ -106,6 +122,16 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createGmailForwardTool(clientManager));
     add(createGmailModifyTool(clientManager));
     add(createGmailAccountsTool(clientManager));
+    add(createGmailDraftListTool(clientManager));
+    add(createGmailDraftCreateTool(clientManager));
+    add(createGmailDraftUpdateTool(clientManager));
+    add(createGmailDraftDeleteTool(clientManager));
+    add(createGmailDraftSendTool(clientManager));
+    add(createGmailLabelsListTool(clientManager));
+    add(createGmailLabelCreateTool(clientManager));
+    add(createGmailLabelDeleteTool(clientManager));
+    add(createGmailThreadListTool(clientManager));
+    add(createGmailThreadGetTool(clientManager));
 
     add(createCalendarAuthTool(clientManager, config));
     add(createCalendarListCalendarsTool(clientManager));

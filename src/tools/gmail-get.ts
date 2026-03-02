@@ -104,7 +104,7 @@ export function createGmailGetTool(clientManager: OAuthClientManager): any {
     name: "gmail_get",
     label: "Gmail Get Email",
     description:
-      "Fetch the full body of a single Gmail message by ID. Returns subject, from, to, date, both plain-text and HTML body, and a list of attachments with their IDs. Use gmail_inbox or gmail_search to find message IDs.",
+      "Fetch the full body of a single Gmail message by ID. Returns threadId, subject, from, to, cc, bcc, reply_to, date, snippet, labelIds, both plain-text and HTML body, and a list of attachments with their IDs. Use gmail_inbox or gmail_search to find message IDs.",
     parameters: Type.Object({
       id: Type.String({ description: "The Gmail message ID to fetch." }),
       account: Type.Optional(
@@ -156,10 +156,16 @@ export function createGmailGetTool(clientManager: OAuthClientManager): any {
 
       return jsonResult({
         id: res.data.id ?? params.id,
+        threadId: res.data.threadId ?? "",
         subject: get("Subject"),
         from: get("From"),
         to: get("To"),
+        cc: get("Cc"),
+        bcc: get("Bcc"),
+        reply_to: get("Reply-To"),
         date: get("Date"),
+        snippet: res.data.snippet ?? "",
+        labelIds: res.data.labelIds ?? [],
         body_text: bodyText,
         body_html: bodyHtml,
         attachments,

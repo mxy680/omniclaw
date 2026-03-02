@@ -159,27 +159,27 @@ struct ChatView: View {
         let assistantMessage = Message(role: .assistant, content: "", isStreaming: true)
         store.addMessage(assistantMessage, to: conversationId)
 
-        var accumulated = ""
+        var latestContent = ""
 
         chatService.sendMessage(
             text: text,
             sessionKey: sessionKey,
-            onDelta: { delta in
-                accumulated += delta
-                store.updateLastMessage(in: conversationId, content: accumulated, isStreaming: true)
+            onDelta: { fullText in
+                latestContent = fullText
+                store.updateLastMessage(in: conversationId, content: fullText, isStreaming: true)
             },
             onComplete: {
-                store.updateLastMessage(in: conversationId, content: accumulated, isStreaming: false)
+                store.updateLastMessage(in: conversationId, content: latestContent, isStreaming: false)
             },
             onError: { error in
                 errorMessage = error.localizedDescription
-                if accumulated.isEmpty {
+                if latestContent.isEmpty {
                     if let index = store.conversations.firstIndex(where: { $0.id == conversationId }) {
                         store.conversations[index].messages.removeLast()
                         store.save()
                     }
                 } else {
-                    store.updateLastMessage(in: conversationId, content: accumulated, isStreaming: false)
+                    store.updateLastMessage(in: conversationId, content: latestContent, isStreaming: false)
                 }
             }
         )

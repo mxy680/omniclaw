@@ -234,17 +234,15 @@ final class ChatService: ObservableObject {
         }
 
         switch state {
-        case "delta":
-            if let message = payload["message"] as? String {
-                onDelta?(message)
+        case "delta", "final":
+            if let text = extractTextFromMessage(payload["message"]) {
+                onDelta?(text)
             }
-        case "final":
-            isStreaming = false
-            currentRunId = nil
-            if let message = payload["message"] as? String {
-                onDelta?(message)
+            if state == "final" {
+                isStreaming = false
+                currentRunId = nil
+                onComplete?()
             }
-            onComplete?()
         case "error":
             isStreaming = false
             currentRunId = nil
@@ -257,6 +255,20 @@ final class ChatService: ObservableObject {
         default:
             break
         }
+    }
+
+    /// Extracts text from OpenClaw message format:
+    /// `{ role: "assistant", content: [{ type: "text", text: "..." }] }`
+    private func extractTextFromMessage(_ message: Any?) -> String? {
+        guard let msg = message as? [String: Any],
+              let content = msg["content"] as? [[String: Any]] else {
+            return message as? String
+        }
+        let texts = content.compactMap { block -> String? in
+            guard (block["type"] as? String) == "text" else { return nil }
+            return block["text"] as? String
+        }
+        return texts.isEmpty ? nil : texts.joined()
     }
 
     // MARK: - Helpers

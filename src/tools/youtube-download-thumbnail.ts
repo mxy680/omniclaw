@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 import { statSync } from "fs";
 import { join } from "path";
 import { ensureDir, downloadUrl } from "./media-utils.js";
+import { parseVideoId } from "./youtube-utils.js";
 import { jsonResult } from "./shared.js";
 
 const qualityMap: Record<string, string> = {
@@ -20,8 +21,9 @@ export function createYouTubeDownloadThumbnailTool(): any {
     description:
       "Download a YouTube video thumbnail to local disk. Supports different quality levels.",
     parameters: Type.Object({
-      video_id: Type.String({
-        description: "YouTube video ID (e.g. 'dQw4w9WgXcQ').",
+      video: Type.String({
+        description:
+          "YouTube video ID or URL (e.g. 'dQw4w9WgXcQ' or 'https://www.youtube.com/watch?v=dQw4w9WgXcQ').",
       }),
       save_dir: Type.String({
         description: "Directory to save the thumbnail.",
@@ -42,17 +44,25 @@ export function createYouTubeDownloadThumbnailTool(): any {
     }),
     async execute(
       _toolCallId: string,
-      params: { video_id: string; save_dir: string; quality?: string; account?: string },
+      params: { video: string; save_dir: string; quality?: string; account?: string },
     ) {
       try {
+        const videoId = parseVideoId(params.video);
+        if (!videoId) {
+          return jsonResult({
+            error: "invalid_video",
+            message: "Could not parse a video ID from the input.",
+          });
+        }
+
         const resolvedQuality = params.quality ?? "high";
         const qualitySlug = qualityMap[resolvedQuality] ?? qualityMap["high"];
 
-        const url = `https://img.youtube.com/vi/${params.video_id}/${qualitySlug}.jpg`;
+        const url = `https://img.youtube.com/vi/${videoId}/${qualitySlug}.jpg`;
 
         ensureDir(params.save_dir);
 
-        const filename = `youtube-thumb-${params.video_id}-${qualitySlug}.jpg`;
+        const filename = `youtube-thumb-${videoId}-${qualitySlug}.jpg`;
         const filepath = join(params.save_dir, filename);
 
         await downloadUrl(url, filepath);
@@ -62,7 +72,7 @@ export function createYouTubeDownloadThumbnailTool(): any {
         return jsonResult({
           path: filepath,
           mimeType: "image/jpeg",
-          video_id: params.video_id,
+          video_id: videoId,
           quality: resolvedQuality,
           size,
         });

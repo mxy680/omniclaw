@@ -99,6 +99,11 @@ import {
   createYouTubeVideoCommentsTool,
 } from "../tools/youtube-social.js";
 import { createYouTubeDownloadThumbnailTool } from "../tools/youtube-download-thumbnail.js";
+import {
+  createYouTubePlaylistsListTool,
+  createYouTubePlaylistItemsTool,
+  createYouTubePlaylistCreateTool,
+} from "../tools/youtube-playlists.js";
 import { createYouTubeTranscriptTool } from "../tools/youtube-transcript.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -219,6 +224,9 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createYouTubeVideoDetailsTool(clientManager));
     add(createYouTubeChannelInfoTool(clientManager));
     add(createYouTubeVideoCommentsTool(clientManager));
+    add(createYouTubePlaylistsListTool(clientManager));
+    add(createYouTubePlaylistItemsTool(clientManager));
+    add(createYouTubePlaylistCreateTool(clientManager));
   }
 
   return tools;

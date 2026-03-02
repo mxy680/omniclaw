@@ -106,13 +106,16 @@ export function createYouTubeVideoCommentsTool(clientManager: OAuthClientManager
           default: "relevance",
         }),
       ),
+      page_token: Type.Optional(
+        Type.String({ description: "Token for the next page of comments (from a previous response's nextPageToken)." }),
+      ),
       account: Type.Optional(
         Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { video: string; max_results?: number; order?: string; account?: string },
+      params: { video: string; max_results?: number; order?: string; page_token?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -137,6 +140,7 @@ export function createYouTubeVideoCommentsTool(clientManager: OAuthClientManager
           maxResults: Math.min(params.max_results ?? 20, 100),
           order: params.order ?? "relevance",
           textFormat: "plainText",
+          ...(params.page_token ? { pageToken: params.page_token } : {}),
         });
 
         const comments = (res.data.items ?? []).map((item) => {
@@ -152,7 +156,12 @@ export function createYouTubeVideoCommentsTool(clientManager: OAuthClientManager
           };
         });
 
-        return jsonResult({ videoId, commentCount: comments.length, comments });
+        return jsonResult({
+          videoId,
+          commentCount: comments.length,
+          comments,
+          ...(res.data.nextPageToken ? { nextPageToken: res.data.nextPageToken } : {}),
+        });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         // Comments may be disabled on the video

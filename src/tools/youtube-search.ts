@@ -27,13 +27,16 @@ export function createYouTubeSearchTool(clientManager: OAuthClientManager): any 
           default: "relevance",
         }),
       ),
+      page_token: Type.Optional(
+        Type.String({ description: "Token for the next page of results (from a previous response's nextPageToken)." }),
+      ),
       account: Type.Optional(
         Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
       ),
     }),
     async execute(
       _toolCallId: string,
-      params: { query: string; max_results?: number; order?: string; account?: string },
+      params: { query: string; max_results?: number; order?: string; page_token?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -50,6 +53,7 @@ export function createYouTubeSearchTool(clientManager: OAuthClientManager): any 
           type: ["video"],
           maxResults: Math.min(params.max_results ?? 10, 50),
           order: params.order ?? "relevance",
+          ...(params.page_token ? { pageToken: params.page_token } : {}),
         });
 
         const videos = (res.data.items ?? []).map((item) => ({
@@ -63,7 +67,11 @@ export function createYouTubeSearchTool(clientManager: OAuthClientManager): any 
             item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.default?.url ?? "",
         }));
 
-        return jsonResult({ query: params.query, results: videos });
+        return jsonResult({
+          query: params.query,
+          results: videos,
+          ...(res.data.nextPageToken ? { nextPageToken: res.data.nextPageToken } : {}),
+        });
       } catch (err) {
         return jsonResult({
           error: "search_failed",

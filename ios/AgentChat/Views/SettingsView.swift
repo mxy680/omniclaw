@@ -82,7 +82,7 @@ struct SettingsView: View {
                             Text("Not configured")
                                 .foregroundStyle(.secondary)
                         } else {
-                            Text("http://\(host):\(port)/v1/chat/completions")
+                            Text("ws://\(host):\(port)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

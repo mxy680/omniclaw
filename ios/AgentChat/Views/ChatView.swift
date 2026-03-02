@@ -8,11 +8,16 @@ struct ChatView: View {
     @StateObject private var chatService = ChatService()
     @State private var inputText = ""
     @State private var errorMessage: String?
+    @State private var hasConnected = false
     @FocusState private var isInputFocused: Bool
 
     @AppStorage("gatewayHost") private var host = ""
     @AppStorage("gatewayPort") private var port = 18789
     @AppStorage("authToken") private var authToken = ""
+
+    private var sessionKey: String {
+        "agent:main:ios-\(agent.id)"
+    }
 
     private var conversation: Conversation? {
         store.conversations.first { $0.id == conversationId }
@@ -48,7 +53,24 @@ struct ChatView: View {
                 }
             }
 
-            // Error banner
+            // Connection / error banner
+            if !chatService.isConnected && hasConnected {
+                HStack {
+                    Image(systemName: "wifi.slash")
+                        .foregroundStyle(.orange)
+                    Text("Disconnected from gateway")
+                        .font(.caption)
+                    Spacer()
+                    Button("Reconnect") {
+                        connectToGateway()
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(.orange.opacity(0.1))
+            }
+
             if let errorMessage {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -72,22 +94,52 @@ struct ChatView: View {
                 isStreaming: chatService.isStreaming,
                 isFocused: $isInputFocused,
                 onSend: sendMessage,
-                onCancel: { chatService.cancel() }
+                onCancel: { chatService.abort() }
             )
         }
         .navigationTitle(agent.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button(role: .destructive) {
-                        store.clearConversation(conversationId)
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(chatService.isConnected ? .green : .red)
+                        .frame(width: 8, height: 8)
+                    Menu {
+                        Button(role: .destructive) {
+                            store.clearConversation(conversationId)
+                        } label: {
+                            Label("Clear Chat", systemImage: "trash")
+                        }
                     } label: {
-                        Label("Clear Chat", systemImage: "trash")
+                        Image(systemName: "ellipsis.circle")
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
                 }
+            }
+        }
+        .onAppear {
+            if !chatService.isConnected {
+                connectToGateway()
+            }
+        }
+        .onDisappear {
+            chatService.disconnect()
+        }
+    }
+
+    private func connectToGateway() {
+        let config = ChatService.ServerConfig(
+            host: host,
+            port: port,
+            authToken: authToken
+        )
+        Task {
+            do {
+                try await chatService.connect(config: config)
+                hasConnected = true
+            } catch {
+                errorMessage = error.localizedDescription
+                hasConnected = true
             }
         }
     }
@@ -109,16 +161,9 @@ struct ChatView: View {
 
         var accumulated = ""
 
-        let config = ChatService.ServerConfig(
-            host: host,
-            port: port,
-            authToken: authToken
-        )
-
         chatService.sendMessage(
-            messages: conversation?.messages.filter { !$0.isStreaming } ?? [],
-            agent: agent,
-            config: config,
+            text: text,
+            sessionKey: sessionKey,
             onDelta: { delta in
                 accumulated += delta
                 store.updateLastMessage(in: conversationId, content: accumulated, isStreaming: true)
@@ -128,7 +173,6 @@ struct ChatView: View {
             },
             onError: { error in
                 errorMessage = error.localizedDescription
-                // Remove the empty assistant message on error
                 if accumulated.isEmpty {
                     if let index = store.conversations.firstIndex(where: { $0.id == conversationId }) {
                         store.conversations[index].messages.removeLast()

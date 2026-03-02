@@ -131,6 +131,8 @@ export function ensureAgentWorkspaces(agents: AgentConfig[]): void {
       path.join(agent.workspace, "memories"),
       path.join(agent.workspace, "conversations"),
       path.join(agent.workspace, "config"),
+      path.join(agent.workspace, "instructions"),
+      path.join(agent.workspace, "schedule-results"),
     ];
     for (const dir of dirs) {
       fs.mkdirSync(dir, { recursive: true });

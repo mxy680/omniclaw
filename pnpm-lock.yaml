@@ -14,6 +14,9 @@ importers:
       '@sinclair/typebox':
         specifier: 0.34.48
         version: 0.34.48
+      croner:
+        specifier: ^10.0.1
+        version: 10.0.1
       express:
         specifier: ^5.2.1
         version: 5.2.1

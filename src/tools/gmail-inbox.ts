@@ -18,6 +18,7 @@ async function fetchMessages(
   account: string,
   maxResults: number,
   query?: string,
+  labelIds?: string[],
 ): Promise<MessageSummary[] | typeof AUTH_REQUIRED> {
   if (!clientManager.listAccounts().includes(account)) {
     return AUTH_REQUIRED;
@@ -28,7 +29,7 @@ async function fetchMessages(
 
   const listRes = await gmail.users.messages.list({
     userId: "me",
-    labelIds: ["INBOX"],
+    ...(labelIds ? { labelIds } : {}),
     maxResults,
     ...(query ? { q: query } : {}),
   });
@@ -84,7 +85,7 @@ export function createGmailInboxTool(clientManager: OAuthClientManager): any {
     async execute(_toolCallId: string, params: { max_results?: number; account?: string }) {
       const account = params.account ?? "default";
       const maxResults = params.max_results ?? 20;
-      const result = await fetchMessages(clientManager, account, maxResults);
+      const result = await fetchMessages(clientManager, account, maxResults, undefined, ["INBOX"]);
       return jsonResult(result);
     },
   };

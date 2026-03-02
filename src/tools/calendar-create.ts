@@ -5,22 +5,30 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("gmail");
 
+/** Returns `{ date }` for all-day (YYYY-MM-DD) or `{ dateTime }` for timed events. */
+function toEventTime(input: string): { date: string } | { dateTime: string } {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    return { date: input };
+  }
+  return { dateTime: input };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createCalendarCreateTool(clientManager: OAuthClientManager): any {
   return {
     name: "calendar_create",
     label: "Calendar Create Event",
     description:
-      "Create a new Google Calendar event. Provide a title, start and end times as ISO 8601 datetimes (e.g. '2026-03-01T14:00:00-05:00'), and optionally a description, location, and list of attendee email addresses.",
+      "Create a new Google Calendar event. Provide a title, start and end times. Use ISO 8601 datetime for timed events (e.g. '2026-03-01T14:00:00-05:00') or YYYY-MM-DD for all-day events (e.g. '2026-03-01').",
     parameters: Type.Object({
       summary: Type.String({ description: "Event title." }),
       start: Type.String({
         description:
-          "Event start time as an ISO 8601 datetime string (e.g. '2026-03-01T14:00:00-05:00').",
+          "Event start: ISO 8601 datetime (e.g. '2026-03-01T14:00:00-05:00') or YYYY-MM-DD for all-day events.",
       }),
       end: Type.String({
         description:
-          "Event end time as an ISO 8601 datetime string (e.g. '2026-03-01T15:00:00-05:00').",
+          "Event end: ISO 8601 datetime (e.g. '2026-03-01T15:00:00-05:00') or YYYY-MM-DD for all-day events.",
       }),
       description: Type.Optional(Type.String({ description: "Event description or agenda." })),
       location: Type.Optional(Type.String({ description: "Location or meeting room." })),
@@ -68,8 +76,8 @@ export function createCalendarCreateTool(clientManager: OAuthClientManager): any
           summary: params.summary,
           description: params.description,
           location: params.location,
-          start: { dateTime: params.start },
-          end: { dateTime: params.end },
+          start: toEventTime(params.start),
+          end: toEventTime(params.end),
           attendees: params.attendees?.map((email) => ({ email })),
         },
       });

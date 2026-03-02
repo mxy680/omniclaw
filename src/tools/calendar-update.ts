@@ -5,6 +5,14 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("gmail");
 
+/** Returns `{ date }` for all-day (YYYY-MM-DD) or `{ dateTime }` for timed events. */
+function toEventTime(input: string): { date: string } | { dateTime: string } {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    return { date: input };
+  }
+  return { dateTime: input };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createCalendarUpdateTool(clientManager: OAuthClientManager): any {
   return {
@@ -16,10 +24,10 @@ export function createCalendarUpdateTool(clientManager: OAuthClientManager): any
       event_id: Type.String({ description: "The Google Calendar event ID to update." }),
       summary: Type.Optional(Type.String({ description: "New event title." })),
       start: Type.Optional(
-        Type.String({ description: "New start time as an ISO 8601 datetime string." }),
+        Type.String({ description: "New start: ISO 8601 datetime or YYYY-MM-DD for all-day." }),
       ),
       end: Type.Optional(
-        Type.String({ description: "New end time as an ISO 8601 datetime string." }),
+        Type.String({ description: "New end: ISO 8601 datetime or YYYY-MM-DD for all-day." }),
       ),
       description: Type.Optional(Type.String({ description: "New event description." })),
       location: Type.Optional(Type.String({ description: "New location." })),
@@ -61,8 +69,8 @@ export function createCalendarUpdateTool(clientManager: OAuthClientManager): any
       if (params.summary !== undefined) patch.summary = params.summary;
       if (params.description !== undefined) patch.description = params.description;
       if (params.location !== undefined) patch.location = params.location;
-      if (params.start !== undefined) patch.start = { dateTime: params.start };
-      if (params.end !== undefined) patch.end = { dateTime: params.end };
+      if (params.start !== undefined) patch.start = toEventTime(params.start);
+      if (params.end !== undefined) patch.end = toEventTime(params.end);
 
       const res = await calendar.events.patch({
         calendarId: params.calendar_id ?? "primary",

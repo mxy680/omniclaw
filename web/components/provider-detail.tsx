@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -9,15 +9,30 @@ import {
   Github,
   Instagram,
   Lock,
+  Play,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { IntegrationCard } from "@/components/integration-card";
+import { Button } from "@/components/ui/button";
+import { ServiceTestPanel } from "@/components/service-test-panel";
 import { AccountRow } from "@/components/account-row";
 import { ConnectDialog } from "@/components/connect-dialog";
 import { RevokeDialog } from "@/components/revoke-dialog";
 import type { Provider } from "@/lib/integrations";
 import type { AccountInfo } from "@/lib/auth";
+
+interface ToolInfo {
+  name: string;
+  label: string;
+  description: string;
+  parameters: unknown;
+}
+
+interface ServiceToolsData {
+  name: string;
+  tools: ToolInfo[];
+}
 
 const PROVIDER_ICONS: Record<string, LucideIcon> = {
   Chrome,
@@ -36,6 +51,12 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
   const [loading, setLoading] = useState(true);
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
   const [revoking, setRevoking] = useState(false);
+  const [serviceTools, setServiceTools] = useState<Record<string, ServiceToolsData>>({});
+  const [toolsLoading, setToolsLoading] = useState(false);
+
+  // Refs for "Test All Services" — stores test functions from child panels
+  const panelTestAllRefs = useRef<Map<string, () => Promise<void>>>(new Map());
+  const [testingAllServices, setTestingAllServices] = useState(false);
 
   const fetchAccounts = useCallback(async () => {
     if (!provider.available) {
@@ -53,9 +74,26 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
     }
   }, [provider.available]);
 
+  const fetchTools = useCallback(async () => {
+    if (!provider.available) return;
+    setToolsLoading(true);
+    try {
+      const res = await fetch("/api/tools");
+      const data = await res.json();
+      if (data.services) {
+        setServiceTools(data.services);
+      }
+    } catch {
+      // Tools are optional — don't toast on failure
+    } finally {
+      setToolsLoading(false);
+    }
+  }, [provider.available]);
+
   useEffect(() => {
     fetchAccounts();
-  }, [fetchAccounts]);
+    fetchTools();
+  }, [fetchAccounts, fetchTools]);
 
   useEffect(() => {
     const success = searchParams.get("success");
@@ -179,23 +217,76 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
         <>
           <Separator className="opacity-50" />
 
-          {/* Services Grid */}
+          {/* Services — Tool Testing */}
           <section className="space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold">Services</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {provider.services.length} services available with this integration
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold">Services</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {provider.services.length} services available with this integration
+                </p>
+              </div>
+              {Object.keys(serviceTools).length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs"
+                  disabled={testingAllServices}
+                  onClick={async () => {
+                    setTestingAllServices(true);
+                    for (const service of provider.services) {
+                      const testFn = panelTestAllRefs.current.get(service.id);
+                      if (testFn) await testFn();
+                    }
+                    setTestingAllServices(false);
+                  }}
+                >
+                  {testingAllServices ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3 w-3" />
+                      Test All Services
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {provider.services.map((service) => (
-                <IntegrationCard
-                  key={service.id}
-                  integration={service}
-                  connected={connected}
-                />
-              ))}
-            </div>
+
+            {toolsLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-14 animate-pulse rounded-lg bg-muted/50"
+                  />
+                ))}
+              </div>
+            ) : Object.keys(serviceTools).length > 0 ? (
+              <div className="space-y-2">
+                {provider.services.map((service) => {
+                  const data = serviceTools[service.id];
+                  if (!data) return null;
+                  return (
+                    <ServiceTestPanel
+                      key={service.id}
+                      serviceId={service.id}
+                      serviceName={data.name}
+                      tools={data.tools}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border/50 p-8 text-center">
+                <p className="text-[13px] text-muted-foreground">
+                  Run <code className="rounded bg-muted px-1.5 py-0.5 text-[12px]">pnpm build</code> first to load tool definitions.
+                </p>
+              </div>
+            )}
           </section>
         </>
       )}

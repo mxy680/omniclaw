@@ -1,0 +1,8 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/auth/callback/route": "/api/auth/callback",
+  "/api/auth/revoke/route": "/api/auth/revoke",
+  "/api/auth/url/route": "/api/auth/url",
+  "/api/auth/accounts/route": "/api/auth/accounts",
+  "/page": "/"
+}

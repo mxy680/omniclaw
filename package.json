@@ -12,7 +12,9 @@
     "test": "vitest run --exclude 'tests/integration/**'",
     "test:watch": "vitest --exclude 'tests/integration/**'",
     "test:integration": "vitest run tests/integration",
-    "test:smoke": "vitest run tests/integration/smoke.test.ts"
+    "test:smoke": "vitest run tests/integration/smoke.test.ts",
+    "web:dev": "pnpm --filter @openclaw/omniclaw-web dev",
+    "web:build": "pnpm --filter @openclaw/omniclaw-web build"
   },
   "openclaw": {
     "extensions": [

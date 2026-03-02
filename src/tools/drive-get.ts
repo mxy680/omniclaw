@@ -34,6 +34,7 @@ export function createDriveGetTool(clientManager: OAuthClientManager): any {
         fileId: params.file_id,
         fields:
           "id,name,mimeType,size,modifiedTime,createdTime,parents,webViewLink,webContentLink,owners,shared,trashed,description",
+        supportsAllDrives: true,
       });
 
       const f = res.data;

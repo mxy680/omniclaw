@@ -25,6 +25,9 @@ export function createDriveListTool(clientManager: OAuthClientManager): any {
           default: 20,
         }),
       ),
+      page_token: Type.Optional(
+        Type.String({ description: "Page token for next page of results." }),
+      ),
       account: Type.Optional(
         Type.String({
           description: "Account name to use. Defaults to 'default'.",
@@ -34,7 +37,7 @@ export function createDriveListTool(clientManager: OAuthClientManager): any {
     }),
     async execute(
       _toolCallId: string,
-      params: { folder_id?: string; max_results?: number; account?: string },
+      params: { folder_id?: string; max_results?: number; page_token?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -48,8 +51,11 @@ export function createDriveListTool(clientManager: OAuthClientManager): any {
       const res = await drive.files.list({
         q: `'${folderId}' in parents and trashed=false`,
         pageSize: params.max_results ?? 20,
-        fields: "files(id,name,mimeType,size,modifiedTime,parents)",
+        fields: "nextPageToken,files(id,name,mimeType,size,modifiedTime,parents)",
         orderBy: "modifiedTime desc",
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+        pageToken: params.page_token,
       });
 
       const files = (res.data.files ?? []).map((f) => ({
@@ -60,7 +66,7 @@ export function createDriveListTool(clientManager: OAuthClientManager): any {
         modifiedTime: f.modifiedTime ?? "",
       }));
 
-      return jsonResult(files);
+      return jsonResult({ files, nextPageToken: res.data.nextPageToken ?? null });
     },
   };
 }

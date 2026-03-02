@@ -20,12 +20,18 @@ import { createDocsExportTool } from "../tools/docs-download.js";
 import { createDocsGetTool } from "../tools/docs-get.js";
 import { createDocsReplaceTextTool } from "../tools/docs-replace-text.js";
 import { createDriveCreateFolderTool } from "../tools/drive-create-folder.js";
+import { createDriveCopyTool } from "../tools/drive-copy.js";
 import { createDriveDeleteTool } from "../tools/drive-delete.js";
 import { createDriveDownloadTool } from "../tools/drive-download.js";
 import { createDriveGetTool } from "../tools/drive-get.js";
 import { createDriveListTool } from "../tools/drive-list.js";
 import { createDriveMoveTool } from "../tools/drive-move.js";
+import {
+  createDrivePermissionsListTool,
+  createDrivePermissionsDeleteTool,
+} from "../tools/drive-permissions.js";
 import { createDriveReadTool } from "../tools/drive-read.js";
+import { createDriveRestoreTool } from "../tools/drive-restore.js";
 import { createDriveSearchTool } from "../tools/drive-search.js";
 import { createDriveShareTool } from "../tools/drive-share.js";
 import { createDriveUploadTool } from "../tools/drive-upload.js";
@@ -159,6 +165,10 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createDriveMoveTool(clientManager));
     add(createDriveDeleteTool(clientManager));
     add(createDriveShareTool(clientManager));
+    add(createDriveCopyTool(clientManager));
+    add(createDriveRestoreTool(clientManager));
+    add(createDrivePermissionsListTool(clientManager));
+    add(createDrivePermissionsDeleteTool(clientManager));
 
     add(createDocsAuthTool(clientManager, config));
     add(createDocsCreateTool(clientManager));

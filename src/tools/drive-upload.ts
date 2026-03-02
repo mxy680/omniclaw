@@ -111,6 +111,7 @@ export function createDriveUploadTool(clientManager: OAuthClientManager): any {
           requestBody: { name: fileName },
           media: { mimeType, body },
           fields: "id,name,webViewLink",
+          supportsAllDrives: true,
         });
       } else {
         // Create new file
@@ -126,6 +127,7 @@ export function createDriveUploadTool(clientManager: OAuthClientManager): any {
           requestBody,
           media: { mimeType, body },
           fields: "id,name,webViewLink",
+          supportsAllDrives: true,
         });
       }
 

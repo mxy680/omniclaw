@@ -41,6 +41,7 @@ export function createDriveReadTool(clientManager: OAuthClientManager): any {
       const meta = await drive.files.get({
         fileId: params.file_id,
         fields: "id,name,mimeType",
+        supportsAllDrives: true,
       });
 
       const mimeType = meta.data.mimeType ?? "";
@@ -64,7 +65,7 @@ export function createDriveReadTool(clientManager: OAuthClientManager): any {
       ) {
         // Plain text file — download directly
         const res = await drive.files.get(
-          { fileId: params.file_id, alt: "media" },
+          { fileId: params.file_id, alt: "media", supportsAllDrives: true },
           { responseType: "text" },
         );
         content = res.data as string;

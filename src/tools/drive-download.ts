@@ -25,18 +25,35 @@ const WORKSPACE_EXPORT_MAP: Record<string, { exportMime: string; ext: string }> 
   },
 };
 
+// Maps user-facing format names to their MIME types for export.
+const FORMAT_MIME: Record<string, string> = {
+  pdf: "application/pdf",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  csv: "text/csv",
+  txt: "text/plain",
+  html: "text/html",
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createDriveDownloadTool(clientManager: OAuthClientManager): any {
   return {
     name: "drive_download",
     label: "Drive Download File",
     description:
-      "Download a file from Google Drive to local disk. Supports both regular files and Google Workspace files (Docs→PDF, Sheets→XLSX, Slides→PDF).",
+      "Download a file from Google Drive to local disk. Supports both regular files and Google Workspace files (Docs→PDF, Sheets→XLSX, Slides→PDF). Use 'format' to override the export format.",
     parameters: Type.Object({
       file_id: Type.String({ description: "The Google Drive file ID to download." }),
       save_dir: Type.String({
         description: "Local directory path where the file will be saved.",
       }),
+      format: Type.Optional(
+        Type.String({
+          description:
+            "Export format for Google Workspace files: 'pdf', 'docx', 'xlsx', 'pptx', 'csv', 'txt', 'html'. If omitted, uses defaults (PDF for Docs/Slides, XLSX for Sheets).",
+        }),
+      ),
       account: Type.Optional(
         Type.String({
           description: "Account name to use. Defaults to 'default'.",
@@ -46,7 +63,7 @@ export function createDriveDownloadTool(clientManager: OAuthClientManager): any 
     }),
     async execute(
       _toolCallId: string,
-      params: { file_id: string; save_dir: string; account?: string },
+      params: { file_id: string; save_dir: string; format?: string; account?: string },
     ) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
@@ -61,6 +78,7 @@ export function createDriveDownloadTool(clientManager: OAuthClientManager): any 
         const metaRes = await drive.files.get({
           fileId: params.file_id,
           fields: "id,name,mimeType,size",
+          supportsAllDrives: true,
         });
         const meta = metaRes.data;
         const rawName = meta.name ?? params.file_id;
@@ -72,18 +90,23 @@ export function createDriveDownloadTool(clientManager: OAuthClientManager): any 
 
         const workspaceExport = WORKSPACE_EXPORT_MAP[mimeType];
         if (workspaceExport) {
-          // Google Workspace file — must be exported, not downloaded directly
+          // Google Workspace file — must be exported, not downloaded directly.
+          // Use user-specified format if provided, otherwise fall back to defaults.
+          const exportMime =
+            params.format && FORMAT_MIME[params.format]
+              ? FORMAT_MIME[params.format]
+              : workspaceExport.exportMime;
           const exportRes = await drive.files.export(
-            { fileId: params.file_id, mimeType: workspaceExport.exportMime },
+            { fileId: params.file_id, mimeType: exportMime },
             { responseType: "arraybuffer" },
           );
           data = exportRes.data as ArrayBuffer;
-          finalMimeType = workspaceExport.exportMime;
-          ext = workspaceExport.ext;
+          finalMimeType = exportMime;
+          ext = params.format ? `.${params.format}` : workspaceExport.ext;
         } else {
           // Regular binary or text file — download via alt=media
           const dlRes = await drive.files.get(
-            { fileId: params.file_id, alt: "media" },
+            { fileId: params.file_id, alt: "media", supportsAllDrives: true },
             { responseType: "arraybuffer" },
           );
           data = dlRes.data as ArrayBuffer;

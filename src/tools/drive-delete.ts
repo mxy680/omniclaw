@@ -41,11 +41,12 @@ export function createDriveDeleteTool(clientManager: OAuthClientManager): any {
       const drive = google.drive({ version: "v3", auth: client });
 
       if (params.permanent) {
-        await drive.files.delete({ fileId: params.file_id });
+        await drive.files.delete({ fileId: params.file_id, supportsAllDrives: true });
       } else {
         await drive.files.update({
           fileId: params.file_id,
           requestBody: { trashed: true },
+          supportsAllDrives: true,
         });
       }
 

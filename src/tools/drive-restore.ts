@@ -6,14 +6,13 @@ import { jsonResult, authRequired } from "./shared.js";
 const AUTH_REQUIRED = authRequired("drive");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createDriveMoveTool(clientManager: OAuthClientManager): any {
+export function createDriveRestoreTool(clientManager: OAuthClientManager): any {
   return {
-    name: "drive_move",
-    label: "Drive Move File",
-    description: "Move a Google Drive file or folder to a different parent folder.",
+    name: "drive_restore",
+    label: "Drive Restore File",
+    description: "Restore a trashed Google Drive file or folder back to its original location.",
     parameters: Type.Object({
-      file_id: Type.String({ description: "ID of the file or folder to move." }),
-      folder_id: Type.String({ description: "ID of the destination folder." }),
+      file_id: Type.String({ description: "ID of the trashed file or folder to restore." }),
       account: Type.Optional(
         Type.String({
           description: "Account name to use. Defaults to 'default'.",
@@ -21,10 +20,7 @@ export function createDriveMoveTool(clientManager: OAuthClientManager): any {
         }),
       ),
     }),
-    async execute(
-      _toolCallId: string,
-      params: { file_id: string; folder_id: string; account?: string },
-    ) {
+    async execute(_toolCallId: string, params: { file_id: string; account?: string }) {
       const account = params.account ?? "default";
       if (!clientManager.listAccounts().includes(account)) {
         return jsonResult(AUTH_REQUIRED);
@@ -33,28 +29,18 @@ export function createDriveMoveTool(clientManager: OAuthClientManager): any {
       const client = clientManager.getClient(account);
       const drive = google.drive({ version: "v3", auth: client });
 
-      // Get current parents to remove them
-      const meta = await drive.files.get({
-        fileId: params.file_id,
-        fields: "parents",
-        supportsAllDrives: true,
-      });
-
-      const previousParents = (meta.data.parents ?? []).join(",");
-
       const res = await drive.files.update({
         fileId: params.file_id,
-        addParents: params.folder_id,
-        removeParents: previousParents,
-        fields: "id,name,parents",
         supportsAllDrives: true,
+        requestBody: { trashed: false },
+        fields: "id,name,trashed",
       });
 
       return jsonResult({
         success: true,
         id: res.data.id ?? "",
         name: res.data.name ?? "",
-        parents: res.data.parents ?? [],
+        trashed: false,
       });
     },
   };

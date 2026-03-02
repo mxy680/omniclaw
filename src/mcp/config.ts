@@ -8,6 +8,7 @@ export interface McpServerConfig {
   host: string;
   authToken: string;
   plugin: PluginConfig;
+  agentsPath: string;
 }
 
 export function loadMcpConfig(): McpServerConfig {
@@ -32,5 +33,9 @@ export function loadMcpConfig(): McpServerConfig {
     console.warn(`Config file not found at ${configPath} — running with defaults (no Google OAuth tools).`);
   }
 
-  return { port, host, authToken, plugin };
+  const agentsPath =
+    process.env.OMNICLAW_AGENTS_PATH ??
+    path.join(os.homedir(), ".openclaw", "agents.json");
+
+  return { port, host, authToken, plugin, agentsPath };
 }

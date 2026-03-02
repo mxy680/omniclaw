@@ -1,59 +1,70 @@
-export interface Integration {
+export interface Service {
   id: string;
   name: string;
   icon: string;
   color: string;
-  scope: string;
 }
 
-export const INTEGRATIONS: Integration[] = [
+export interface Provider {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  available: boolean;
+  services: Service[];
+}
+
+export const PROVIDERS: Provider[] = [
   {
-    id: "gmail",
-    name: "Gmail",
-    icon: "Mail",
-    color: "#EA4335",
-    scope: "https://www.googleapis.com/auth/gmail.modify",
-  },
-  {
-    id: "calendar",
-    name: "Calendar",
-    icon: "Calendar",
+    id: "google-workspace",
+    name: "Google Workspace",
+    icon: "Chrome",
     color: "#4285F4",
-    scope: "https://www.googleapis.com/auth/calendar",
+    description:
+      "Gmail, Calendar, Drive, Docs, Sheets, Slides, and YouTube. Connect a Google account to enable all services.",
+    available: true,
+    services: [
+      { id: "gmail", name: "Gmail", icon: "Mail", color: "#EA4335" },
+      { id: "calendar", name: "Calendar", icon: "Calendar", color: "#4285F4" },
+      { id: "drive", name: "Drive", icon: "HardDrive", color: "#0F9D58" },
+      { id: "docs", name: "Docs", icon: "FileText", color: "#4285F4" },
+      { id: "sheets", name: "Sheets", icon: "Table", color: "#0F9D58" },
+      { id: "slides", name: "Slides", icon: "Presentation", color: "#F4B400" },
+      { id: "youtube", name: "YouTube", icon: "Youtube", color: "#FF0000" },
+    ],
   },
   {
-    id: "drive",
-    name: "Drive",
-    icon: "HardDrive",
-    color: "#0F9D58",
-    scope: "https://www.googleapis.com/auth/drive",
+    id: "linkedin",
+    name: "LinkedIn",
+    icon: "Linkedin",
+    color: "#0A66C2",
+    description: "Post updates, manage connections, and access LinkedIn APIs.",
+    available: false,
+    services: [],
   },
   {
-    id: "docs",
-    name: "Docs",
-    icon: "FileText",
-    color: "#4285F4",
-    scope: "https://www.googleapis.com/auth/documents",
+    id: "github",
+    name: "GitHub",
+    icon: "Github",
+    color: "#24292F",
+    description: "Manage repositories, issues, pull requests, and more.",
+    available: false,
+    services: [],
   },
   {
-    id: "sheets",
-    name: "Sheets",
-    icon: "Table",
-    color: "#0F9D58",
-    scope: "https://www.googleapis.com/auth/spreadsheets",
-  },
-  {
-    id: "slides",
-    name: "Slides",
-    icon: "Presentation",
-    color: "#F4B400",
-    scope: "https://www.googleapis.com/auth/presentations",
-  },
-  {
-    id: "youtube",
-    name: "YouTube",
-    icon: "Youtube",
-    color: "#FF0000",
-    scope: "https://www.googleapis.com/auth/youtube.force-ssl",
+    id: "instagram",
+    name: "Instagram",
+    icon: "Instagram",
+    color: "#E4405F",
+    description: "Publish content, manage comments, and access insights.",
+    available: false,
+    services: [],
   },
 ];
+
+// Backward compat for IntegrationCard
+export type Integration = Service;
+export const INTEGRATIONS: Service[] = PROVIDERS.find(
+  (p) => p.id === "google-workspace",
+)!.services;

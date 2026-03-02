@@ -16,10 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface ConnectDialogProps {
+  providerName?: string;
   existingAccounts: string[];
 }
 
-export function ConnectDialog({ existingAccounts }: ConnectDialogProps) {
+export function ConnectDialog({ providerName = "Google", existingAccounts }: ConnectDialogProps) {
   const [open, setOpen] = useState(false);
   const [accountName, setAccountName] = useState("default");
   const [loading, setLoading] = useState(false);
@@ -52,10 +53,9 @@ export function ConnectDialog({ existingAccounts }: ConnectDialogProps) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Connect Google Account</DialogTitle>
+          <DialogTitle>Connect {providerName} Account</DialogTitle>
           <DialogDescription>
-            Enter a name for this account, then sign in with Google. This grants
-            access to Gmail, Calendar, Drive, Docs, Sheets, Slides, and YouTube.
+            Enter a name for this account, then sign in with {providerName}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -79,7 +79,7 @@ export function ConnectDialog({ existingAccounts }: ConnectDialogProps) {
             onClick={handleConnect}
             disabled={!accountName.trim() || loading}
           >
-            {loading ? "Redirecting..." : "Sign in with Google"}
+            {loading ? "Redirecting..." : `Sign in with ${providerName}`}
           </Button>
         </DialogFooter>
       </DialogContent>

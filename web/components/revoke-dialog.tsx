@@ -13,6 +13,7 @@ import {
 
 interface RevokeDialogProps {
   accountName: string | null;
+  providerName?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
@@ -21,6 +22,7 @@ interface RevokeDialogProps {
 
 export function RevokeDialog({
   accountName,
+  providerName = "Google",
   open,
   onOpenChange,
   onConfirm,
@@ -32,9 +34,9 @@ export function RevokeDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Revoke Access</AlertDialogTitle>
           <AlertDialogDescription>
-            This will remove the &ldquo;{accountName}&rdquo; account and revoke its Google
-            access tokens. The MCP server will no longer be able to use this
-            account. This action cannot be undone.
+            This will remove the &ldquo;{accountName}&rdquo; account and revoke its{" "}
+            {providerName} access tokens. The MCP server will no longer be able
+            to use this account. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0FFB61E93B20E3300C211A61 /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD803A97357A7631EC04E91 /* Agent.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* AgentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6071829A1B2C3D43A5B /* AgentService.swift */; };
 		132DBAB68B00C6F75D0C0382 /* ConversationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA8C37243FC0489EE999200D /* ConversationStore.swift */; };
 		1740B85D86727175C2C67B41 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4DC7F680C6A508029086C40 /* SettingsView.swift */; };
 		214FE54D18F8D25A59E7A163 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B73B71758E576F5A1DD9333 /* ChatView.swift */; };
@@ -24,6 +25,7 @@
 
 /* Begin PBXFileReference section */
 		0C8BB6786E9C0916F24A2569 /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
+		D4E5F6071829A1B2C3D43A5B /* AgentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentService.swift; sourceTree = "<group>"; };
 		2F56D5467C871D435E443DE2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6619BD62DB7564400EA59108 /* Conversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Conversation.swift; sourceTree = "<group>"; };
 		6FCD2B1A5BFF82DD4EC1E0D8 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
@@ -96,6 +98,7 @@
 		E62E6D7A312E09D3A9F37F57 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				D4E5F6071829A1B2C3D43A5B /* AgentService.swift */,
 				0C8BB6786E9C0916F24A2569 /* ChatService.swift */,
 				CA8C37243FC0489EE999200D /* ConversationStore.swift */,
 			);
@@ -168,6 +171,7 @@
 			files = (
 				0FFB61E93B20E3300C211A61 /* Agent.swift in Sources */,
 				C3E4691A22CF289CBF2D98B0 /* AgentChatApp.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* AgentService.swift in Sources */,
 				9C474121CC4898ADF9BAE2B2 /* ChatService.swift in Sources */,
 				214FE54D18F8D25A59E7A163 /* ChatView.swift in Sources */,
 				3A50586F33516F54ABE6631C /* Conversation.swift in Sources */,

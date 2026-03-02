@@ -1,12 +1,12 @@
 ---
 name: docs
-description: Google Docs access — create, read, append text, and find-and-replace inside documents.
+description: Google Docs access — create, read (plain text or markdown), insert, delete, append, replace text, and export documents.
 metadata: {"openclaw": {"emoji": "📝"}}
 ---
 
 # Google Docs
 
-Create, read, append to, and edit Google Docs.
+Create, read, insert, delete, append to, replace text in, and export Google Docs.
 
 ## First-Time Setup
 
@@ -22,17 +22,23 @@ This is a one-time step. If you've already authenticated via any other `*_auth_s
 
 - `docs_auth_setup` — Authenticate with Google Docs (run once)
 - `docs_create` — Create a new Google Doc with a title and optional initial content
-- `docs_get` — Fetch a document's title and full plain-text content
+- `docs_get` — Fetch a document's title and content (supports `format: "plain"` or `"markdown"` with headings, lists, links, tables)
 - `docs_append` — Append text to the end of an existing document
+- `docs_insert` — Insert text at a specific position (character index) in a document
+- `docs_delete_text` — Delete a range of content from a document
 - `docs_replace_text` — Find and replace all occurrences of a string in a document
+- `docs_export` — Download/export a document to local disk (PDF, DOCX, etc.)
 
 ## Workflow
 
 1. Complete first-time setup above.
 2. Use `docs_create` to make a new document, optionally with starter text.
-3. Use `docs_get` to read the current content of any document by its ID.
+3. Use `docs_get` to read the current content of any document (use `format: "markdown"` for structured output).
 4. Use `docs_append` to add new content to the end of a document.
-5. Use `docs_replace_text` to fill in templates or bulk-update text.
+5. Use `docs_insert` to insert text at a specific position.
+6. Use `docs_delete_text` to remove content from a range.
+7. Use `docs_replace_text` to fill in templates or bulk-update text.
+8. Use `docs_export` to download the document as PDF, DOCX, etc.
 
 ## Finding the Document ID
 
@@ -45,9 +51,12 @@ Or use `drive_search` to find a document by name and get its ID.
 
 - "Create a doc called 'Meeting Notes' with today's agenda" → `docs_create`
 - "Read the project spec doc" → `drive_search` then `docs_get`
+- "Read the doc as markdown with headings" → `docs_get` with `format: "markdown"`
 - "Add a summary section to the doc" → `docs_append`
+- "Insert a header at the beginning" → `docs_insert` with `index: 1`
+- "Delete the first paragraph" → `docs_delete_text` with start/end indices
 - "Replace all occurrences of '{{name}}' with 'Alice'" → `docs_replace_text`
-- "Fill in the template: replace {{date}} and {{author}}" → `docs_replace_text` twice
+- "Download the doc as PDF" → `docs_export`
 
 ## Error Handling
 

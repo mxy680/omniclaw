@@ -153,6 +153,37 @@ function createMcpServerAndTransport(agentId: string): {
 // ---------------------------------------------------------------------------
 
 const app = express();
+
+// Attachment upload — registered before global middleware so express.json() does
+// not consume the raw body stream.  Accepts either the MCP token or the gateway
+// token (iOS clients only know the gateway token).
+app.post("/api/attachments", express.raw({ type: "*/*", limit: "20mb" }), (req: Request, res: Response) => {
+  const auth = req.headers.authorization;
+  const validToken =
+    (config.authToken && auth === `Bearer ${config.authToken}`) ||
+    (config.gatewayToken && auth === `Bearer ${config.gatewayToken}`);
+  if (config.authToken && !validToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const filename = (req.headers["x-filename"] as string) || "upload.bin";
+  const mimeType = (req.headers["content-type"] as string) || "application/octet-stream";
+
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    res.status(400).json({ error: "Empty body" });
+    return;
+  }
+
+  try {
+    const meta: AttachmentMeta = saveAttachment(req.body, filename, mimeType);
+    res.json(meta);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
+});
+
 app.use(express.json());
 if (config.authToken) {
   app.use(bearerAuth(config.authToken));
@@ -181,25 +212,6 @@ app.get("/agents", (_req: Request, res: Response) => {
     services: a.permissions.services,
   }));
   res.json({ agents });
-});
-
-// POST /api/attachments — upload a file for the agent to view
-app.post("/api/attachments", express.raw({ type: "*/*", limit: "20mb" }), (req: Request, res: Response) => {
-  const filename = (req.headers["x-filename"] as string) || "upload.bin";
-  const mimeType = (req.headers["content-type"] as string) || "application/octet-stream";
-
-  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-    res.status(400).json({ error: "Empty body" });
-    return;
-  }
-
-  try {
-    const meta: AttachmentMeta = saveAttachment(req.body, filename, mimeType);
-    res.json(meta);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    res.status(500).json({ error: message });
-  }
 });
 
 // POST /mcp — create new session or route to existing one

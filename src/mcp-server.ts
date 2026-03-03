@@ -30,6 +30,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
 import { loadMcpConfig } from "./mcp/config.js";
+import { saveAttachment, type AttachmentMeta } from "./tools/attachment-store.js";
 import { bearerAuth } from "./mcp/auth-middleware.js";
 import { createAllTools, type OmniclawTool } from "./mcp/tool-registry.js";
 import {
@@ -121,7 +122,7 @@ function createMcpServerAndTransport(agentId: string): {
         (request.params.arguments ?? {}) as Record<string, unknown>,
       );
       // Tools return { content: [...], details: ... } via jsonResult()
-      const typed = result as { content: Array<{ type: string; text: string }> };
+      const typed = result as { content: Array<Record<string, unknown>> };
       return { content: typed.content };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -180,6 +181,25 @@ app.get("/agents", (_req: Request, res: Response) => {
     services: a.permissions.services,
   }));
   res.json({ agents });
+});
+
+// POST /api/attachments — upload a file for the agent to view
+app.post("/api/attachments", express.raw({ type: "*/*", limit: "20mb" }), (req: Request, res: Response) => {
+  const filename = (req.headers["x-filename"] as string) || "upload.bin";
+  const mimeType = (req.headers["content-type"] as string) || "application/octet-stream";
+
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    res.status(400).json({ error: "Empty body" });
+    return;
+  }
+
+  try {
+    const meta: AttachmentMeta = saveAttachment(req.body, filename, mimeType);
+    res.json(meta);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
 });
 
 // POST /mcp — create new session or route to existing one

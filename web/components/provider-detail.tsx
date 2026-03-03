@@ -54,8 +54,9 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
-      const res = await fetch("/api/auth/accounts");
+      const res = await fetch(`/api/auth/accounts?provider=${encodeURIComponent(provider.id)}`);
       const data = await res.json();
       setAccounts(data.accounts ?? []);
     } catch {
@@ -63,7 +64,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
     } finally {
       setLoading(false);
     }
-  }, [provider.available]);
+  }, [provider.available, provider.id]);
 
   const fetchTools = useCallback(async () => {
     if (!provider.available) return;
@@ -112,7 +113,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
       const res = await fetch("/api/auth/revoke", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ account: revokeTarget }),
+        body: JSON.stringify({ account: revokeTarget, provider: provider.id }),
       });
 
       if (res.ok) {
@@ -170,8 +171,10 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
             </p>
           </div>
           <ConnectDialog
+            providerId={provider.id}
             providerName={provider.name}
             existingAccounts={accounts.map((a) => a.name)}
+            onConnected={fetchAccounts}
           />
         </div>
 

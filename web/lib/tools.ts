@@ -34,6 +34,7 @@ const SERVICE_NAMES: Record<string, string> = {
   sheets: "Sheets",
   slides: "Slides",
   youtube: "YouTube",
+  github: "GitHub",
 };
 
 let cached: ToolRegistry | null = null;

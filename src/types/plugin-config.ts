@@ -3,4 +3,5 @@ export interface PluginConfig {
   oauth_port?: number;
   tokens_path?: string;
   schedules_path?: string;
+  github_token?: string;
 }

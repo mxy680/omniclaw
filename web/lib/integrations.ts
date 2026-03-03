@@ -48,9 +48,11 @@ export const PROVIDERS: Provider[] = [
     name: "GitHub",
     icon: "Github",
     color: "#24292F",
-    description: "Manage repositories, issues, pull requests, and more.",
-    available: false,
-    services: [],
+    description: "Manage repositories, issues, pull requests, actions, gists, and more.",
+    available: true,
+    services: [
+      { id: "github", name: "GitHub", icon: "Github", color: "#24292F" },
+    ],
   },
   {
     id: "instagram",

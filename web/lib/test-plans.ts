@@ -382,6 +382,508 @@ const youtubeTest: ServiceTestFn = async (execute) => {
   return steps;
 };
 
+const githubTest: ServiceTestFn = async (execute) => {
+  const steps: TestStepResult[] = [];
+
+  // ── Phase 1: Standalone reads (public repos/users) ──────────────────
+
+  const rRepoList = await runStep("List repos", "github_repo_list", { per_page: 2 }, execute);
+  steps.push(rRepoList.result);
+
+  steps.push((await runStep("Get repo (octocat/Hello-World)", "github_repo_get", {
+    owner: "octocat", repo: "Hello-World",
+  }, execute)).result);
+
+  steps.push((await runStep("Get repo topics", "github_repo_topics", {
+    owner: "octocat", repo: "Hello-World",
+  }, execute)).result);
+
+  steps.push((await runStep("Get repo contributors", "github_repo_contributors", {
+    owner: "octocat", repo: "Hello-World", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("Get repo languages", "github_repo_languages", {
+    owner: "octocat", repo: "Hello-World",
+  }, execute)).result);
+
+  steps.push((await runStep("Get user (octocat)", "github_user_get", { username: "octocat" }, execute)).result);
+
+  steps.push((await runStep("List user repos", "github_user_repos", {
+    username: "octocat", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("Get org (github)", "github_org_get", { org: "github" }, execute)).result);
+
+  steps.push((await runStep("List org members", "github_org_members", {
+    org: "github", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("List org repos", "github_org_repos", {
+    org: "github", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("List teams", "github_team_list", {
+    org: "github", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("Search repos", "github_search_repos", {
+    q: "typescript", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("Search code", "github_search_code", {
+    q: "README repo:octocat/Hello-World", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("Search issues", "github_search_issues", {
+    q: "is:issue repo:octocat/Hello-World", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("Search commits", "github_search_commits", {
+    q: "test repo:octocat/Hello-World", per_page: 1,
+  }, execute)).result);
+
+  steps.push((await runStep("Search users", "github_search_users", {
+    q: "octocat", per_page: 1,
+  }, execute)).result);
+
+  // ── Phase 2: Notifications ──────────────────────────────────────────
+
+  const rNotifs = await runStep("List notifications", "github_notification_list", { per_page: 2 }, execute);
+  steps.push(rNotifs.result);
+
+  steps.push((await runStep("Mark notifications read", "github_notification_mark_read", {
+    last_read_at: new Date().toISOString(),
+  }, execute)).result);
+
+  const notifsParsed = extractResult(rNotifs.data) as { id?: string }[] | undefined;
+  const threadId = Array.isArray(notifsParsed) && notifsParsed.length > 0
+    ? Number(notifsParsed[0].id) : undefined;
+
+  if (threadId) {
+    steps.push((await runStep("Mark thread read", "github_notification_thread_read", {
+      thread_id: threadId,
+    }, execute)).result);
+
+    steps.push((await runStep("Subscribe to thread", "github_notification_thread_subscribe", {
+      thread_id: threadId, ignored: false,
+    }, execute)).result);
+  }
+
+  // ── Phase 3: Gist round-trip ────────────────────────────────────────
+
+  const rGistCreate = await runStep("Create test gist", "github_gist_create", {
+    description: "[omniclaw-smoke] auto-cleanup",
+    public: false,
+    files: { "smoke.txt": { content: "Smoke test — will be deleted." } },
+  }, execute);
+  steps.push(rGistCreate.result);
+
+  const gistParsed = extractResult(rGistCreate.data) as Record<string, unknown> | undefined;
+  const gistId = gistParsed?.id as string | undefined;
+
+  if (gistId) {
+    steps.push((await runStep("Get test gist", "github_gist_get", { gist_id: gistId }, execute)).result);
+
+    steps.push((await runStep("List gists", "github_gist_list", { per_page: 1 }, execute)).result);
+
+    steps.push((await runStep("Update test gist", "github_gist_update", {
+      gist_id: gistId, description: "[omniclaw-smoke] updated",
+    }, execute)).result);
+
+    steps.push((await runStep("Delete test gist", "github_gist_delete", { gist_id: gistId }, execute, true)).result);
+  }
+
+  // ── Phase 4: Star round-trip ────────────────────────────────────────
+
+  steps.push((await runStep("Star repo", "github_repo_star", {
+    owner: "octocat", repo: "Hello-World",
+  }, execute)).result);
+
+  steps.push((await runStep("Unstar repo", "github_repo_unstar", {
+    owner: "octocat", repo: "Hello-World",
+  }, execute, true)).result);
+
+  // ── Phase 5: Actions reads (public repo actions/checkout) ───────────
+
+  const rWorkflows = await runStep("List workflows", "github_workflow_list", {
+    owner: "actions", repo: "checkout", per_page: 5,
+  }, execute);
+  steps.push(rWorkflows.result);
+
+  const wfParsed = extractResult(rWorkflows.data) as { id?: number }[] | undefined;
+  const workflowId = Array.isArray(wfParsed) && wfParsed.length > 0
+    ? wfParsed[0].id : undefined;
+
+  if (workflowId) {
+    steps.push((await runStep("Get workflow", "github_workflow_get", {
+      owner: "actions", repo: "checkout", workflow_id: workflowId,
+    }, execute)).result);
+  }
+
+  const rRuns = await runStep("List workflow runs", "github_run_list", {
+    owner: "actions", repo: "checkout", per_page: 1,
+  }, execute);
+  steps.push(rRuns.result);
+
+  const runsParsed = extractResult(rRuns.data) as { id?: number }[] | undefined;
+  const runId = Array.isArray(runsParsed) && runsParsed.length > 0
+    ? runsParsed[0].id : undefined;
+
+  if (runId) {
+    steps.push((await runStep("Get workflow run", "github_run_get", {
+      owner: "actions", repo: "checkout", run_id: runId,
+    }, execute)).result);
+
+    steps.push((await runStep("List jobs for run", "github_job_list", {
+      owner: "actions", repo: "checkout", run_id: runId,
+    }, execute)).result);
+
+    steps.push((await runStep("Get run logs URL", "github_run_logs", {
+      owner: "actions", repo: "checkout", run_id: runId,
+    }, execute)).result);
+  }
+
+  // ── Phase 6: Repo round-trip (create → exercise → delete) ──────────
+
+  const repoName = `omniclaw-smoke-${Date.now()}`;
+  const rRepoCreate = await runStep("Create test repo", "github_repo_create", {
+    name: repoName, description: "Omniclaw smoke test", private: true, auto_init: true,
+  }, execute);
+  steps.push(rRepoCreate.result);
+
+  const repoParsed = extractResult(rRepoCreate.data) as Record<string, unknown> | undefined;
+  const repoFullName = repoParsed?.full_name as string | undefined;
+  const owner = repoFullName?.split("/")[0];
+
+  if (owner) {
+    // --- Repo metadata ---
+    steps.push((await runStep("Update repo", "github_repo_update", {
+      owner, repo: repoName, description: "Smoke test — will be deleted",
+    }, execute)).result);
+
+    steps.push((await runStep("Get README content", "github_repo_content_get", {
+      owner, repo: repoName, path: "README.md",
+    }, execute)).result);
+
+    steps.push((await runStep("Get branch protection", "github_branch_protection_get", {
+      owner, repo: repoName, branch: "main",
+    }, execute)).result);
+
+    // --- Labels ---
+    steps.push((await runStep("Create label", "github_issue_label_create", {
+      owner, repo: repoName, name: "smoke-test", color: "ff0000", description: "Smoke test label",
+    }, execute)).result);
+
+    steps.push((await runStep("List labels", "github_issue_label_list", {
+      owner, repo: repoName,
+    }, execute)).result);
+
+    // --- Milestones ---
+    steps.push((await runStep("Create milestone", "github_issue_milestone_create", {
+      owner, repo: repoName, title: "Smoke Milestone",
+    }, execute)).result);
+
+    steps.push((await runStep("List milestones", "github_issue_milestone_list", {
+      owner, repo: repoName,
+    }, execute)).result);
+
+    // --- Issues ---
+    const rIssueCreate = await runStep("Create issue", "github_issue_create", {
+      owner, repo: repoName, title: "Smoke test issue", body: "Auto-created by smoke test.",
+    }, execute);
+    steps.push(rIssueCreate.result);
+
+    const issueParsed = extractResult(rIssueCreate.data) as Record<string, unknown> | undefined;
+    const issueNumber = issueParsed?.number as number | undefined;
+
+    if (issueNumber) {
+      steps.push((await runStep("Get issue", "github_issue_get", {
+        owner, repo: repoName, issue_number: issueNumber,
+      }, execute)).result);
+
+      steps.push((await runStep("List issues", "github_issue_list", {
+        owner, repo: repoName, per_page: 5,
+      }, execute)).result);
+
+      steps.push((await runStep("Update issue", "github_issue_update", {
+        owner, repo: repoName, issue_number: issueNumber, title: "Updated smoke issue",
+      }, execute)).result);
+
+      const rComment = await runStep("Create issue comment", "github_issue_comment_create", {
+        owner, repo: repoName, issue_number: issueNumber, body: "Smoke test comment.",
+      }, execute);
+      steps.push(rComment.result);
+
+      const commentParsed = extractResult(rComment.data) as Record<string, unknown> | undefined;
+      const commentId = commentParsed?.id as number | undefined;
+
+      steps.push((await runStep("List issue comments", "github_issue_comment_list", {
+        owner, repo: repoName, issue_number: issueNumber,
+      }, execute)).result);
+
+      if (commentId) {
+        steps.push((await runStep("Update issue comment", "github_issue_comment_update", {
+          owner, repo: repoName, comment_id: commentId, body: "Updated smoke comment.",
+        }, execute)).result);
+
+        steps.push((await runStep("Delete issue comment", "github_issue_comment_delete", {
+          owner, repo: repoName, comment_id: commentId,
+        }, execute, true)).result);
+      }
+    }
+
+    // --- Git objects ---
+    const rCommits = await runStep("List commits", "github_commit_list", {
+      owner, repo: repoName, per_page: 1,
+    }, execute);
+    steps.push(rCommits.result);
+
+    const commitsParsed = extractResult(rCommits.data) as { sha?: string }[] | undefined;
+    const commitSha = Array.isArray(commitsParsed) && commitsParsed.length > 0
+      ? commitsParsed[0].sha : undefined;
+
+    if (commitSha) {
+      const rCommitGet = await runStep("Get commit", "github_commit_get", {
+        owner, repo: repoName, ref: commitSha,
+      }, execute);
+      steps.push(rCommitGet.result);
+
+      // Extract tree SHA from the commit for tree_get
+      const commitDetail = extractResult(rCommitGet.data) as Record<string, unknown> | undefined;
+      // The commit response includes files but not tree directly — use the SHA with ref_list
+      // For tree_get, use the commit SHA itself (GitHub resolves it)
+      steps.push((await runStep("Get git tree", "github_tree_get", {
+        owner, repo: repoName, tree_sha: commitSha,
+      }, execute)).result);
+    }
+
+    steps.push((await runStep("List refs", "github_ref_list", {
+      owner, repo: repoName, ref: "heads",
+    }, execute)).result);
+
+    steps.push((await runStep("Compare commits", "github_compare", {
+      owner, repo: repoName, base: "main", head: "main",
+    }, execute)).result);
+
+    // --- Branches & content for PR ---
+    steps.push((await runStep("List branches", "github_branch_list", {
+      owner, repo: repoName,
+    }, execute)).result);
+
+    const rBranchGet = await runStep("Get branch (main)", "github_branch_get", {
+      owner, repo: repoName, branch: "main",
+    }, execute);
+    steps.push(rBranchGet.result);
+
+    const branchParsed = extractResult(rBranchGet.data) as Record<string, unknown> | undefined;
+    const branchCommit = branchParsed?.commit as Record<string, unknown> | undefined;
+    const mainSha = (branchCommit?.sha ?? commitSha) as string | undefined;
+
+    if (mainSha) {
+      // Create a feature branch
+      steps.push((await runStep("Create branch", "github_branch_create", {
+        owner, repo: repoName, branch: "smoke-test-branch", sha: mainSha,
+      }, execute)).result);
+
+      // Add a file on the feature branch
+      const rContentCreate = await runStep("Create file on branch", "github_repo_content_create", {
+        owner, repo: repoName, path: "smoke.txt",
+        message: "Add smoke test file",
+        content: Buffer.from("Smoke test content").toString("base64"),
+        branch: "smoke-test-branch",
+      }, execute);
+      steps.push(rContentCreate.result);
+
+      // --- Pull Requests ---
+      const rPrCreate = await runStep("Create pull request", "github_pull_create", {
+        owner, repo: repoName, title: "Smoke test PR",
+        body: "Auto-created by smoke test.", head: "smoke-test-branch", base: "main",
+      }, execute);
+      steps.push(rPrCreate.result);
+
+      const prParsed = extractResult(rPrCreate.data) as Record<string, unknown> | undefined;
+      const prNumber = prParsed?.number as number | undefined;
+
+      if (prNumber) {
+        steps.push((await runStep("Get pull request", "github_pull_get", {
+          owner, repo: repoName, pull_number: prNumber,
+        }, execute)).result);
+
+        steps.push((await runStep("List pull requests", "github_pull_list", {
+          owner, repo: repoName, state: "open",
+        }, execute)).result);
+
+        steps.push((await runStep("Update pull request", "github_pull_update", {
+          owner, repo: repoName, pull_number: prNumber, title: "Updated smoke PR",
+        }, execute)).result);
+
+        steps.push((await runStep("List PR files", "github_pull_files", {
+          owner, repo: repoName, pull_number: prNumber,
+        }, execute)).result);
+
+        steps.push((await runStep("Get PR diff", "github_pull_diff", {
+          owner, repo: repoName, pull_number: prNumber,
+        }, execute)).result);
+
+        steps.push((await runStep("List PR reviews", "github_pull_review_list", {
+          owner, repo: repoName, pull_number: prNumber,
+        }, execute)).result);
+
+        steps.push((await runStep("Create PR review", "github_pull_review_create", {
+          owner, repo: repoName, pull_number: prNumber,
+          event: "COMMENT", body: "Smoke test review.",
+        }, execute)).result);
+
+        steps.push((await runStep("List PR review comments", "github_pull_review_comments", {
+          owner, repo: repoName, pull_number: prNumber,
+        }, execute)).result);
+
+        steps.push((await runStep("Request PR reviewers", "github_pull_request_reviewers", {
+          owner, repo: repoName, pull_number: prNumber, reviewers: [],
+        }, execute)).result);
+
+        steps.push((await runStep("List PR checks", "github_pull_checks", {
+          owner, repo: repoName, pull_number: prNumber,
+        }, execute)).result);
+
+        steps.push((await runStep("Merge pull request", "github_pull_merge", {
+          owner, repo: repoName, pull_number: prNumber, merge_method: "squash",
+        }, execute)).result);
+      }
+
+      // Clean up the feature branch
+      steps.push((await runStep("Delete branch", "github_branch_delete", {
+        owner, repo: repoName, branch: "smoke-test-branch",
+      }, execute, true)).result);
+    }
+
+    // --- Content create & delete on main ---
+    const rFileCreate = await runStep("Create file on main", "github_repo_content_create", {
+      owner, repo: repoName, path: "delete-me.txt",
+      message: "Add file to delete",
+      content: Buffer.from("Will be deleted").toString("base64"),
+    }, execute);
+    steps.push(rFileCreate.result);
+
+    const fileParsed = extractResult(rFileCreate.data) as Record<string, unknown> | undefined;
+    const fileSha = fileParsed?.sha as string | undefined;
+
+    if (fileSha) {
+      steps.push((await runStep("Delete file", "github_repo_content_delete", {
+        owner, repo: repoName, path: "delete-me.txt",
+        message: "Remove smoke test file", sha: fileSha,
+      }, execute, true)).result);
+    }
+
+    // --- Tags & Releases ---
+    steps.push((await runStep("List tags", "github_tag_list", {
+      owner, repo: repoName,
+    }, execute)).result);
+
+    const rRelease = await runStep("Create release", "github_release_create", {
+      owner, repo: repoName, tag_name: "v0.0.1-smoke",
+      name: "Smoke Test Release", body: "Auto-created by smoke test.",
+    }, execute);
+    steps.push(rRelease.result);
+
+    const releaseParsed = extractResult(rRelease.data) as Record<string, unknown> | undefined;
+    const releaseId = releaseParsed?.id as number | undefined;
+
+    if (releaseId) {
+      steps.push((await runStep("List releases", "github_release_list", {
+        owner, repo: repoName,
+      }, execute)).result);
+
+      steps.push((await runStep("Get release", "github_release_get", {
+        owner, repo: repoName, release_id: releaseId,
+      }, execute)).result);
+
+      steps.push((await runStep("Delete release", "github_release_delete", {
+        owner, repo: repoName, release_id: releaseId,
+      }, execute, true)).result);
+    }
+
+    // --- Webhooks ---
+    const rWebhook = await runStep("Create webhook", "github_webhook_create", {
+      owner, repo: repoName, url: "https://example.com/omniclaw-smoke-test",
+      events: ["push"], active: false,
+    }, execute);
+    steps.push(rWebhook.result);
+
+    const webhookParsed = extractResult(rWebhook.data) as Record<string, unknown> | undefined;
+    const hookId = webhookParsed?.id as number | undefined;
+
+    if (hookId) {
+      steps.push((await runStep("List webhooks", "github_webhook_list", {
+        owner, repo: repoName,
+      }, execute)).result);
+
+      steps.push((await runStep("Update webhook", "github_webhook_update", {
+        owner, repo: repoName, hook_id: hookId, active: false,
+      }, execute)).result);
+
+      steps.push((await runStep("Delete webhook", "github_webhook_delete", {
+        owner, repo: repoName, hook_id: hookId,
+      }, execute, true)).result);
+    }
+
+    // --- Security (read-only, may return empty or 403) ---
+    steps.push((await runStep("Dependabot alerts", "github_dependabot_alerts", {
+      owner, repo: repoName,
+    }, execute)).result);
+
+    steps.push((await runStep("Code scanning alerts", "github_code_scanning_alerts", {
+      owner, repo: repoName,
+    }, execute)).result);
+
+    steps.push((await runStep("Secret scanning alerts", "github_secret_scanning_alerts", {
+      owner, repo: repoName,
+    }, execute)).result);
+
+    steps.push((await runStep("Security advisories", "github_security_advisories", {
+      owner, repo: repoName,
+    }, execute)).result);
+
+    // --- Projects (classic v1, likely empty) ---
+    const rProjects = await runStep("List projects", "github_project_list", {
+      owner, repo: repoName, state: "all",
+    }, execute);
+    steps.push(rProjects.result);
+
+    const projectsParsed = extractResult(rProjects.data) as { id?: number }[] | undefined;
+    const projectId = Array.isArray(projectsParsed) && projectsParsed.length > 0
+      ? projectsParsed[0].id : undefined;
+
+    if (projectId) {
+      steps.push((await runStep("Get project", "github_project_get", {
+        project_id: projectId,
+      }, execute)).result);
+
+      const rColumns = await runStep("List project columns", "github_project_columns", {
+        project_id: projectId,
+      }, execute);
+      steps.push(rColumns.result);
+
+      const colsParsed = extractResult(rColumns.data) as { id?: number }[] | undefined;
+      const columnId = Array.isArray(colsParsed) && colsParsed.length > 0
+        ? colsParsed[0].id : undefined;
+
+      if (columnId) {
+        steps.push((await runStep("List project cards", "github_project_cards", {
+          column_id: columnId,
+        }, execute)).result);
+      }
+    }
+
+    // --- Cleanup: delete the test repo ---
+    steps.push((await runStep("Delete test repo", "github_repo_delete", {
+      owner, repo: repoName,
+    }, execute, true)).result);
+  }
+
+  return steps;
+};
+
 const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   gmail: gmailTest,
   calendar: calendarTest,
@@ -390,6 +892,7 @@ const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   sheets: sheetsTest,
   slides: slidesTest,
   youtube: youtubeTest,
+  github: githubTest,
 };
 
 export async function runServiceTest(

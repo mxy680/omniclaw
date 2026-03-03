@@ -55,6 +55,14 @@ import { createSlidesCreateTool } from "../../src/tools/slides-create.js";
 import { createSlidesAppendSlideTool } from "../../src/tools/slides-append-slide.js";
 import { createSlidesExportTool } from "../../src/tools/slides-download.js";
 
+// GitHub tool imports
+import { GitHubClient } from "../../src/auth/github-client.js";
+import { createGitHubAuthSetupTool } from "../../src/tools/github-auth.js";
+import { createGitHubRepoGetTool, createGitHubRepoListTool } from "../../src/tools/github-repos.js";
+import { createGitHubSearchReposTool } from "../../src/tools/github-search.js";
+import { createGitHubUserGetTool } from "../../src/tools/github-users.js";
+import { createGitHubGistListTool, createGitHubGistCreateTool, createGitHubGistDeleteTool } from "../../src/tools/github-gists.js";
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -80,6 +88,15 @@ if (!credentialsExist) {
     "\n[smoke] Google OAuth credentials not found — authenticated checks will be skipped.\n" +
       `  CLIENT_SECRET_PATH=${CLIENT_SECRET_PATH}\n` +
       `  TOKENS_PATH=${TOKENS_PATH}\n`,
+  );
+}
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
+const githubTokenExists = GITHUB_TOKEN.length > 0;
+
+if (!githubTokenExists) {
+  console.warn(
+    "\n[smoke] GITHUB_TOKEN not set — GitHub checks will be skipped.\n",
   );
 }
 
@@ -694,6 +711,91 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
           permanent: true,
         });
         expect(deleteResult.details.success).toBe(true);
+        return deleteResult;
+      });
+    });
+  });
+
+  // =========================================================================
+  // GitHub (5 read checks + 1 write check)
+  // =========================================================================
+
+  describe("GitHub", () => {
+    let ghClient: GitHubClient;
+
+    beforeAll(() => {
+      if (githubTokenExists) {
+        ghClient = new GitHubClient(GITHUB_TOKEN);
+      }
+    });
+
+    it.skipIf(!githubTokenExists)("github_auth_setup — validate token", async () => {
+      const result = await smokeCheck("GitHub", "github_auth_setup", async () => {
+        const tool = createGitHubAuthSetupTool(ghClient);
+        return tool.execute("smoke", { token: GITHUB_TOKEN });
+      });
+      expect(result.details).not.toHaveProperty("error");
+      expect(typeof result.details.login).toBe("string");
+    });
+
+    it.skipIf(!githubTokenExists)("github_repo_list — list repos", async () => {
+      const result = await smokeCheck("GitHub", "github_repo_list", async () => {
+        const tool = createGitHubRepoListTool(ghClient);
+        return tool.execute("smoke", { per_page: 3 });
+      });
+      expect(Array.isArray(result.details)).toBe(true);
+    });
+
+    it.skipIf(!githubTokenExists)("github_repo_get — fetch octocat/Hello-World", async () => {
+      const result = await smokeCheck("GitHub", "github_repo_get", async () => {
+        const tool = createGitHubRepoGetTool(ghClient);
+        return tool.execute("smoke", { owner: "octocat", repo: "Hello-World" });
+      });
+      expect(result.details).not.toHaveProperty("error");
+      expect(result.details.full_name).toBe("octocat/Hello-World");
+    });
+
+    it.skipIf(!githubTokenExists)("github_search_repos — search TypeScript", async () => {
+      const result = await smokeCheck("GitHub", "github_search_repos", async () => {
+        const tool = createGitHubSearchReposTool(ghClient);
+        return tool.execute("smoke", { q: "typescript", per_page: 1 });
+      });
+      expect(result.details.total_count).toBeGreaterThan(0);
+    });
+
+    it.skipIf(!githubTokenExists)("github_user_get — fetch octocat profile", async () => {
+      const result = await smokeCheck("GitHub", "github_user_get", async () => {
+        const tool = createGitHubUserGetTool(ghClient);
+        return tool.execute("smoke", { username: "octocat" });
+      });
+      expect(result.details.login).toBe("octocat");
+    });
+  });
+
+  describe("GitHub (write)", () => {
+    let ghClient: GitHubClient;
+
+    beforeAll(() => {
+      if (githubTokenExists) {
+        ghClient = new GitHubClient(GITHUB_TOKEN);
+      }
+    });
+
+    it.skipIf(!githubTokenExists)("github_gist_create + github_gist_delete — create and delete", async () => {
+      await smokeCheck("GitHub", "gist_create+delete", async () => {
+        const createTool = createGitHubGistCreateTool(ghClient);
+        const deleteTool = createGitHubGistDeleteTool(ghClient);
+
+        const createResult = await createTool.execute("smoke", {
+          description: "[omniclaw-smoke] auto-cleanup",
+          public: false,
+          files: { "smoke.txt": { content: "Smoke test — will be deleted." } },
+        });
+        expect(createResult.details).not.toHaveProperty("error");
+        const gistId = createResult.details.id;
+
+        const deleteResult = await deleteTool.execute("smoke", { gist_id: gistId });
+        expect(deleteResult.details).toMatchObject({ success: true });
         return deleteResult;
       });
     });

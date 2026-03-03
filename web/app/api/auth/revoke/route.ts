@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revokeTokens } from "@/lib/auth";
+import { revokeTokens, revokeGitHubToken } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const account = body.account;
+    const provider = body.provider;
 
     if (!account || typeof account !== "string") {
       return NextResponse.json(
@@ -13,7 +14,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const deleted = await revokeTokens(account);
+    let deleted: boolean;
+    if (provider === "github") {
+      deleted = revokeGitHubToken();
+    } else {
+      deleted = await revokeTokens(account);
+    }
 
     if (!deleted) {
       return NextResponse.json(

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,16 +17,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface ConnectDialogProps {
+  providerId: string;
   providerName?: string;
   existingAccounts: string[];
+  onConnected?: () => void;
 }
 
-export function ConnectDialog({ providerName = "Google", existingAccounts }: ConnectDialogProps) {
+export function ConnectDialog({
+  providerId,
+  providerName = "Google",
+  existingAccounts,
+  onConnected,
+}: ConnectDialogProps) {
   const [open, setOpen] = useState(false);
   const [accountName, setAccountName] = useState("default");
+  const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleConnect() {
+  const isGitHub = providerId === "github";
+
+  async function handleGoogleConnect() {
     if (!accountName.trim()) return;
     setLoading(true);
 
@@ -43,6 +54,33 @@ export function ConnectDialog({ providerName = "Google", existingAccounts }: Con
     }
   }
 
+  async function handleGitHubConnect() {
+    if (!token.trim()) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/github", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token.trim() }),
+      });
+
+      if (res.ok) {
+        toast.success("GitHub token saved");
+        setOpen(false);
+        setToken("");
+        onConnected?.();
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to save token");
+      }
+    } catch {
+      toast.error("Failed to save token");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -55,31 +93,68 @@ export function ConnectDialog({ providerName = "Google", existingAccounts }: Con
         <DialogHeader>
           <DialogTitle>Connect {providerName} Account</DialogTitle>
           <DialogDescription>
-            Enter a name for this account, then sign in with {providerName}.
+            {isGitHub
+              ? "Enter a GitHub Personal Access Token (PAT) with the scopes you need."
+              : `Enter a name for this account, then sign in with ${providerName}.`}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="account-name">Account Name</Label>
-            <Input
-              id="account-name"
-              value={accountName}
-              onChange={(e) => setAccountName(e.target.value)}
-              placeholder="e.g. default, work, personal"
-            />
-            {existingAccounts.includes(accountName.trim()) && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                This will replace the existing &ldquo;{accountName.trim()}&rdquo; account.
+
+        {isGitHub ? (
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="github-token">Personal Access Token</Label>
+              <Input
+                id="github-token"
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="ghp_..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Create a token at{" "}
+                <a
+                  href="https://github.com/settings/tokens"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  github.com/settings/tokens
+                </a>
               </p>
-            )}
+              {existingAccounts.length > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  This will replace the existing token.
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="account-name">Account Name</Label>
+              <Input
+                id="account-name"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="e.g. default, work, personal"
+              />
+              {existingAccounts.includes(accountName.trim()) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  This will replace the existing &ldquo;{accountName.trim()}&rdquo; account.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         <DialogFooter>
           <Button
-            onClick={handleConnect}
-            disabled={!accountName.trim() || loading}
+            onClick={isGitHub ? handleGitHubConnect : handleGoogleConnect}
+            disabled={isGitHub ? !token.trim() || loading : !accountName.trim() || loading}
           >
-            {loading ? "Redirecting..." : `Sign in with ${providerName}`}
+            {loading
+              ? isGitHub ? "Saving..." : "Redirecting..."
+              : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
           </Button>
         </DialogFooter>
       </DialogContent>

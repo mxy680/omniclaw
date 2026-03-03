@@ -19,6 +19,10 @@
       "tokens_path": {
         "type": "string",
         "description": "Path to store OAuth tokens. Defaults to ~/.openclaw/omniclaw-tokens.json."
+      },
+      "github_token": {
+        "type": "string",
+        "description": "GitHub Personal Access Token (classic or fine-grained). Required for GitHub tools."
       }
     },
     "required": []
@@ -29,6 +33,9 @@
     },
     "oauth_port": {
       "label": "OAuth Callback Port"
+    },
+    "github_token": {
+      "label": "GitHub Personal Access Token"
     }
   }
 }

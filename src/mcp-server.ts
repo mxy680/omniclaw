@@ -11,11 +11,15 @@
  * defaults to the first configured agent (backward compatible).
  *
  * Environment variables:
- *   OMNICLAW_MCP_TOKEN   — required, Bearer token for auth
- *   OMNICLAW_MCP_PORT    — port to listen on (default: 9850)
- *   OMNICLAW_MCP_HOST    — host to bind to (default: 0.0.0.0)
- *   OMNICLAW_MCP_CONFIG  — path to plugin config JSON (default: ~/.openclaw/mcp-server-config.json)
- *   OMNICLAW_AGENTS_PATH — path to agents JSON (default: ~/.openclaw/agents.json)
+ *   OMNICLAW_MCP_TOKEN        — required, Bearer token for auth
+ *   OMNICLAW_MCP_PORT         — port to listen on (default: 9850)
+ *   OMNICLAW_MCP_HOST         — host to bind to (default: 0.0.0.0)
+ *   OMNICLAW_MCP_CONFIG       — path to plugin config JSON (default: ~/.openclaw/mcp-server-config.json)
+ *   OMNICLAW_AGENTS_PATH      — path to agents JSON (default: ~/.openclaw/agents.json)
+ *   OMNICLAW_GATEWAY_URL      — gateway WebSocket URL for scheduler (default: ws://localhost:18789)
+ *   OMNICLAW_GATEWAY_TOKEN    — gateway auth token (default: reuses MCP token)
+ *   OMNICLAW_SCHEDULES_PATH   — path to schedules JSON (default: ~/.openclaw/schedules.json)
+ *   OMNICLAW_SCHEDULER_ENABLED — enable cron scheduler (default: true)
  */
 
 import { randomUUID } from "crypto";
@@ -34,6 +38,7 @@ import {
   ensureAgentWorkspaces,
   type AgentConfig,
 } from "./mcp/agent-config.js";
+import { SchedulerService, type ScheduleJob } from "./scheduler/index.js";
 
 // ---------------------------------------------------------------------------
 // Bootstrap: config + tools + agents
@@ -159,6 +164,9 @@ app.get("/health", (_req: Request, res: Response) => {
     tools: toolMap.size,
     sessions: sessions.size,
     agents: agentsFile.agents.length,
+    scheduler: scheduler
+      ? { enabled: true, jobs: scheduler.getStore().listJobs().length, activeRuns: scheduler.getActiveRuns().length }
+      : { enabled: false },
   });
 });
 
@@ -231,6 +239,140 @@ app.delete("/mcp", async (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// Scheduler
+// ---------------------------------------------------------------------------
+
+let scheduler: SchedulerService | null = null;
+
+if (config.schedulerEnabled && config.gatewayUrl) {
+  scheduler = new SchedulerService({
+    gateway: { url: config.gatewayUrl, authToken: config.gatewayToken },
+    agentMap,
+    schedulesPath: config.schedulesPath,
+  });
+  scheduler.start();
+}
+
+// ---------------------------------------------------------------------------
+// Schedule REST API
+// ---------------------------------------------------------------------------
+
+// GET /api/schedules — list all scheduled jobs
+app.get("/api/schedules", (_req: Request, res: Response) => {
+  if (!scheduler) {
+    res.status(503).json({ error: "Scheduler not enabled" });
+    return;
+  }
+  const jobs = scheduler.getStore().listJobs();
+  const enriched = jobs.map((job) => ({ ...job, ...scheduler!.getJobStatus(job.id) }));
+  res.json({ jobs: enriched });
+});
+
+// GET /api/schedules/:id — get a single job
+app.get("/api/schedules/:id", (req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  const id = req.params.id as string;
+  const job = scheduler.getStore().getJob(id);
+  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+  res.json({ job: { ...job, ...scheduler.getJobStatus(job.id) } });
+});
+
+// POST /api/schedules — create a new job
+app.post("/api/schedules", (req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  const body = req.body as Partial<ScheduleJob>;
+  if (!body.name || !body.agentId || !body.cron || !body.instructionFile) {
+    res.status(400).json({ error: "Missing required fields: name, agentId, cron, instructionFile" });
+    return;
+  }
+  if (!agentMap.has(body.agentId)) {
+    res.status(400).json({ error: `Unknown agent: ${body.agentId}` });
+    return;
+  }
+  const now = new Date().toISOString();
+  const job: ScheduleJob = {
+    id: body.id ?? randomUUID(),
+    name: body.name,
+    agentId: body.agentId,
+    cron: body.cron,
+    instructionFile: body.instructionFile,
+    enabled: body.enabled ?? true,
+    timezone: body.timezone,
+    description: body.description,
+    createdAt: now,
+    updatedAt: now,
+  };
+  scheduler.addJob(job);
+  res.status(201).json({ job });
+});
+
+// PATCH /api/schedules/:id — update a job
+app.patch("/api/schedules/:id", (req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  const id = req.params.id as string;
+  try {
+    const updated = scheduler.updateJob(id, { ...req.body, updatedAt: new Date().toISOString() });
+    res.json({ job: updated });
+  } catch {
+    res.status(404).json({ error: "Job not found" });
+  }
+});
+
+// DELETE /api/schedules/:id — delete a job
+app.delete("/api/schedules/:id", (req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  scheduler.deleteJob(req.params.id as string);
+  res.json({ status: "deleted" });
+});
+
+// POST /api/schedules/:id/trigger — manually trigger a job
+app.post("/api/schedules/:id/trigger", (req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  const id = req.params.id as string;
+  try {
+    scheduler.triggerJob(id);
+    res.json({ status: "triggered", jobId: id });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(404).json({ error: msg });
+  }
+});
+
+// GET /api/schedules/:id/runs — list runs for a job
+app.get("/api/schedules/:id/runs", (req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  const id = req.params.id as string;
+  const job = scheduler.getStore().getJob(id);
+  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+  const agent = agentMap.get(job.agentId);
+  if (!agent) { res.status(404).json({ error: "Agent not found" }); return; }
+  const limit = parseInt(req.query.limit as string) || 20;
+  const runs = scheduler.getResultStore().listRuns(agent.workspace, job.id, limit);
+  res.json({ runs });
+});
+
+// GET /api/schedules/:id/runs/:runId — get a single run result
+app.get("/api/schedules/:id/runs/:runId", (req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  const id = req.params.id as string;
+  const runId = req.params.runId as string;
+  const job = scheduler.getStore().getJob(id);
+  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+  const agent = agentMap.get(job.agentId);
+  if (!agent) { res.status(404).json({ error: "Agent not found" }); return; }
+  const run = scheduler.getResultStore().getRun(agent.workspace, job.id, runId);
+  if (!run) { res.status(404).json({ error: "Run not found" }); return; }
+  res.json({ run });
+});
+
+// POST /api/schedules/reload — reload all schedules from disk
+app.post("/api/schedules/reload", (_req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  scheduler.reload();
+  res.json({ status: "reloaded" });
+});
+
+// ---------------------------------------------------------------------------
 // Start listening
 // ---------------------------------------------------------------------------
 
@@ -238,5 +380,8 @@ app.listen(config.port, config.host, () => {
   console.log(`omniclaw MCP server listening on http://${config.host}:${config.port}`);
   console.log(`  tools registered: ${toolMap.size}`);
   console.log(`  agents loaded: ${agentsFile.agents.length} (${agentsFile.agents.map((a) => a.id).join(", ")})`);
+  if (scheduler) {
+    console.log(`  scheduler: enabled (gateway: ${config.gatewayUrl})`);
+  }
   console.log(`  health: http://${config.host}:${config.port}/health`);
 });

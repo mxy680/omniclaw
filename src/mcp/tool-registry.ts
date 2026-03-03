@@ -105,6 +105,13 @@ import {
   createYouTubePlaylistCreateTool,
 } from "../tools/youtube-playlists.js";
 import { createYouTubeTranscriptTool } from "../tools/youtube-transcript.js";
+import { createScheduleListTool } from "../tools/schedule-list.js";
+import { createScheduleCreateTool } from "../tools/schedule-create.js";
+import { createScheduleGetTool } from "../tools/schedule-get.js";
+import { createScheduleUpdateTool } from "../tools/schedule-update.js";
+import { createScheduleDeleteTool } from "../tools/schedule-delete.js";
+import { ScheduleStore } from "../scheduler/schedule-store.js";
+import { loadAgentConfigs } from "./agent-config.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface OmniclawTool {
@@ -126,6 +133,15 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
   // YouTube tools — no OAuth required
   add(createYouTubeTranscriptTool());
   add(createYouTubeDownloadThumbnailTool());
+
+  // Schedule tools — no OAuth required
+  const scheduleStore = new ScheduleStore(config.schedules_path);
+  const agentConfigs = loadAgentConfigs().agents;
+  add(createScheduleListTool(scheduleStore));
+  add(createScheduleCreateTool(scheduleStore, agentConfigs));
+  add(createScheduleGetTool(scheduleStore, agentConfigs));
+  add(createScheduleUpdateTool(scheduleStore, agentConfigs));
+  add(createScheduleDeleteTool(scheduleStore));
 
   // Google OAuth tools — gated on client_secret_path being configured
   if (config.client_secret_path) {

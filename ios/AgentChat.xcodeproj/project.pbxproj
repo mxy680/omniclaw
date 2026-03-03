@@ -21,6 +21,12 @@
 		C3E4691A22CF289CBF2D98B0 /* AgentChatApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B361CAEC0EF8D81ED75D07 /* AgentChatApp.swift */; };
 		CA911EC1FE947402383EC910 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCD2B1A5BFF82DD4EC1E0D8 /* Message.swift */; };
 		F546E21F1538F1B377C36401 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B83FC3AB08E5766C8FF234 /* MessageBubble.swift */; };
+		AA10000100000001AAAAAAAA /* Schedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20000100000001AAAAAAAA /* Schedule.swift */; };
+		AA10000200000002AAAAAAAA /* ScheduleRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20000200000002AAAAAAAA /* ScheduleRun.swift */; };
+		AA10000300000003AAAAAAAA /* ScheduleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20000300000003AAAAAAAA /* ScheduleService.swift */; };
+		AA10000400000004AAAAAAAA /* ScheduleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20000400000004AAAAAAAA /* ScheduleListView.swift */; };
+		AA10000500000005AAAAAAAA /* ScheduleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20000500000005AAAAAAAA /* ScheduleDetailView.swift */; };
+		AA10000600000006AAAAAAAA /* ScheduleRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA20000600000006AAAAAAAA /* ScheduleRunView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +46,12 @@
 		F3C5A752B918FFD7F2CAA594 /* ConversationRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationRow.swift; sourceTree = "<group>"; };
 		F7DC4A50E084AFD83BA926D1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F87D00D0C83C2A50EC645B76 /* AgentChat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AgentChat.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA20000100000001AAAAAAAA /* Schedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Schedule.swift; sourceTree = "<group>"; };
+		AA20000200000002AAAAAAAA /* ScheduleRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRun.swift; sourceTree = "<group>"; };
+		AA20000300000003AAAAAAAA /* ScheduleService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleService.swift; sourceTree = "<group>"; };
+		AA20000400000004AAAAAAAA /* ScheduleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleListView.swift; sourceTree = "<group>"; };
+		AA20000500000005AAAAAAAA /* ScheduleDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleDetailView.swift; sourceTree = "<group>"; };
+		AA20000600000006AAAAAAAA /* ScheduleRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRunView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -67,6 +79,9 @@
 				F3C5A752B918FFD7F2CAA594 /* ConversationRow.swift */,
 				D3B83FC3AB08E5766C8FF234 /* MessageBubble.swift */,
 				C1316B20BE67E59C4F9B82B9 /* MessageInputBar.swift */,
+				AA20000500000005AAAAAAAA /* ScheduleDetailView.swift */,
+				AA20000400000004AAAAAAAA /* ScheduleListView.swift */,
+				AA20000600000006AAAAAAAA /* ScheduleRunView.swift */,
 				B4DC7F680C6A508029086C40 /* SettingsView.swift */,
 			);
 			path = Views;
@@ -78,6 +93,8 @@
 				9DD803A97357A7631EC04E91 /* Agent.swift */,
 				6619BD62DB7564400EA59108 /* Conversation.swift */,
 				6FCD2B1A5BFF82DD4EC1E0D8 /* Message.swift */,
+				AA20000100000001AAAAAAAA /* Schedule.swift */,
+				AA20000200000002AAAAAAAA /* ScheduleRun.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -101,6 +118,7 @@
 				D4E5F6071829A1B2C3D43A5B /* AgentService.swift */,
 				0C8BB6786E9C0916F24A2569 /* ChatService.swift */,
 				CA8C37243FC0489EE999200D /* ConversationStore.swift */,
+				AA20000300000003AAAAAAAA /* ScheduleService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -182,6 +200,12 @@
 				F546E21F1538F1B377C36401 /* MessageBubble.swift in Sources */,
 				2A49F4328597CC25637BB30D /* MessageInputBar.swift in Sources */,
 				1740B85D86727175C2C67B41 /* SettingsView.swift in Sources */,
+				AA10000100000001AAAAAAAA /* Schedule.swift in Sources */,
+				AA10000200000002AAAAAAAA /* ScheduleRun.swift in Sources */,
+				AA10000300000003AAAAAAAA /* ScheduleService.swift in Sources */,
+				AA10000400000004AAAAAAAA /* ScheduleListView.swift in Sources */,
+				AA10000500000005AAAAAAAA /* ScheduleDetailView.swift in Sources */,
+				AA10000600000006AAAAAAAA /* ScheduleRunView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -5,6 +5,7 @@ struct SettingsView: View {
 
     @AppStorage("gatewayHost") private var host = ""
     @AppStorage("gatewayPort") private var port = 18789
+    @AppStorage("mcpPort") private var mcpPort = 9850
     @AppStorage("authToken") private var authToken = ""
 
     @State private var connectionStatus: ConnectionStatus = .idle
@@ -42,6 +43,15 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                         SecureField("Auth token", text: $authToken)
                             .textContentType(.password)
+                    }
+                }
+
+                Section("MCP Server") {
+                    HStack {
+                        Image(systemName: "server.rack")
+                            .foregroundStyle(.secondary)
+                        TextField("MCP Server Port", value: $mcpPort, format: .number)
+                            .keyboardType(.numberPad)
                     }
                 }
 

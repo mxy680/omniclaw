@@ -9,6 +9,10 @@ export interface McpServerConfig {
   authToken: string;
   plugin: PluginConfig;
   agentsPath: string;
+  gatewayUrl: string;
+  gatewayToken: string;
+  schedulesPath: string;
+  schedulerEnabled: boolean;
 }
 
 export function loadMcpConfig(): McpServerConfig {
@@ -33,5 +37,12 @@ export function loadMcpConfig(): McpServerConfig {
     process.env.OMNICLAW_AGENTS_PATH ??
     path.join(os.homedir(), ".openclaw", "agents.json");
 
-  return { port, host, authToken, plugin, agentsPath };
+  const gatewayUrl = process.env.OMNICLAW_GATEWAY_URL ?? "ws://localhost:18789";
+  const gatewayToken = process.env.OMNICLAW_GATEWAY_TOKEN ?? authToken;
+  const schedulesPath =
+    process.env.OMNICLAW_SCHEDULES_PATH ??
+    path.join(os.homedir(), ".openclaw", "schedules.json");
+  const schedulerEnabled = process.env.OMNICLAW_SCHEDULER_ENABLED !== "false";
+
+  return { port, host, authToken, plugin, agentsPath, gatewayUrl, gatewayToken, schedulesPath, schedulerEnabled };
 }

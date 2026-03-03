@@ -5,9 +5,9 @@ import {
   Linkedin,
   Github,
   Instagram,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { PROVIDERS, type Provider } from "@/lib/integrations";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -29,9 +29,20 @@ export function AppSidebar({ selectedId, onSelect }: AppSidebarProps) {
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 py-5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sidebar-primary">
-          <Zap className="h-3.5 w-3.5 text-sidebar-primary-foreground" />
-        </div>
+        <Image
+          src="/openclaw-logo.svg"
+          alt="Omniclaw"
+          width={28}
+          height={28}
+          className="rounded-lg dark:hidden"
+        />
+        <Image
+          src="/openclaw-logo-dark.svg"
+          alt="Omniclaw"
+          width={28}
+          height={28}
+          className="hidden rounded-lg dark:block"
+        />
         <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">
           Omniclaw
         </span>

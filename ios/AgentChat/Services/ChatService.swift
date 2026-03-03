@@ -103,6 +103,7 @@ final class ChatService: ObservableObject {
 
     func sendMessage(
         text: String,
+        attachments: [Attachment] = [],
         sessionKey: String,
         onDelta: @escaping (String) -> Void,
         onComplete: @escaping () -> Void,
@@ -119,13 +120,33 @@ final class ChatService: ObservableObject {
         self.currentSessionKey = sessionKey
         self.isStreaming = true
 
+        // Build message payload: plain string when text-only, content blocks when attachments present
+        let message: ChatMessagePayload
+        if attachments.isEmpty {
+            message = .text(text)
+        } else {
+            var blocks: [ContentBlock] = []
+            for attachment in attachments {
+                guard let base64 = AttachmentStore.shared.base64Data(for: attachment) else { continue }
+                let blockType = attachment.isImage ? "image" : "document"
+                blocks.append(ContentBlock(
+                    type: blockType,
+                    source: ContentBlockSource(type: "base64", mediaType: attachment.mimeType, data: base64)
+                ))
+            }
+            if !text.isEmpty {
+                blocks.append(ContentBlock(type: "text", text: text))
+            }
+            message = .contentBlocks(blocks)
+        }
+
         let chatFrame = ChatSendFrame(
             type: "req",
             id: nextRequestId(),
             method: "chat.send",
             params: ChatSendParams(
                 sessionKey: sessionKey,
-                message: text,
+                message: message,
                 idempotencyKey: UUID().uuidString
             )
         )
@@ -345,8 +366,53 @@ struct ChatSendFrame: Encodable {
 
 struct ChatSendParams: Encodable {
     let sessionKey: String
-    let message: String
+    let message: ChatMessagePayload
     let idempotencyKey: String
+}
+
+/// Encodes as a JSON string when text-only, or as an array of content blocks when attachments present.
+enum ChatMessagePayload: Encodable {
+    case text(String)
+    case contentBlocks([ContentBlock])
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .text(let string):
+            try container.encode(string)
+        case .contentBlocks(let blocks):
+            try container.encode(blocks)
+        }
+    }
+}
+
+struct ContentBlock: Encodable {
+    let type: String
+    var text: String?
+    var source: ContentBlockSource?
+
+    enum CodingKeys: String, CodingKey {
+        case type, text, source
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type, forKey: .type)
+        if let text { try container.encode(text, forKey: .text) }
+        if let source { try container.encode(source, forKey: .source) }
+    }
+}
+
+struct ContentBlockSource: Encodable {
+    let type: String
+    let mediaType: String
+    let data: String
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case mediaType = "media_type"
+        case data
+    }
 }
 
 struct ChatAbortFrame: Encodable {

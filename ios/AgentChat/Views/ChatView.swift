@@ -7,8 +7,12 @@ struct ChatView: View {
     @EnvironmentObject var store: ConversationStore
     @StateObject private var chatService = ChatService()
     @State private var inputText = ""
+    @State private var pendingAttachments: [Attachment] = []
     @State private var errorMessage: String?
     @State private var hasConnected = false
+    @State private var showPhotoLibrary = false
+    @State private var showCamera = false
+    @State private var showDocumentPicker = false
     @FocusState private var isInputFocused: Bool
 
     @AppStorage("gatewayHost") private var host = ""
@@ -80,10 +84,18 @@ struct ChatView: View {
             // Input bar
             MessageInputBar(
                 text: $inputText,
+                pendingAttachments: $pendingAttachments,
                 isStreaming: chatService.isStreaming,
                 isFocused: $isInputFocused,
                 onSend: sendMessage,
-                onCancel: { chatService.abort() }
+                onCancel: { chatService.abort() },
+                onPickFromLibrary: { showPhotoLibrary = true },
+                onPickFromCamera: { showCamera = true },
+                onPickFromFiles: { showDocumentPicker = true },
+                onRemoveAttachment: { attachment in
+                    pendingAttachments.removeAll { $0.id == attachment.id }
+                    AttachmentStore.shared.delete(attachments: [attachment])
+                }
             )
         }
         .background(Color(.systemBackground))
@@ -115,6 +127,34 @@ struct ChatView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .foregroundStyle(.blue)
+                }
+            }
+        }
+        .sheet(isPresented: $showPhotoLibrary) {
+            PhotoLibraryPicker { images in
+                for image in images {
+                    if let attachment = try? AttachmentStore.shared.saveImage(image, filename: "photo.jpg") {
+                        pendingAttachments.append(attachment)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraPicker { image in
+                if let attachment = try? AttachmentStore.shared.saveImage(image, filename: "camera.jpg") {
+                    pendingAttachments.append(attachment)
+                }
+            }
+        }
+        .sheet(isPresented: $showDocumentPicker) {
+            DocumentPicker { url in
+                if let data = try? Data(contentsOf: url) {
+                    let filename = url.lastPathComponent
+                    if let attachment = try? AttachmentStore.shared.save(
+                        data: data, filename: filename, mimeType: "application/pdf"
+                    ) {
+                        pendingAttachments.append(attachment)
+                    }
                 }
             }
         }
@@ -191,12 +231,14 @@ struct ChatView: View {
 
     private func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        let attachments = pendingAttachments
+        guard !text.isEmpty || !attachments.isEmpty else { return }
 
         inputText = ""
+        pendingAttachments = []
         errorMessage = nil
 
-        let userMessage = Message(role: .user, content: text)
+        let userMessage = Message(role: .user, content: text, attachments: attachments)
         store.addMessage(userMessage, to: conversationId)
 
         let assistantMessage = Message(role: .assistant, content: "", isStreaming: true)
@@ -206,6 +248,7 @@ struct ChatView: View {
 
         chatService.sendMessage(
             text: text,
+            attachments: attachments,
             sessionKey: conversation?.sessionKey ?? "agent:\(agent.id):ios-app",
             onDelta: { fullText in
                 latestContent = fullText

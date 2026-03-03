@@ -30,7 +30,7 @@ struct ConversationRow: View {
                 }
 
                 if let lastMessage = conversation.lastMessage {
-                    Text(lastMessage.content.isEmpty ? "..." : lastMessage.content)
+                    Text(lastMessagePreview(lastMessage))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -43,6 +43,17 @@ struct ConversationRow: View {
             }
         }
         .padding(.vertical, 2)
+    }
+
+    private func lastMessagePreview(_ message: Message) -> String {
+        if !message.content.isEmpty { return message.content }
+        if message.attachments.isEmpty { return "..." }
+        let imageCount = message.attachments.filter(\.isImage).count
+        let pdfCount = message.attachments.filter(\.isPDF).count
+        var parts: [String] = []
+        if imageCount > 0 { parts.append("\(imageCount) photo\(imageCount > 1 ? "s" : "")") }
+        if pdfCount > 0 { parts.append("\(pdfCount) PDF\(pdfCount > 1 ? "s" : "")") }
+        return parts.joined(separator: ", ")
     }
 
     private func formattedTimestamp(_ date: Date) -> String {

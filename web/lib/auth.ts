@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
 import { google } from "googleapis";
 import type { Credentials } from "google-auth-library";
-import { getClientSecretPath, getTokensPath } from "./config";
+import { getClientSecretPath, getTokensPath, getConfig, updateConfig } from "./config";
 
 type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
 
@@ -93,28 +93,68 @@ export function deleteTokens(account: string): boolean {
 export interface AccountInfo {
   name: string;
   email: string | null;
+  provider: "google" | "github";
   hasTokens: boolean;
   isExpired: boolean;
 }
 
-export async function listAccounts(): Promise<AccountInfo[]> {
-  const data = loadTokens();
+export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   const accounts: AccountInfo[] = [];
 
-  for (const [name, tokens] of Object.entries(data)) {
-    const email = await getEmailForTokens(tokens);
-    const isExpired = tokens.expiry_date
-      ? Date.now() > tokens.expiry_date
-      : false;
-    accounts.push({
-      name,
-      email,
-      hasTokens: true,
-      isExpired: !tokens.refresh_token && isExpired,
-    });
+  if (!provider || provider === "google-workspace") {
+    const data = loadTokens();
+    for (const [name, tokens] of Object.entries(data)) {
+      const email = await getEmailForTokens(tokens);
+      const isExpired = tokens.expiry_date
+        ? Date.now() > tokens.expiry_date
+        : false;
+      accounts.push({
+        name,
+        email,
+        provider: "google",
+        hasTokens: true,
+        isExpired: !tokens.refresh_token && isExpired,
+      });
+    }
+  }
+
+  if (!provider || provider === "github") {
+    const ghAccount = getGitHubAccount();
+    if (ghAccount) accounts.push(ghAccount);
   }
 
   return accounts;
+}
+
+function getGitHubAccount(): AccountInfo | null {
+  try {
+    const config = getConfig();
+    if (!config.github_token) return null;
+    return {
+      name: "default",
+      email: null,
+      provider: "github",
+      hasTokens: true,
+      isExpired: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function setGitHubToken(token: string): void {
+  updateConfig({ github_token: token });
+}
+
+export function revokeGitHubToken(): boolean {
+  try {
+    const config = getConfig();
+    if (!config.github_token) return false;
+    updateConfig({ github_token: undefined });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function revokeTokens(account: string): Promise<boolean> {

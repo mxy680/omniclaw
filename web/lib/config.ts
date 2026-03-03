@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
@@ -6,16 +6,22 @@ interface McpServerConfig {
   client_secret_path: string;
   tokens_path?: string;
   oauth_port?: number;
+  github_token?: string;
 }
 
 let cached: McpServerConfig | null = null;
 
+function getConfigPath(): string {
+  return (
+    process.env.OMNICLAW_MCP_CONFIG ??
+    join(homedir(), ".openclaw", "mcp-server-config.json")
+  );
+}
+
 export function getConfig(): McpServerConfig {
   if (cached) return cached;
 
-  const configPath =
-    process.env.OMNICLAW_MCP_CONFIG ??
-    join(homedir(), ".openclaw", "mcp-server-config.json");
+  const configPath = getConfigPath();
 
   if (!existsSync(configPath)) {
     throw new Error(
@@ -25,6 +31,14 @@ export function getConfig(): McpServerConfig {
 
   cached = JSON.parse(readFileSync(configPath, "utf-8")) as McpServerConfig;
   return cached;
+}
+
+export function updateConfig(updates: Partial<McpServerConfig>): void {
+  const configPath = getConfigPath();
+  const config = getConfig();
+  const updated = { ...config, ...updates };
+  writeFileSync(configPath, JSON.stringify(updated, null, 2), "utf-8");
+  cached = updated;
 }
 
 export function getTokensPath(): string {

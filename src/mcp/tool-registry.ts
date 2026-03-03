@@ -110,6 +110,7 @@ import { createScheduleCreateTool } from "../tools/schedule-create.js";
 import { createScheduleGetTool } from "../tools/schedule-get.js";
 import { createScheduleUpdateTool } from "../tools/schedule-update.js";
 import { createScheduleDeleteTool } from "../tools/schedule-delete.js";
+import { createViewAttachmentTool } from "../tools/attachment-view.js";
 import { ScheduleStore } from "../scheduler/schedule-store.js";
 import { loadAgentConfigs } from "./agent-config.js";
 import { GitHubClient } from "../auth/github-client.js";
@@ -264,6 +265,9 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
   add(createScheduleGetTool(scheduleStore, agentConfigs));
   add(createScheduleUpdateTool(scheduleStore, agentConfigs));
   add(createScheduleDeleteTool(scheduleStore));
+
+  // Attachment viewing tool — always available
+  add(createViewAttachmentTool());
 
   // Google OAuth tools — gated on client_secret_path being configured
   if (config.client_secret_path) {

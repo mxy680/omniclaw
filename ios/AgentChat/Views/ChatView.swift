@@ -7,13 +7,18 @@ struct ChatView: View {
     @EnvironmentObject var store: ConversationStore
     @StateObject private var chatService = ChatService()
     @State private var inputText = ""
+    @State private var pendingAttachments: [Attachment] = []
     @State private var errorMessage: String?
     @State private var hasConnected = false
+    @State private var showPhotoLibrary = false
+    @State private var showCamera = false
+    @State private var showDocumentPicker = false
     @FocusState private var isInputFocused: Bool
 
     @AppStorage("gatewayHost") private var host = ""
     @AppStorage("gatewayPort") private var port = 18789
     @AppStorage("authToken") private var authToken = ""
+    @AppStorage("mcpPort") private var mcpPort = 9850
 
     private var conversation: Conversation? {
         store.conversations.first { $0.id == conversationId }
@@ -80,10 +85,18 @@ struct ChatView: View {
             // Input bar
             MessageInputBar(
                 text: $inputText,
+                pendingAttachments: $pendingAttachments,
                 isStreaming: chatService.isStreaming,
                 isFocused: $isInputFocused,
                 onSend: sendMessage,
-                onCancel: { chatService.abort() }
+                onCancel: { chatService.abort() },
+                onPickFromLibrary: { showPhotoLibrary = true },
+                onPickFromCamera: { showCamera = true },
+                onPickFromFiles: { showDocumentPicker = true },
+                onRemoveAttachment: { attachment in
+                    pendingAttachments.removeAll { $0.id == attachment.id }
+                    AttachmentStore.shared.delete(attachments: [attachment])
+                }
             )
         }
         .background(Color(.systemBackground))
@@ -115,6 +128,34 @@ struct ChatView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .foregroundStyle(.blue)
+                }
+            }
+        }
+        .sheet(isPresented: $showPhotoLibrary) {
+            PhotoLibraryPicker { images in
+                for image in images {
+                    if let attachment = try? AttachmentStore.shared.saveImage(image, filename: "photo.jpg") {
+                        pendingAttachments.append(attachment)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraPicker { image in
+                if let attachment = try? AttachmentStore.shared.saveImage(image, filename: "camera.jpg") {
+                    pendingAttachments.append(attachment)
+                }
+            }
+        }
+        .sheet(isPresented: $showDocumentPicker) {
+            DocumentPicker { url in
+                if let data = try? Data(contentsOf: url) {
+                    let filename = url.lastPathComponent
+                    if let attachment = try? AttachmentStore.shared.save(
+                        data: data, filename: filename, mimeType: "application/pdf"
+                    ) {
+                        pendingAttachments.append(attachment)
+                    }
                 }
             }
         }
@@ -191,12 +232,14 @@ struct ChatView: View {
 
     private func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        let attachments = pendingAttachments
+        guard !text.isEmpty || !attachments.isEmpty else { return }
 
         inputText = ""
+        pendingAttachments = []
         errorMessage = nil
 
-        let userMessage = Message(role: .user, content: text)
+        let userMessage = Message(role: .user, content: text, attachments: attachments)
         store.addMessage(userMessage, to: conversationId)
 
         let assistantMessage = Message(role: .assistant, content: "", isStreaming: true)
@@ -204,28 +247,65 @@ struct ChatView: View {
 
         var latestContent = ""
 
-        chatService.sendMessage(
-            text: text,
-            sessionKey: conversation?.sessionKey ?? "agent:\(agent.id):ios-app",
-            onDelta: { fullText in
-                latestContent = fullText
-                store.updateLastMessage(in: conversationId, content: fullText, isStreaming: true)
-            },
-            onComplete: {
-                store.updateLastMessage(in: conversationId, content: latestContent, isStreaming: false)
-            },
-            onError: { error in
-                errorMessage = error.localizedDescription
-                if latestContent.isEmpty {
-                    if let index = store.conversations.firstIndex(where: { $0.id == conversationId }) {
-                        store.conversations[index].messages.removeLast()
-                        store.save()
+        // Upload attachments then send message
+        Task {
+            var messageText = text
+
+            if !attachments.isEmpty {
+                var uploadedRefs: [String] = []
+                for attachment in attachments {
+                    do {
+                        let uploaded = try await AttachmentUploader.shared.upload(
+                            attachment: attachment,
+                            host: host,
+                            mcpPort: mcpPort,
+                            authToken: authToken
+                        )
+                        let label = attachment.isImage ? "Image" : "PDF"
+                        uploadedRefs.append("[\(label): \(uploaded.filename) (attachment_id: \(uploaded.id))]")
+                    } catch {
+                        errorMessage = "Upload failed: \(error.localizedDescription)"
+                        // Remove the empty assistant message on failure
+                        if let index = store.conversations.firstIndex(where: { $0.id == conversationId }) {
+                            store.conversations[index].messages.removeLast()
+                            store.save()
+                        }
+                        return
                     }
+                }
+
+                // Prepend attachment references to the message
+                let refsText = uploadedRefs.joined(separator: "\n")
+                if messageText.isEmpty {
+                    messageText = refsText + "\n\nPlease view the attached file(s) using the view_attachment tool."
                 } else {
-                    store.updateLastMessage(in: conversationId, content: latestContent, isStreaming: false)
+                    messageText = refsText + "\n\n" + messageText
                 }
             }
-        )
+
+            chatService.sendMessage(
+                text: messageText,
+                sessionKey: conversation?.sessionKey ?? "agent:\(agent.id):ios-app",
+                onDelta: { fullText in
+                    latestContent = fullText
+                    store.updateLastMessage(in: conversationId, content: fullText, isStreaming: true)
+                },
+                onComplete: {
+                    store.updateLastMessage(in: conversationId, content: latestContent, isStreaming: false)
+                },
+                onError: { error in
+                    errorMessage = error.localizedDescription
+                    if latestContent.isEmpty {
+                        if let index = store.conversations.firstIndex(where: { $0.id == conversationId }) {
+                            store.conversations[index].messages.removeLast()
+                            store.save()
+                        }
+                    } else {
+                        store.updateLastMessage(in: conversationId, content: latestContent, isStreaming: false)
+                    }
+                }
+            )
+        }
     }
 
     private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {

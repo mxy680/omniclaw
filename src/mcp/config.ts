@@ -38,7 +38,24 @@ export function loadMcpConfig(): McpServerConfig {
     path.join(os.homedir(), ".openclaw", "agents.json");
 
   const gatewayUrl = process.env.OMNICLAW_GATEWAY_URL ?? "ws://localhost:18789";
-  const gatewayToken = process.env.OMNICLAW_GATEWAY_TOKEN ?? authToken;
+
+  // Resolve gateway token: explicit env var > read from openclaw.json > fall back to MCP token
+  let gatewayToken = process.env.OMNICLAW_GATEWAY_TOKEN ?? "";
+  if (!gatewayToken) {
+    const openclawConfigPath = path.join(os.homedir(), ".openclaw", "openclaw.json");
+    try {
+      if (fs.existsSync(openclawConfigPath)) {
+        const raw = JSON.parse(fs.readFileSync(openclawConfigPath, "utf-8"));
+        gatewayToken = raw?.gateway?.auth?.token ?? "";
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+  if (!gatewayToken) {
+    gatewayToken = authToken;
+  }
+
   const schedulesPath =
     process.env.OMNICLAW_SCHEDULES_PATH ??
     path.join(os.homedir(), ".openclaw", "schedules.json");

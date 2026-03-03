@@ -25,3 +25,4 @@ targets:
         UILaunchScreen: {}
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+        NSCameraUsageDescription: AgentChat needs camera access to take photos for your messages.

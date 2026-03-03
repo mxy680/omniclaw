@@ -101,7 +101,14 @@ export function getToolService(toolName: string): string {
   return toolName.split("_")[0];
 }
 
+/** Tools that are always available regardless of agent service permissions. */
+const GLOBAL_TOOLS = new Set(["view_attachment"]);
+
 export function isToolAllowed(toolName: string, permissions: AgentPermissions): boolean {
+  if (GLOBAL_TOOLS.has(toolName)) {
+    return true;
+  }
+
   const service = getToolService(toolName);
 
   if (!permissions.services.includes(service)) {

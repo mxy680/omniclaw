@@ -39,23 +39,37 @@ struct MessageBubble: View {
         }
     }
 
+    private var hasAttachments: Bool { !message.attachments.isEmpty }
+
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
             if isUser { Spacer(minLength: 60) }
 
-            if message.isStreaming && message.content.isEmpty {
+            if message.isStreaming && message.content.isEmpty && !hasAttachments {
                 TypingIndicator()
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(Color(.systemGray5))
                     .clipShape(UnevenRoundedRectangle(cornerRadii: cornerRadii))
             } else {
-                Text(LocalizedStringKey(message.content))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(isUser ? Color.blue : Color(.systemGray5))
-                    .foregroundStyle(isUser ? .white : .primary)
-                    .clipShape(UnevenRoundedRectangle(cornerRadii: cornerRadii))
+                VStack(alignment: isUser ? .trailing : .leading, spacing: 0) {
+                    ForEach(message.attachments) { attachment in
+                        if attachment.isImage {
+                            ImageAttachmentView(attachment: attachment)
+                        } else if attachment.isPDF {
+                            PDFAttachmentView(attachment: attachment)
+                        }
+                    }
+
+                    if !message.content.isEmpty {
+                        Text(LocalizedStringKey(message.content))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(isUser ? .white : .primary)
+                    }
+                }
+                .background(isUser ? Color.blue : Color(.systemGray5))
+                .clipShape(UnevenRoundedRectangle(cornerRadii: cornerRadii))
             }
 
             if !isUser { Spacer(minLength: 60) }

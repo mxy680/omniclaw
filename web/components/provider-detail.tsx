@@ -54,6 +54,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
       const res = await fetch(`/api/auth/accounts?provider=${encodeURIComponent(provider.id)}`);
       const data = await res.json();
@@ -63,7 +64,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
     } finally {
       setLoading(false);
     }
-  }, [provider.available]);
+  }, [provider.available, provider.id]);
 
   const fetchTools = useCallback(async () => {
     if (!provider.available) return;

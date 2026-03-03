@@ -4,15 +4,26 @@ struct ConversationListView: View {
     @EnvironmentObject var store: ConversationStore
     @EnvironmentObject var agentService: AgentService
     @State private var showSettings = false
+    @State private var searchText = ""
 
     @AppStorage("gatewayHost") private var host = ""
     @AppStorage("gatewayPort") private var port = 18789
     @AppStorage("authToken") private var authToken = ""
 
     var sortedConversations: [Conversation] {
-        store.conversations
+        let conversations = store.conversations
             .filter { agentService.agent(for: $0.agentId) != nil }
             .sorted { $0.updatedAt > $1.updatedAt }
+
+        if searchText.isEmpty {
+            return conversations
+        }
+        return conversations.filter { conversation in
+            let agent = agentService.agent(for: conversation.agentId)
+            let nameMatch = agent?.name.localizedCaseInsensitiveContains(searchText) ?? false
+            let messageMatch = conversation.lastMessage?.content.localizedCaseInsensitiveContains(searchText) ?? false
+            return nameMatch || messageMatch
+        }
     }
 
     var body: some View {
@@ -24,6 +35,7 @@ struct ConversationListView: View {
             }
         }
         .listStyle(.plain)
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search")
         .navigationTitle("Messages")
         .navigationDestination(for: UUID.self) { conversationId in
             if let conversation = store.conversations.first(where: { $0.id == conversationId }),
@@ -38,19 +50,19 @@ struct ConversationListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gear")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
                     Task {
                         await agentService.fetchAgents(host: host, port: port, authToken: authToken)
                         store.ensureDefaultConversations(for: agentService.agents)
                     }
                 } label: {
                     Image(systemName: "arrow.clockwise")
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showSettings = true
-                } label: {
-                    Image(systemName: "gear")
                 }
             }
         }

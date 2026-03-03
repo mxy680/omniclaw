@@ -15,6 +15,7 @@ import {
   Table,
   Presentation,
   Youtube,
+  Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +27,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   sheets: Table,
   slides: Presentation,
   youtube: Youtube,
+  github: Github,
 };
 
 const COLOR_MAP: Record<string, string> = {
@@ -36,6 +38,7 @@ const COLOR_MAP: Record<string, string> = {
   sheets: "#0F9D58",
   slides: "#F4B400",
   youtube: "#FF0000",
+  github: "#24292F",
 };
 
 interface StepResult {

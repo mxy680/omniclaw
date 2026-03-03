@@ -382,6 +382,53 @@ const youtubeTest: ServiceTestFn = async (execute) => {
   return steps;
 };
 
+const githubTest: ServiceTestFn = async (execute) => {
+  const steps: TestStepResult[] = [];
+
+  // Read: list repos for authenticated user
+  const s1 = await runStep("List repos", "github_repo_list", { per_page: 3 }, execute);
+  steps.push(s1.result);
+
+  // Read: get a well-known public repo
+  const s2 = await runStep("Get repo (octocat/Hello-World)", "github_repo_get", {
+    owner: "octocat", repo: "Hello-World",
+  }, execute);
+  steps.push(s2.result);
+
+  // Read: search repos
+  const s3 = await runStep("Search repos", "github_search_repos", { q: "typescript", per_page: 1 }, execute);
+  steps.push(s3.result);
+
+  // Read: get a public user
+  const s4 = await runStep("Get user (octocat)", "github_user_get", { username: "octocat" }, execute);
+  steps.push(s4.result);
+
+  // Read: list notifications
+  const s5 = await runStep("List notifications", "github_notification_list", { per_page: 3 }, execute);
+  steps.push(s5.result);
+
+  // Round-trip: create gist → get → delete
+  const s6 = await runStep("Create test gist", "github_gist_create", {
+    description: "[omniclaw-smoke] auto-cleanup",
+    public: false,
+    files: { "smoke.txt": { content: "Smoke test — will be deleted." } },
+  }, execute);
+  steps.push(s6.result);
+
+  const gistParsed = extractResult(s6.data) as Record<string, unknown> | undefined;
+  const gistId = gistParsed?.id as string | undefined;
+
+  if (gistId) {
+    const s7 = await runStep("Get test gist", "github_gist_get", { gist_id: gistId }, execute);
+    steps.push(s7.result);
+
+    const s8 = await runStep("Delete test gist", "github_gist_delete", { gist_id: gistId }, execute, true);
+    steps.push(s8.result);
+  }
+
+  return steps;
+};
+
 const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   gmail: gmailTest,
   calendar: calendarTest,
@@ -390,6 +437,7 @@ const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   sheets: sheetsTest,
   slides: slidesTest,
   youtube: youtubeTest,
+  github: githubTest,
 };
 
 export async function runServiceTest(

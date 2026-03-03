@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import { createAllTools } from "../../src/mcp/tool-registry.js";
 
 describe("createAllTools", () => {
-  it("returns YouTube tools with no OAuth config", () => {
+  it("returns non-OAuth tools with no OAuth config", () => {
     const tools = createAllTools({ pluginConfig: {} as any });
-    // Without client_secret_path, only non-OAuth tools are registered (YouTube transcript + thumbnail)
-    expect(tools.length).toBe(2);
+    // Without client_secret_path, only non-OAuth tools: YouTube (2) + Schedule (5)
+    expect(tools.length).toBe(7);
     for (const tool of tools) {
       expect(tool.name).toBeDefined();
       expect(typeof tool.name).toBe("string");

@@ -38,6 +38,7 @@ export const VALID_SERVICES = [
   "sheets",
   "slides",
   "youtube",
+  "schedule",
 ] as const;
 
 const DEFAULT_AGENTS_FILE: AgentsFile = {
@@ -52,7 +53,7 @@ const DEFAULT_AGENTS_FILE: AgentsFile = {
         "You are concise, thoughtful, and direct. You help with coding, writing, " +
         "research, planning, and any other task.",
       colorName: "blue",
-      permissions: { services: [...VALID_SERVICES] },
+      permissions: { services: [...VALID_SERVICES] as string[] },
       workspace: path.join(os.homedir(), ".openclaw", "agents", "markus"),
     },
   ],

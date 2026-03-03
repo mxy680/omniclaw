@@ -219,14 +219,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = SMJLWBZ8X6;
 				INFOPLIST_FILE = AgentChat/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AgentChat;
+				INFOPLIST_KEY_CFBundleDisplayName = Omniclaw;
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.openclaw.AgentChat;
+				PRODUCT_BUNDLE_IDENTIFIER = com.openclaw.Omniclaw;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -239,14 +239,14 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = SMJLWBZ8X6;
 				INFOPLIST_FILE = AgentChat/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AgentChat;
+				INFOPLIST_KEY_CFBundleDisplayName = Omniclaw;
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.openclaw.AgentChat;
+				PRODUCT_BUNDLE_IDENTIFIER = com.openclaw.Omniclaw;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

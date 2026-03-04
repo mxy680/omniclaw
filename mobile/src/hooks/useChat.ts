@@ -1,4 +1,5 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import { ChatService, ServerConfig } from '../services/ChatService';
 import { useConversationStore } from '../stores/useConversationStore';
@@ -135,6 +136,17 @@ export function useChat(conversationId: string, _agentId: string) {
   const clear = useCallback(() => {
     clearConversation(conversationId);
   }, [clearConversation, conversationId]);
+
+  // Auto-reconnect when app comes to foreground
+  useEffect(() => {
+    const handleAppState = (nextState: AppStateStatus) => {
+      if (nextState === 'active' && hasConnected && !chatServiceRef.current?.isConnected) {
+        connect();
+      }
+    };
+    const sub = AppState.addEventListener('change', handleAppState);
+    return () => sub.remove();
+  }, [hasConnected, connect]);
 
   return {
     isConnected,

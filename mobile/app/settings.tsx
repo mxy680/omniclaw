@@ -10,8 +10,9 @@ import {
   Platform,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { ChatService } from '@/services/ChatService';
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'failure';
 
@@ -24,6 +25,8 @@ export default function SettingsScreen() {
   const [mcpPort, setMcpPort] = useState(String(store.mcpPort));
   const [authToken, setAuthToken] = useState(store.authToken);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle');
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const chatServiceRef = useRef(new ChatService());
 
   // Load settings on mount if not already loaded
   useEffect(() => {
@@ -56,12 +59,14 @@ export default function SettingsScreen() {
 
   async function handleTestConnection() {
     setConnectionStatus('testing');
+    setConnectionError(null);
     try {
-      // Stub: replace with ChatService.testConnection when implemented
-      await new Promise<void>((resolve) => setTimeout(resolve, 1200));
+      const parsedPort = parseInt(port, 10) || 18789;
+      await chatServiceRef.current.testConnection({ host, port: parsedPort, authToken });
       setConnectionStatus('success');
-    } catch {
+    } catch (err) {
       setConnectionStatus('failure');
+      setConnectionError(err instanceof Error ? err.message : 'Connection failed');
     }
   }
 
@@ -186,6 +191,9 @@ export default function SettingsScreen() {
               {testButtonLabel}
             </Text>
           </Pressable>
+          {connectionError && (
+            <Text style={styles.errorText}>{connectionError}</Text>
+          )}
         </View>
 
         {/* Info section */}
@@ -322,6 +330,11 @@ const styles = StyleSheet.create({
   testButtonLabel: {
     fontSize: 17,
     fontWeight: '500',
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#FF3B30',
+    marginTop: 8,
   },
 
   // Footer note

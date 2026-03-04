@@ -13,12 +13,14 @@
     "test:watch": "vitest --exclude 'tests/integration/**'",
     "test:integration": "vitest run tests/integration",
     "test:smoke": "vitest run tests/integration/smoke.test.ts",
-    "web:dev": "pnpm --filter @openclaw/omniclaw-web dev",
+    "web:dev": "pnpm build && pnpm --filter @openclaw/omniclaw-web dev",
     "web:build": "pnpm --filter @openclaw/omniclaw-web build",
     "web:test": "pnpm --filter @openclaw/omniclaw-web test",
     "mobile:dev": "pnpm --filter @openclaw/omniclaw-mobile start",
     "mobile:ios": "pnpm --filter @openclaw/omniclaw-mobile ios",
-    "mobile:android": "pnpm --filter @openclaw/omniclaw-mobile android"
+    "mobile:android": "pnpm --filter @openclaw/omniclaw-mobile android",
+    "activate": "ln -sfn \"$PWD\" ~/.openclaw/current-plugin && echo 'Activated: '\"$PWD\"",
+    "postinstall": "ln -sfn \"$PWD\" ~/.openclaw/current-plugin"
   },
   "openclaw": {
     "extensions": [

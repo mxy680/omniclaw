@@ -21,7 +21,8 @@
         },
         "NSCameraUsageDescription": "Omniclaw needs camera access to take photos for your messages.",
         "NSPhotoLibraryUsageDescription": "Omniclaw accesses your photos to send them in messages."
-      }
+      },
+      "appleTeamId": "SMJLWBZ8X6"
     },
     "android": {
       "package": "com.openclaw.agentchat",
@@ -31,7 +32,12 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

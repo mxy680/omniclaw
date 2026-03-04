@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   XCircle,
   Users,
+  Rocket,
 } from "lucide-react";
 import type { SystemStatus } from "@/lib/system-types";
 
@@ -56,15 +57,16 @@ export function SystemPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const handleAction = async (
-    service: "gateway" | "mcp-server",
+    service: "gateway" | "mcp-server" | "mobile-ios",
     action: "start" | "stop",
+    extra?: Record<string, string>,
   ) => {
     setActionLoading(`${action}-${service}`);
     try {
       await fetch(`/api/system/${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ service }),
+        body: JSON.stringify({ service, ...extra }),
       });
       // Wait a moment then refresh
       await new Promise((r) => setTimeout(r, 1000));
@@ -138,6 +140,15 @@ export function SystemPage() {
           onStop={() => handleAction("mcp-server", "stop")}
         />
       </div>
+
+      {/* Mobile App */}
+      <MobileCard
+        mobile={status?.mobile}
+        actionLoading={actionLoading}
+        onLaunch={(udid) =>
+          handleAction("mobile-ios", "start", udid ? { udid } : undefined)
+        }
+      />
 
       <Separator />
 
@@ -336,7 +347,7 @@ function ServiceCard({
   );
 }
 
-function StatusDot({ status }: { status: "running" | "stopped" | "error" }) {
+function StatusDot({ status, label }: { status: "running" | "stopped" | "error"; label?: string }) {
   if (status === "running") {
     return (
       <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
@@ -344,7 +355,7 @@ function StatusDot({ status }: { status: "running" | "stopped" | "error" }) {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
         </span>
-        Running
+        {label ?? "Running"}
       </span>
     );
   }
@@ -352,14 +363,14 @@ function StatusDot({ status }: { status: "running" | "stopped" | "error" }) {
     return (
       <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
         <span className="h-2 w-2 rounded-full bg-amber-500" />
-        Error
+        {label ?? "Error"}
       </span>
     );
   }
   return (
     <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
       <span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-      Stopped
+      {label ?? "Stopped"}
     </span>
   );
 }
@@ -436,6 +447,72 @@ function DiagnosticItem({
         <span className="text-xs text-muted-foreground ml-auto">{detail}</span>
       )}
     </div>
+  );
+}
+
+function MobileCard({
+  mobile,
+  actionLoading,
+  onLaunch,
+}: {
+  mobile?: { metro: "running" | "stopped"; metroPort: number; devices: Array<{ name: string; osVersion: string; udid: string }> };
+  actionLoading: string | null;
+  onLaunch: (udid?: string) => void;
+}) {
+  const isLaunching = actionLoading === "start-mobile-ios";
+  const devices = mobile?.devices ?? [];
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4" />
+            <CardTitle className="text-base">Mobile App</CardTitle>
+          </div>
+          <StatusDot status={mobile?.metro === "running" ? "running" : "stopped"} label={mobile?.metro === "running" ? "Metro running" : "Metro stopped"} />
+        </div>
+        <CardDescription>
+          Expo dev client (Metro on port {mobile?.metroPort ?? 8081})
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {devices.length > 0 ? (
+          <div className="space-y-2">
+            {devices.map((device) => (
+              <div
+                key={device.udid}
+                className="flex items-center justify-between rounded-lg border px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-sm font-medium">{device.name}</span>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    iOS {device.osVersion}
+                  </Badge>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => onLaunch(device.udid)}
+                  disabled={isLaunching}
+                >
+                  {isLaunching ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Rocket className="h-3 w-3" />
+                  )}
+                  Launch
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No iOS devices connected. Connect your iPhone via USB.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

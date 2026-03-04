@@ -73,6 +73,29 @@ export async function POST(request: Request) {
     });
   }
 
+  if (service === "mobile-ios") {
+    const mobileDir = join(PROJECT_ROOT, "mobile");
+    const udid = (body.udid as string) || undefined;
+
+    const args = ["expo", "run:ios", "--device"];
+    if (udid) {
+      args.push(udid);
+    }
+
+    const child = spawn("npx", args, {
+      cwd: mobileDir,
+      detached: true,
+      stdio: "ignore",
+      env: { ...process.env },
+    });
+    child.unref();
+
+    return NextResponse.json({
+      status: "building",
+      pid: child.pid,
+    });
+  }
+
   return NextResponse.json(
     { error: `Unknown service: ${service}` },
     { status: 400 },

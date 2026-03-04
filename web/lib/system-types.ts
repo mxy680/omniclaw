@@ -24,9 +24,22 @@ export interface AgentInfo {
   services: string[];
 }
 
+export interface ConnectedDevice {
+  name: string;
+  osVersion: string;
+  udid: string;
+}
+
+export interface MobileStatus {
+  metro: "running" | "stopped";
+  metroPort: number;
+  devices: ConnectedDevice[];
+}
+
 export interface SystemStatus {
   gateway: GatewayStatus;
   mcpServer: McpServerStatus;
+  mobile: MobileStatus;
   agents: AgentInfo[];
   lanIp: string;
 }

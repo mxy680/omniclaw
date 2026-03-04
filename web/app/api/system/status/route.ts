@@ -3,10 +3,13 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir, networkInterfaces } from "os";
 import net from "net";
+import { execFileSync } from "child_process";
 import type {
   SystemStatus,
   GatewayStatus,
   McpServerStatus,
+  MobileStatus,
+  ConnectedDevice,
   AgentInfo,
 } from "@/lib/system-types";
 
@@ -116,18 +119,70 @@ async function probeMcpServer(port: number): Promise<McpServerStatus> {
   }
 }
 
+function detectConnectedDevices(): ConnectedDevice[] {
+  try {
+    const output = execFileSync("xcrun", ["xctrace", "list", "devices"], {
+      encoding: "utf-8",
+      timeout: 5000,
+    });
+
+    const devices: ConnectedDevice[] = [];
+    let inDevices = false;
+
+    for (const line of output.split("\n")) {
+      if (line.startsWith("== Devices ==")) {
+        inDevices = true;
+        continue;
+      }
+      if (line.startsWith("== Devices Offline ==") || line.startsWith("== Simulators ==")) {
+        break;
+      }
+      if (!inDevices) continue;
+
+      // Format: "Name (OS Version) (UDID)"
+      const match = line.match(/^(.+?)\s+\((\d+\.\d+(?:\.\d+)?)\)\s+\(([A-F0-9-]+)\)$/);
+      if (match) {
+        const name = match[1].trim();
+        // Skip Macs — they show as devices but aren't mobile targets
+        if (name.includes("MacBook") || name.includes("iMac") || name.includes("Mac ")) continue;
+        devices.push({
+          name,
+          osVersion: match[2],
+          udid: match[3],
+        });
+      }
+    }
+
+    return devices;
+  } catch {
+    return [];
+  }
+}
+
+async function probeMobile(): Promise<MobileStatus> {
+  const metroPort = 8081;
+  const metroRunning = await probePort(metroPort);
+  const devices = detectConnectedDevices();
+  return {
+    metro: metroRunning ? "running" : "stopped",
+    metroPort,
+    devices,
+  };
+}
+
 export async function GET() {
   const gwConfig = readGatewayConfig();
   const mcpPort = parseInt(process.env.OMNICLAW_MCP_PORT ?? "9850", 10);
 
-  const [gateway, mcpServer] = await Promise.all([
+  const [gateway, mcpServer, mobile] = await Promise.all([
     probeGateway(gwConfig.port),
     probeMcpServer(mcpPort),
+    probeMobile(),
   ]);
 
   const agents = readAgents();
   const lanIp = getLanIp();
 
-  const status: SystemStatus = { gateway, mcpServer, agents, lanIp };
+  const status: SystemStatus = { gateway, mcpServer, mobile, agents, lanIp };
   return NextResponse.json(status);
 }

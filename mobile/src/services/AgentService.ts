@@ -27,7 +27,7 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
         params: {
           minProtocol: 3,
           maxProtocol: 3,
-          client: { id: 'openclaw-rn', version: '1.0.0', platform: Platform.OS, mode: 'cli' },
+          client: { id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android', version: '1.0.0', platform: Platform.OS, mode: 'ui' },
           role: 'operator',
           scopes: ['operator.read'],
           auth: { token: authToken },

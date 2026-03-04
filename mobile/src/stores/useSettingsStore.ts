@@ -1,9 +1,12 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 
-const SETTINGS_FILE = `${FileSystem.documentDirectory}omniclaw-settings.json`;
 const AUTH_TOKEN_KEY = 'omniclaw_auth_token';
+
+function settingsFile(): File {
+  return new File(Paths.document, 'omniclaw-settings.json');
+}
 
 interface PersistedSettings {
   host: string;
@@ -35,9 +38,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   load: async () => {
     try {
       // Load non-sensitive settings from the file system
-      const fileInfo = await FileSystem.getInfoAsync(SETTINGS_FILE);
-      if (fileInfo.exists) {
-        const raw = await FileSystem.readAsStringAsync(SETTINGS_FILE);
+      const file = settingsFile();
+      if (file.exists) {
+        const raw = await file.text();
         const parsed: Partial<PersistedSettings> = JSON.parse(raw);
         set({
           host: parsed.host ?? '',
@@ -58,7 +61,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const { host, port, mcpPort, authToken } = get();
     try {
       const data: PersistedSettings = { host, port, mcpPort };
-      await FileSystem.writeAsStringAsync(SETTINGS_FILE, JSON.stringify(data));
+      settingsFile().write(JSON.stringify(data));
       await SecureStore.setItemAsync(AUTH_TOKEN_KEY, authToken);
     } catch (err) {
       console.warn('Failed to save settings:', err);

@@ -17,7 +17,8 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
     let phase: 'connecting' | 'listing' = 'connecting';
     let messageCount = 0;
 
-    const cleanup = () => { try { ws.close(); } catch {} };
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const cleanup = () => { clearTimeout(timeoutId); try { ws.close(); } catch {} };
 
     ws.onopen = () => {
       const frame: ConnectFrame = {
@@ -37,12 +38,17 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
     };
 
     ws.onmessage = (event) => {
-      messageCount++;
-      if (messageCount > 20) { cleanup(); reject(new Error('Too many messages')); return; }
-
-      const json = JSON.parse(event.data as string);
+      let json: Record<string, unknown>;
+      try {
+        json = JSON.parse(event.data as string);
+      } catch {
+        return;
+      }
 
       if (json.type === 'event') return; // skip events
+
+      messageCount++;
+      if (messageCount > 20) { cleanup(); reject(new Error('Too many messages')); return; }
 
       if (phase === 'connecting' && json.type === 'res') {
         if (json.ok) {
@@ -82,6 +88,6 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
     ws.onerror = () => { cleanup(); reject(new Error('WebSocket error')); };
 
     // Timeout after 10 seconds
-    setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 10000);
+    timeoutId = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 10000);
   });
 }

@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { File, Paths } from 'expo-file-system';
 
 const AUTH_TOKEN_KEY = 'omniclaw_auth_token';
+const DEFAULT_AUTH_TOKEN = 'e23e564a957acd23de76f2ce31c6a143bc7e6a03dcd17321';
 
 function settingsFile(): File {
   return new File(Paths.document, 'omniclaw-settings.json');
@@ -29,10 +30,10 @@ interface SettingsState {
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  host: '',
+  host: '100.71.39.86',
   port: 18789,
   mcpPort: 9850,
-  authToken: '',
+  authToken: DEFAULT_AUTH_TOKEN,
   isLoaded: false,
 
   load: async () => {
@@ -43,7 +44,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         const raw = await file.text();
         const parsed: Partial<PersistedSettings> = JSON.parse(raw);
         set({
-          host: parsed.host ?? '',
+          host: parsed.host ?? '100.71.39.86',
           port: parsed.port ?? 18789,
           mcpPort: parsed.mcpPort ?? 9850,
         });
@@ -51,7 +52,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       // Load sensitive auth token from secure store
       const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
-      set({ authToken: token ?? '', isLoaded: true });
+      set({ authToken: token || DEFAULT_AUTH_TOKEN, isLoaded: true });
     } catch {
       set({ isLoaded: true });
     }
@@ -61,7 +62,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const { host, port, mcpPort, authToken } = get();
     try {
       const data: PersistedSettings = { host, port, mcpPort };
-      settingsFile().write(JSON.stringify(data));
+      await settingsFile().write(JSON.stringify(data));
       await SecureStore.setItemAsync(AUTH_TOKEN_KEY, authToken);
     } catch (err) {
       console.warn('Failed to save settings:', err);

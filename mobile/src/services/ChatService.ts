@@ -40,6 +40,9 @@ export class ChatService {
   connect(config: ServerConfig): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.ws) {
+        this.ws.onclose = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
         this.ws.close();
         this.ws = null;
       }
@@ -83,12 +86,6 @@ export class ChatService {
       };
 
       ws.onmessage = (event) => {
-        messageCount++;
-        if (messageCount > 10) {
-          settle(new Error('Connect handshake timed out — too many messages'));
-          return;
-        }
-
         let json: Record<string, unknown>;
         try {
           json = JSON.parse(event.data as string);
@@ -96,8 +93,14 @@ export class ChatService {
           return;
         }
 
-        // Skip event frames during handshake
+        // Skip event frames during handshake (don't count them)
         if (json.type === 'event') return;
+
+        messageCount++;
+        if (messageCount > 10) {
+          settle(new Error('Connect handshake timed out — too many messages'));
+          return;
+        }
 
         if (json.type === 'res') {
           if (json.ok) {

@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web"
+    "start": "npx expo start",
+    "android": "npx expo run:android",
+    "ios": "npx expo run:ios",
+    "web": "npx expo start --web"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~6.1.0",
+    "@expo/vector-icons": "^15.0.0",
+    "date-fns": "^4.1.0",
     "expo": "~54.0.0",
     "expo-camera": "~17.0.0",
     "expo-crypto": "~15.0.0",
@@ -20,15 +23,12 @@
     "expo-router": "~6.0.0",
     "expo-secure-store": "~15.0.0",
     "expo-status-bar": "~3.0.0",
-    "react": "19.1.4",
-    "react-native": "0.81.6",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
     "react-native-reanimated": "~4.1.0",
-    "react-native-worklets": "~0.7.0",
-    "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.23.0",
-    "@expo/metro-runtime": "~6.1.0",
-    "@expo/vector-icons": "^15.0.0",
-    "date-fns": "^4.1.0",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-worklets": "0.5.1",
     "zustand": "^5.0.0"
   },
   "devDependencies": {

@@ -2,6 +2,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Message } from '../types/message';
 import { Attachment, isImage, isPDF } from '../types/attachment';
 import { TypingIndicator } from './TypingIndicator';
+import { ImageAttachmentView } from './ImageAttachmentView';
+import { PDFAttachmentView } from './PDFAttachmentView';
 
 export type BubblePosition = 'standalone' | 'first' | 'middle' | 'last';
 
@@ -39,16 +41,25 @@ function assistantRadii(position: BubblePosition) {
   }
 }
 
-function AttachmentChip({ attachment }: { attachment: Attachment }) {
-  const label = isImage(attachment)
-    ? `Photo: ${attachment.filename}`
-    : isPDF(attachment)
-    ? `PDF: ${attachment.filename}`
-    : attachment.filename;
-
+function AttachmentInBubble({
+  attachment,
+  isUser,
+}: {
+  attachment: Attachment;
+  isUser: boolean;
+}) {
+  if (isImage(attachment) && attachment.localUri) {
+    return <ImageAttachmentView attachment={attachment} />;
+  }
+  if (isPDF(attachment)) {
+    return <PDFAttachmentView attachment={attachment} isUserBubble={isUser} />;
+  }
+  // Generic fallback for unknown types
   return (
     <View style={styles.attachmentChip}>
-      <Text style={styles.attachmentLabel} numberOfLines={1}>{label}</Text>
+      <Text style={styles.attachmentLabel} numberOfLines={1}>
+        {attachment.filename}
+      </Text>
     </View>
   );
 }
@@ -67,7 +78,7 @@ export function MessageBubble({ message, position }: Props) {
         {message.attachments.length > 0 && (
           <View style={styles.attachments}>
             {message.attachments.map((a: Attachment) => (
-              <AttachmentChip key={a.id} attachment={a} />
+              <AttachmentInBubble key={a.id} attachment={a} isUser={isUser} />
             ))}
           </View>
         )}

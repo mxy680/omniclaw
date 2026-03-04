@@ -3,6 +3,7 @@ export interface Attachment {
   filename: string;
   mimeType: string;
   byteCount: number;
+  localUri?: string; // Local file path on device (only present for pending/local attachments)
 }
 
 export interface UploadedAttachment {

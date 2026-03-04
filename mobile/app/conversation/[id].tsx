@@ -6,21 +6,24 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '@/hooks/useChat';
+import { useAttachments } from '@/hooks/useAttachments';
 import { useConversationStore } from '@/stores/useConversationStore';
 import { useAgentStore } from '@/stores/useAgentStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { MessageBubble, BubblePosition } from '@/components/MessageBubble';
+import { MessageInputBar } from '@/components/MessageInputBar';
 import { DateHeader } from '@/components/DateHeader';
 import { ConnectionBanner } from '@/components/ConnectionBanner';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { AgentAvatar } from '@/components/AgentAvatar';
+import { uploadAttachment } from '@/services/AttachmentUploader';
 import { Message } from '@/types/message';
+import { Attachment } from '@/types/attachment';
 import { shouldShowDateHeader } from '@/lib/dates';
 import { differenceInMinutes } from 'date-fns';
 
@@ -82,6 +85,23 @@ function computeListItems(messages: Message[]): ListItem[] {
   return items;
 }
 
+/**
+ * Builds the text prefix that references all uploaded attachments.
+ * Format mirrors the iOS app: [Image: filename (attachment_id: id)]
+ */
+function buildAttachmentRefs(
+  originals: Attachment[],
+  uploadIds: Map<string, string>,
+): string {
+  return originals
+    .map(a => {
+      const serverId = uploadIds.get(a.id) ?? a.id;
+      const tag = a.mimeType.startsWith('image/') ? 'Image' : 'File';
+      return `[${tag}: ${a.filename} (attachment_id: ${serverId})]`;
+    })
+    .join('\n');
+}
+
 export default function ChatViewScreen() {
   const { id: conversationId, agentId } = useLocalSearchParams<{
     id: string;
@@ -90,12 +110,14 @@ export default function ChatViewScreen() {
   const navigation = useNavigation();
   const flatListRef = useRef<FlatList>(null);
   const [inputText, setInputText] = useState('');
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const { host, port, authToken, isLoaded, load: loadSettings } = useSettingsStore();
+  const { host, port, mcpPort, authToken, isLoaded, load: loadSettings } = useSettingsStore();
   const { agents, fetch: fetchAgents } = useAgentStore();
   const { conversations } = useConversationStore();
 
   const chat = useChat(conversationId, agentId);
+  const attachments = useAttachments();
 
   const conversation = conversations.find(c => c.id === conversationId);
   const agent = agents.find(a => a.id === agentId);
@@ -164,14 +186,48 @@ export default function ChatViewScreen() {
     return () => clearTimeout(timer);
   }, [listItems.length, scrollToBottom]);
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     const text = inputText.trim();
-    if (!text) return;
-    setInputText('');
-    chat.sendMessage(text);
-  }, [inputText, chat]);
+    // Snapshot pending attachments before any async work
+    const pending = attachments.pendingAttachments.slice();
 
-  const handleAbort = useCallback(() => {
+    if (!text && pending.length === 0) return;
+
+    setUploadError(null);
+
+    // Upload attachments first (before clearing UI state, so we can restore on error)
+    const uploadedIds = new Map<string, string>();
+    if (pending.length > 0) {
+      try {
+        await Promise.all(
+          pending.map(async (a) => {
+            const uploaded = await uploadAttachment(a, host, mcpPort, authToken);
+            uploadedIds.set(a.id, uploaded.id);
+          }),
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Attachment upload failed';
+        setUploadError(msg);
+        return; // Leave input and attachments intact so user can retry
+      }
+    }
+
+    // All uploads succeeded — clear UI state and send
+    setInputText('');
+    attachments.clearPending();
+
+    let finalText = text;
+    if (pending.length > 0) {
+      const refs = buildAttachmentRefs(pending, uploadedIds);
+      finalText = refs + (text ? '\n' + text : '');
+      // Pass the original pending attachments (with localUri) so the bubble can show thumbnails
+      chat.sendMessage(finalText, pending);
+    } else {
+      chat.sendMessage(finalText);
+    }
+  }, [inputText, attachments, host, mcpPort, authToken, chat]);
+
+  const handleCancel = useCallback(() => {
     chat.abort();
   }, [chat]);
 
@@ -209,9 +265,12 @@ export default function ChatViewScreen() {
         <ConnectionBanner onReconnect={chat.connect} />
       )}
 
-      {/* Error banner */}
+      {/* Error banners */}
       {chat.error && (
         <ErrorBanner message={chat.error} onDismiss={chat.clearError} />
+      )}
+      {uploadError && (
+        <ErrorBanner message={uploadError} onDismiss={() => setUploadError(null)} />
       )}
 
       <FlatList
@@ -225,34 +284,19 @@ export default function ChatViewScreen() {
         onContentSizeChange={scrollToBottom}
       />
 
-      {/* Input bar */}
-      <View style={styles.inputBar}>
-        <TextInput
-          style={styles.input}
-          placeholder="Message"
-          placeholderTextColor="#8E8E93"
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          maxLength={4000}
-          returnKeyType="default"
-          enablesReturnKeyAutomatically
-        />
-        {chat.isStreaming ? (
-          <Pressable style={styles.stopButton} onPress={handleAbort} hitSlop={8}>
-            <View style={styles.stopIcon} />
-          </Pressable>
-        ) : (
-          <Pressable
-            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-            onPress={handleSend}
-            disabled={!inputText.trim()}
-            hitSlop={8}
-          >
-            <Ionicons name="arrow-up-circle" size={32} color={inputText.trim() ? '#007AFF' : '#C7C7CC'} />
-          </Pressable>
-        )}
-      </View>
+      {/* Full input bar with attachment support */}
+      <MessageInputBar
+        text={inputText}
+        onChangeText={setInputText}
+        pendingAttachments={attachments.pendingAttachments}
+        isStreaming={chat.isStreaming}
+        onSend={handleSend}
+        onCancel={handleCancel}
+        onPickFromLibrary={attachments.pickFromLibrary}
+        onPickFromCamera={attachments.pickFromCamera}
+        onPickFromFiles={attachments.pickDocument}
+        onRemoveAttachment={attachments.removeAttachment}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -281,53 +325,5 @@ const styles = StyleSheet.create({
   dateHeaderWrapper: {
     paddingVertical: 8,
     alignItems: 'center',
-  },
-  inputBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#C6C6C8',
-    backgroundColor: '#FFFFFF',
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    minHeight: 36,
-    maxHeight: 120,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 8,
-    fontSize: 16,
-    color: '#000000',
-  },
-  sendButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 32,
-    height: 32,
-    marginBottom: 2,
-  },
-  sendButtonDisabled: {
-    opacity: 1,
-  },
-  stopButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 32,
-    height: 32,
-    marginBottom: 2,
-    backgroundColor: '#FF3B30',
-    borderRadius: 16,
-  },
-  stopIcon: {
-    width: 12,
-    height: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 2,
   },
 });

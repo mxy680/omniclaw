@@ -118,7 +118,7 @@ export default function SettingsScreen() {
               style={styles.input}
               value={host}
               onChangeText={setHost}
-              placeholder="localhost"
+              placeholder="Tailscale hostname or IP"
               placeholderTextColor="#C7C7CC"
               autoCapitalize="none"
               autoCorrect={false}
@@ -208,8 +208,8 @@ export default function SettingsScreen() {
         </View>
 
         <Text style={styles.footer}>
-          The gateway connects your mobile app to the Omniclaw backend. Ensure
-          the host is reachable on your local network.
+          The gateway connects your mobile app to the Omniclaw backend via
+          Tailscale. Enter your Tailscale hostname or IP address.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

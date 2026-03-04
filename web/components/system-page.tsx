@@ -24,6 +24,7 @@ import {
   XCircle,
   Users,
   Rocket,
+  AlertTriangle,
 } from "lucide-react";
 import type { SystemStatus } from "@/lib/system-types";
 
@@ -455,12 +456,33 @@ function MobileCard({
   actionLoading,
   onLaunch,
 }: {
-  mobile?: { metro: "running" | "stopped"; metroPort: number; devices: Array<{ name: string; osVersion: string; udid: string }> };
+  mobile?: { metro: "running" | "stopped"; metroPort: number; devices: Array<{ name: string; osVersion: string; udid: string; modelName: string; available: boolean; error?: string }> };
   actionLoading: string | null;
   onLaunch: (udid?: string) => void;
 }) {
   const isLaunching = actionLoading === "start-mobile-ios";
   const devices = mobile?.devices ?? [];
+  const [building, setBuilding] = useState(false);
+  const [buildLog, setBuildLog] = useState("");
+
+  // Poll build log while building
+  useEffect(() => {
+    if (!building) return;
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch("/api/system/build-log");
+        const data = await res.json();
+        setBuildLog(data.log || "");
+      } catch { /* ignore */ }
+    }, 2000);
+    return () => clearInterval(id);
+  }, [building]);
+
+  const handleLaunch = (udid?: string) => {
+    setBuilding(true);
+    setBuildLog("Starting build...");
+    onLaunch(udid);
+  };
 
   return (
     <Card>
@@ -482,27 +504,44 @@ function MobileCard({
             {devices.map((device) => (
               <div
                 key={device.udid}
-                className="flex items-center justify-between rounded-lg border px-3 py-2"
+                className="rounded-lg border px-3 py-2 space-y-1.5"
               >
-                <div className="flex items-center gap-2">
-                  <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-sm font-medium">{device.name}</span>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                    iOS {device.osVersion}
-                  </Badge>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => onLaunch(device.udid)}
-                  disabled={isLaunching}
-                >
-                  {isLaunching ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-sm font-medium">{device.name}</span>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      iOS {device.osVersion}
+                    </Badge>
+                    {device.modelName && (
+                      <span className="text-[10px] text-muted-foreground">{device.modelName}</span>
+                    )}
+                  </div>
+                  {device.available ? (
+                    <Button
+                      size="sm"
+                      onClick={() => handleLaunch(device.udid)}
+                      disabled={isLaunching || building}
+                    >
+                      {isLaunching || building ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Rocket className="h-3 w-3" />
+                      )}
+                      {building ? "Building..." : "Launch"}
+                    </Button>
                   ) : (
-                    <Rocket className="h-3 w-3" />
+                    <Badge variant="secondary" className="text-[10px] text-amber-600 dark:text-amber-400">
+                      Unavailable
+                    </Badge>
                   )}
-                  Launch
-                </Button>
+                </div>
+                {!device.available && device.error && (
+                  <div className="flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-1.5">
+                    <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                    <span>{device.error}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -510,6 +549,21 @@ function MobileCard({
           <p className="text-sm text-muted-foreground">
             No iOS devices connected. Connect your iPhone via USB.
           </p>
+        )}
+        {building && buildLog && (
+          <div className="mt-3">
+            <pre className="text-[11px] bg-muted rounded-lg p-3 max-h-40 overflow-y-auto font-mono text-muted-foreground whitespace-pre-wrap">
+              {buildLog}
+            </pre>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1 text-xs"
+              onClick={() => { setBuilding(false); setBuildLog(""); }}
+            >
+              Dismiss
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

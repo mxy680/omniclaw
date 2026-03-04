@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { spawn } from "child_process";
 import { join } from "path";
+import { openSync } from "fs";
+import { tmpdir } from "os";
 import net from "net";
 
 const PROJECT_ROOT = join(process.cwd(), "..");
+const BUILD_LOG = join(tmpdir(), "omniclaw-ios-build.log");
 
 async function isPortOpen(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -82,17 +85,25 @@ export async function POST(request: Request) {
       args.push(udid);
     }
 
+    // Write build output to a log file so progress can be tracked
+    const logFd = openSync(BUILD_LOG, "w");
+
     const child = spawn("npx", args, {
       cwd: mobileDir,
       detached: true,
-      stdio: "ignore",
-      env: { ...process.env },
+      stdio: ["ignore", logFd, logFd],
+      env: {
+        ...process.env,
+        LANG: "en_US.UTF-8",
+        LC_ALL: "en_US.UTF-8",
+      },
     });
     child.unref();
 
     return NextResponse.json({
       status: "building",
       pid: child.pid,
+      logFile: BUILD_LOG,
     });
   }
 

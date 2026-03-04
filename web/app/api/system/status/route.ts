@@ -119,41 +119,39 @@ async function probeMcpServer(port: number): Promise<McpServerStatus> {
   }
 }
 
+interface XcdeviceEntry {
+  identifier: string;
+  name: string;
+  platform: string;
+  available: boolean;
+  operatingSystemVersion?: string;
+  modelName?: string;
+  error?: { recoverySuggestion?: string };
+}
+
 function detectConnectedDevices(): ConnectedDevice[] {
   try {
-    const output = execFileSync("xcrun", ["xctrace", "list", "devices"], {
+    const output = execFileSync("xcrun", ["xcdevice", "list"], {
       encoding: "utf-8",
-      timeout: 5000,
+      timeout: 10000,
     });
 
-    const devices: ConnectedDevice[] = [];
-    let inDevices = false;
+    const entries: XcdeviceEntry[] = JSON.parse(output);
 
-    for (const line of output.split("\n")) {
-      if (line.startsWith("== Devices ==")) {
-        inDevices = true;
-        continue;
-      }
-      if (line.startsWith("== Devices Offline ==") || line.startsWith("== Simulators ==")) {
-        break;
-      }
-      if (!inDevices) continue;
-
-      // Format: "Name (OS Version) (UDID)"
-      const match = line.match(/^(.+?)\s+\((\d+\.\d+(?:\.\d+)?)\)\s+\(([A-F0-9-]+)\)$/);
-      if (match) {
-        const name = match[1].trim();
-        // Skip Macs — they show as devices but aren't mobile targets
-        if (name.includes("MacBook") || name.includes("iMac") || name.includes("Mac ")) continue;
-        devices.push({
-          name,
-          osVersion: match[2],
-          udid: match[3],
-        });
-      }
-    }
-
-    return devices;
+    return entries
+      .filter((d) => d.platform === "com.apple.platform.iphoneos")
+      .map((d) => {
+        // OS version comes as "18.7.1 (22H31)" — extract just the version
+        const osMatch = d.operatingSystemVersion?.match(/^([\d.]+)/);
+        return {
+          name: d.name,
+          osVersion: osMatch?.[1] ?? "unknown",
+          udid: d.identifier,
+          modelName: d.modelName ?? "",
+          available: d.available,
+          error: d.error?.recoverySuggestion,
+        };
+      });
   } catch {
     return [];
   }

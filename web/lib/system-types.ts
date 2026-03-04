@@ -28,6 +28,9 @@ export interface ConnectedDevice {
   name: string;
   osVersion: string;
   udid: string;
+  modelName: string;
+  available: boolean;
+  error?: string;
 }
 
 export interface MobileStatus {

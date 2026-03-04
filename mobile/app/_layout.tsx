@@ -1,6 +1,8 @@
+import '../global.css';
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { PortalHost } from '@rn-primitives/portal';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
 export default function RootLayout() {
@@ -29,6 +31,7 @@ export default function RootLayout() {
         <Stack.Screen name="schedule/[id]" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="schedule/run/[runId]" options={{ headerShown: true, title: 'Run Result' }} />
       </Stack>
+      <PortalHost />
     </SafeAreaProvider>
   );
 }

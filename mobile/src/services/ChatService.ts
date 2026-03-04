@@ -69,10 +69,10 @@ export class ChatService {
             minProtocol: 3,
             maxProtocol: 3,
             client: {
-              id: 'openclaw-rn',
+              id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android',
               version: '1.0.0',
               platform: Platform.OS,
-              mode: 'cli',
+              mode: 'ui',
             },
             role: 'operator',
             scopes: ['operator.read', 'operator.write'],

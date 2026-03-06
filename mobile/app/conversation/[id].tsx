@@ -112,7 +112,7 @@ export default function ChatViewScreen() {
   const [inputText, setInputText] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const { host, port, mcpPort, authToken, isLoaded, load: loadSettings } = useSettingsStore();
+  const { host, port, mcpPort, authToken, useTLS, isLoaded, load: loadSettings } = useSettingsStore();
   const { agents, fetch: fetchAgents } = useAgentStore();
   const { conversations } = useConversationStore();
 
@@ -131,7 +131,7 @@ export default function ChatViewScreen() {
 
   useEffect(() => {
     if (isLoaded && host && agents.length === 0) {
-      fetchAgents(host, port, authToken);
+      fetchAgents(host, port, authToken, useTLS);
     }
   }, [isLoaded, host, port, authToken, agents.length, fetchAgents]);
 

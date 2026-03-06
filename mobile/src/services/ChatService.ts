@@ -1,10 +1,12 @@
 import { Platform } from 'react-native';
-import { ConnectFrame, ChatSendFrame, ChatAbortFrame } from '../types/protocol';
+import { ChatSendFrame, ChatAbortFrame } from '../types/protocol';
+import { getDeviceIdentity, signChallenge, type DeviceKeys } from './DeviceIdentity';
 
 export interface ServerConfig {
   host: string;
   port: number;
   authToken: string;
+  useTLS?: boolean;
 }
 
 type ChatCallbacks = {
@@ -37,7 +39,10 @@ export class ChatService {
     this.onStateChange?.();
   }
 
-  connect(config: ServerConfig): Promise<void> {
+  async connect(config: ServerConfig): Promise<void> {
+    // Load device identity (generates Ed25519 keypair on first use)
+    const deviceKeys = await getDeviceIdentity();
+
     return new Promise((resolve, reject) => {
       if (this.ws) {
         this.ws.onclose = null;
@@ -47,10 +52,11 @@ export class ChatService {
         this.ws = null;
       }
 
-      const { host, port, authToken } = config;
-      const ws = new WebSocket(`ws://${host}:${port}`);
+      const { host, port, authToken, useTLS } = config;
+      const scopes = ['operator.read', 'operator.write'];
+      const proto = useTLS ? 'wss' : 'ws';
+      const ws = new WebSocket(`${proto}://${host}:${port}`);
       this.ws = ws;
-      let messageCount = 0;
       let settled = false;
 
       const settle = (err?: Error) => {
@@ -63,28 +69,6 @@ export class ChatService {
         }
       };
 
-      ws.onopen = () => {
-        const frame: ConnectFrame = {
-          type: 'req',
-          id: this.nextId(),
-          method: 'connect',
-          params: {
-            minProtocol: 3,
-            maxProtocol: 3,
-            client: {
-              id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android',
-              version: '1.0.0',
-              platform: Platform.OS,
-              mode: 'ui',
-            },
-            role: 'operator',
-            scopes: ['operator.read', 'operator.write'],
-            auth: { token: authToken },
-          },
-        };
-        ws.send(JSON.stringify(frame));
-      };
-
       ws.onmessage = (event) => {
         let json: Record<string, unknown>;
         try {
@@ -93,20 +77,40 @@ export class ChatService {
           return;
         }
 
-        // Skip event frames during handshake (don't count them)
-        if (json.type === 'event') return;
+        // Wait for connect.challenge event, then sign and send connect frame
+        if (json.type === 'event' && json.event === 'connect.challenge') {
+          const payload = json.payload as { nonce: string };
+          const device = signChallenge(deviceKeys, payload.nonce, authToken, scopes);
 
-        messageCount++;
-        if (messageCount > 10) {
-          settle(new Error('Connect handshake timed out — too many messages'));
+          ws.send(JSON.stringify({
+            type: 'req',
+            id: this.nextId(),
+            method: 'connect',
+            params: {
+              minProtocol: 3,
+              maxProtocol: 3,
+              client: {
+                id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android',
+                version: '1.0.0',
+                platform: Platform.OS,
+                mode: 'ui',
+              },
+              role: 'operator',
+              scopes,
+              auth: { token: authToken },
+              device,
+            },
+          }));
           return;
         }
+
+        // Skip other events during handshake
+        if (json.type === 'event') return;
 
         if (json.type === 'res') {
           if (json.ok) {
             this.isConnected = true;
             this.notifyStateChange();
-            // Switch to the normal message handler
             ws.onmessage = this.handleMessage.bind(this);
             settle();
           } else {

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ export default function SettingsScreen() {
   const [port, setPort] = useState(String(store.port));
   const [mcpPort, setMcpPort] = useState(String(store.mcpPort));
   const [authToken, setAuthToken] = useState(store.authToken);
+  const [useTLS, setUseTLS] = useState(store.useTLS);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const chatServiceRef = useRef(new ChatService());
@@ -42,6 +44,7 @@ export default function SettingsScreen() {
       setPort(String(store.port));
       setMcpPort(String(store.mcpPort));
       setAuthToken(store.authToken);
+      setUseTLS(store.useTLS);
     }
   }, [store.isLoaded]);
 
@@ -52,6 +55,7 @@ export default function SettingsScreen() {
     store.setHost(host);
     if (!isNaN(parsedPort)) store.setPort(parsedPort);
     if (!isNaN(parsedMcpPort)) store.setMcpPort(parsedMcpPort);
+    store.setUseTLS(useTLS);
     store.setAuthToken(authToken);
 
     router.back();
@@ -62,7 +66,7 @@ export default function SettingsScreen() {
     setConnectionError(null);
     try {
       const parsedPort = parseInt(port, 10) || 18789;
-      await chatServiceRef.current.testConnection({ host, port: parsedPort, authToken });
+      await chatServiceRef.current.testConnection({ host, port: parsedPort, authToken, useTLS });
       setConnectionStatus('success');
     } catch (err) {
       setConnectionStatus('failure');
@@ -70,7 +74,8 @@ export default function SettingsScreen() {
     }
   }
 
-  const wsUrl = `ws://${host || 'localhost'}:${port || store.port}`;
+  const wsProto = useTLS ? 'wss' : 'ws';
+  const wsUrl = `${wsProto}://${host || 'localhost'}:${port || store.port}`;
 
   const testButtonLabel =
     connectionStatus === 'testing'
@@ -117,7 +122,11 @@ export default function SettingsScreen() {
             <TextInput
               style={styles.input}
               value={host}
-              onChangeText={setHost}
+              onChangeText={(v) => {
+                setHost(v);
+                // Auto-enable TLS for Tailscale hostnames
+                if (v.endsWith('.ts.net')) setUseTLS(true);
+              }}
               placeholder="Tailscale hostname or IP"
               placeholderTextColor="#C7C7CC"
               autoCapitalize="none"
@@ -157,6 +166,19 @@ export default function SettingsScreen() {
               autoCorrect={false}
               returnKeyType="done"
             />
+          </View>
+
+          <View style={styles.separator} />
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Use TLS</Text>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Switch
+                value={useTLS}
+                onValueChange={setUseTLS}
+                trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+              />
+            </View>
           </View>
         </View>
 

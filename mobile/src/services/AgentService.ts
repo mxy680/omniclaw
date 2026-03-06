@@ -1,41 +1,32 @@
 import { Agent } from '../types/agent';
-import { ConnectFrame, AgentsListFrame } from '../types/protocol';
 import { Platform } from 'react-native';
+import { getDeviceIdentity, signChallenge } from './DeviceIdentity';
 
 interface AgentServiceConfig {
   host: string;
   port: number;
   authToken: string;
+  useTLS?: boolean;
 }
 
+/**
+ * Fetch agents by extracting them from the connect handshake snapshot.
+ * The gateway includes health.agents in the connect response payload.
+ * Uses Ed25519 device auth to get proper scopes.
+ */
 export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> {
-  const { host, port, authToken } = config;
+  const { host, port, authToken, useTLS } = config;
   if (!host) return [];
 
+  const deviceKeys = await getDeviceIdentity();
+  const scopes = ['operator.read', 'operator.write'];
+
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`ws://${host}:${port}`);
-    let phase: 'connecting' | 'listing' = 'connecting';
-    let messageCount = 0;
+    const proto = useTLS ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${host}:${port}`);
 
     let timeoutId: ReturnType<typeof setTimeout>;
     const cleanup = () => { clearTimeout(timeoutId); try { ws.close(); } catch {} };
-
-    ws.onopen = () => {
-      const frame: ConnectFrame = {
-        type: 'req',
-        id: 'agent-svc-1',
-        method: 'connect',
-        params: {
-          minProtocol: 3,
-          maxProtocol: 3,
-          client: { id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android', version: '1.0.0', platform: Platform.OS, mode: 'ui' },
-          role: 'operator',
-          scopes: ['operator.read'],
-          auth: { token: authToken },
-        },
-      };
-      ws.send(JSON.stringify(frame));
-    };
 
     ws.onmessage = (event) => {
       let json: Record<string, unknown>;
@@ -45,41 +36,53 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
         return;
       }
 
-      if (json.type === 'event') return; // skip events
+      // Sign the challenge nonce and send connect frame with device identity
+      if (json.type === 'event' && json.event === 'connect.challenge') {
+        const payload = json.payload as { nonce: string };
+        const device = signChallenge(deviceKeys, payload.nonce, authToken, scopes);
 
-      messageCount++;
-      if (messageCount > 20) { cleanup(); reject(new Error('Too many messages')); return; }
-
-      if (phase === 'connecting' && json.type === 'res') {
-        if (json.ok) {
-          phase = 'listing';
-          const listFrame: AgentsListFrame = {
-            type: 'req',
-            id: 'agent-svc-2',
-            method: 'agents.list',
-            params: {},
-          };
-          ws.send(JSON.stringify(listFrame));
-        } else {
-          cleanup();
-          reject(new Error(json.error?.message ?? 'Connection rejected'));
-        }
+        ws.send(JSON.stringify({
+          type: 'req',
+          id: 'agent-svc-1',
+          method: 'connect',
+          params: {
+            minProtocol: 3,
+            maxProtocol: 3,
+            client: { id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android', version: '1.0.0', platform: Platform.OS, mode: 'ui' },
+            role: 'operator',
+            scopes,
+            auth: { token: authToken },
+            device,
+          },
+        }));
         return;
       }
 
-      if (phase === 'listing' && json.type === 'res') {
+      if (json.type === 'event') return;
+
+      if (json.type === 'res') {
         cleanup();
-        if (json.ok && json.payload?.agents) {
-          const agents: Agent[] = (json.payload.agents as any[]).map((a) => ({
-            id: a.id,
-            name: a.name ?? a.id,
-            role: a.role ?? '',
-            colorName: a.colorName ?? 'blue',
-            services: a.services ?? [],
-          }));
-          resolve(agents);
+        if (json.ok) {
+          const payload = json.payload as Record<string, unknown> | undefined;
+          const snapshot = payload?.snapshot as Record<string, unknown> | undefined;
+          const health = snapshot?.health as Record<string, unknown> | undefined;
+          const rawAgents = health?.agents as Array<Record<string, unknown>> | undefined;
+
+          if (rawAgents && rawAgents.length > 0) {
+            const agents: Agent[] = rawAgents.map((a) => ({
+              id: (a.agentId as string) ?? (a.id as string) ?? 'unknown',
+              name: (a.name as string) ?? (a.agentId as string) ?? 'Unknown',
+              role: (a.role as string) ?? '',
+              colorName: (a.colorName as string) ?? 'blue',
+              services: (a.services as string[]) ?? [],
+            }));
+            resolve(agents);
+          } else {
+            resolve([]);
+          }
         } else {
-          reject(new Error('agents.list not supported'));
+          const err = json.error as Record<string, unknown> | undefined;
+          reject(new Error((err?.message as string) ?? 'Connection rejected'));
         }
         return;
       }
@@ -87,7 +90,6 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
 
     ws.onerror = () => { cleanup(); reject(new Error('WebSocket error')); };
 
-    // Timeout after 10 seconds
     timeoutId = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 10000);
   });
 }

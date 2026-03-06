@@ -20,14 +20,14 @@ export default function ConversationListScreen() {
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { host, port, authToken, isLoaded } = useSettingsStore();
+  const { host, port, authToken, useTLS, isLoaded } = useSettingsStore();
   const { agents, isLoading, fetch: fetchAgents } = useAgentStore();
   const { conversations, load: loadConversations, ensureDefaultConversations } = useConversationStore();
 
   const loadData = useCallback(async () => {
     if (!isLoaded || !host) return;
-    await fetchAgents(host, port, authToken);
-  }, [isLoaded, host, port, authToken, fetchAgents]);
+    await fetchAgents(host, port, authToken, useTLS);
+  }, [isLoaded, host, port, authToken, useTLS, fetchAgents]);
 
   // Initial load: conversations from disk, then agents from server
   useEffect(() => {

@@ -13,12 +13,14 @@ interface PersistedSettings {
   host: string;
   port: number;
   mcpPort: number;
+  useTLS: boolean;
 }
 
 interface SettingsState {
   host: string;
   port: number;
   mcpPort: number;
+  useTLS: boolean;
   authToken: string;
   isLoaded: boolean;
   load: () => Promise<void>;
@@ -26,13 +28,21 @@ interface SettingsState {
   setHost: (host: string) => void;
   setPort: (port: number) => void;
   setMcpPort: (port: number) => void;
+  setUseTLS: (useTLS: boolean) => void;
   setAuthToken: (token: string) => void;
+}
+
+/** Build the gateway WebSocket URL from current settings. */
+export function gatewayWsUrl(state: { host: string; port: number; useTLS: boolean }): string {
+  const proto = state.useTLS ? 'wss' : 'ws';
+  return `${proto}://${state.host}:${state.port}`;
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   host: 'localhost',
   port: 18789,
   mcpPort: 9850,
+  useTLS: false,
   authToken: DEFAULT_AUTH_TOKEN,
   isLoaded: false,
 
@@ -47,6 +57,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           host: parsed.host ?? 'localhost',
           port: parsed.port ?? 18789,
           mcpPort: parsed.mcpPort ?? 9850,
+          useTLS: parsed.useTLS ?? false,
         });
       }
 
@@ -59,9 +70,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   save: async () => {
-    const { host, port, mcpPort, authToken } = get();
+    const { host, port, mcpPort, useTLS, authToken } = get();
     try {
-      const data: PersistedSettings = { host, port, mcpPort };
+      const data: PersistedSettings = { host, port, mcpPort, useTLS };
       await settingsFile().write(JSON.stringify(data));
       await SecureStore.setItemAsync(AUTH_TOKEN_KEY, authToken);
     } catch (err) {
@@ -81,6 +92,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   setMcpPort: (mcpPort) => {
     set({ mcpPort });
+    get().save();
+  },
+
+  setUseTLS: (useTLS) => {
+    set({ useTLS });
     get().save();
   },
 

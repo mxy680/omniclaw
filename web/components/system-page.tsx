@@ -30,7 +30,7 @@ import {
 import type { TailscaleStatus } from "@/lib/system-types";
 import type { SystemStatus } from "@/lib/system-types";
 
-function useSystemStatus(intervalMs = 5000) {
+function useSystemStatus(intervalMs = 10000) {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
 

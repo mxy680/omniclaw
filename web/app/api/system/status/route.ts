@@ -17,6 +17,10 @@ import type {
 
 const execFileAsync = promisify(execFile);
 
+// Cache slow xcrun results (takes ~6s) — refresh at most every 30s
+let deviceCache: { devices: ConnectedDevice[]; ts: number } = { devices: [], ts: 0 };
+const DEVICE_CACHE_TTL = 30_000;
+
 function getLanIp(): string {
   const nets = networkInterfaces();
   for (const name of Object.keys(nets)) {
@@ -135,6 +139,10 @@ interface XcdeviceEntry {
 }
 
 async function detectConnectedDevices(): Promise<ConnectedDevice[]> {
+  // Return cached result if fresh enough — xcrun takes ~6s
+  if (Date.now() - deviceCache.ts < DEVICE_CACHE_TTL) {
+    return deviceCache.devices;
+  }
   try {
     const { stdout } = await execFileAsync("xcrun", ["xcdevice", "list"], {
       encoding: "utf-8",
@@ -143,7 +151,7 @@ async function detectConnectedDevices(): Promise<ConnectedDevice[]> {
 
     const entries: XcdeviceEntry[] = JSON.parse(stdout);
 
-    return entries
+    const devices = entries
       .filter((d) => d.platform === "com.apple.platform.iphoneos")
       .map((d) => {
         const osMatch = d.operatingSystemVersion?.match(/^([\d.]+)/);
@@ -156,8 +164,10 @@ async function detectConnectedDevices(): Promise<ConnectedDevice[]> {
           error: d.error?.recoverySuggestion,
         };
       });
+    deviceCache = { devices, ts: Date.now() };
+    return devices;
   } catch {
-    return [];
+    return deviceCache.devices; // Return stale data on error
   }
 }
 

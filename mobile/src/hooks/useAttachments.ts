@@ -3,7 +3,39 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Directory, Paths } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Attachment, fileExtension } from '../types/attachment';
+
+/** Convert HEIC/HEIF images to JPEG; return original URI for other formats. */
+async function ensureJpeg(asset: ImagePicker.ImagePickerAsset): Promise<{
+  uri: string;
+  mimeType: string;
+  filename: string;
+}> {
+  const mime = asset.mimeType ?? '';
+  const isHeic = mime.includes('heic') || mime.includes('heif')
+    || (asset.fileName ?? '').toLowerCase().endsWith('.heic');
+
+  if (!isHeic) {
+    return {
+      uri: asset.uri,
+      mimeType: asset.mimeType ?? 'image/jpeg',
+      filename: asset.fileName ?? `photo.${getExtensionFromMimeType(asset.mimeType ?? 'image/jpeg')}`,
+    };
+  }
+
+  const result = await manipulateAsync(asset.uri, [], {
+    format: SaveFormat.JPEG,
+    compress: 0.8,
+  });
+
+  const baseName = (asset.fileName ?? 'photo').replace(/\.heic$/i, '');
+  return {
+    uri: result.uri,
+    mimeType: 'image/jpeg',
+    filename: `${baseName}.jpg`,
+  };
+}
 
 function getExtensionFromMimeType(mimeType: string): string {
   return fileExtension({ id: '', filename: '', mimeType, byteCount: 0 });
@@ -35,12 +67,11 @@ export function useAttachments() {
     ensureAttachmentsDir();
 
     for (const asset of result.assets) {
+      const { uri, mimeType, filename } = await ensureJpeg(asset);
       const id = Crypto.randomUUID();
-      const mimeType = asset.mimeType ?? 'image/jpeg';
       const ext = getExtensionFromMimeType(mimeType);
-      const filename = asset.fileName ?? `photo-${id}.${ext}`;
 
-      const source = new File(asset.uri);
+      const source = new File(uri);
       const dest = new File(attachmentsDir(), `${id}.${ext}`);
       source.copy(dest);
 
@@ -63,12 +94,11 @@ export function useAttachments() {
 
     ensureAttachmentsDir();
 
+    const { uri, mimeType, filename } = await ensureJpeg(asset);
     const id = Crypto.randomUUID();
-    const mimeType = asset.mimeType ?? 'image/jpeg';
     const ext = getExtensionFromMimeType(mimeType);
-    const filename = asset.fileName ?? `photo-${id}.${ext}`;
 
-    const source = new File(asset.uri);
+    const source = new File(uri);
     const dest = new File(attachmentsDir(), `${id}.${ext}`);
     source.copy(dest);
 

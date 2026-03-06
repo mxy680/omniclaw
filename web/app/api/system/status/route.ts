@@ -3,7 +3,8 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir, networkInterfaces } from "os";
 import net from "net";
-import { execFileSync } from "child_process";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import type {
   SystemStatus,
   GatewayStatus,
@@ -13,6 +14,8 @@ import type {
   AgentInfo,
   TailscaleStatus,
 } from "@/lib/system-types";
+
+const execFileAsync = promisify(execFile);
 
 function getLanIp(): string {
   const nets = networkInterfaces();
@@ -86,8 +89,7 @@ async function probePort(port: number, host = "127.0.0.1", timeoutMs = 2000): Pr
 async function probeGateway(port: number): Promise<GatewayStatus> {
   const config = readGatewayConfig();
   // Always probe 127.0.0.1 — config.address may be a symbolic name like "lan"
-  const bindHost = "127.0.0.1";
-  const running = await probePort(port, bindHost);
+  const running = await probePort(port, "127.0.0.1");
   return {
     status: running ? "running" : "stopped",
     port,
@@ -132,19 +134,18 @@ interface XcdeviceEntry {
   error?: { recoverySuggestion?: string };
 }
 
-function detectConnectedDevices(): ConnectedDevice[] {
+async function detectConnectedDevices(): Promise<ConnectedDevice[]> {
   try {
-    const output = execFileSync("xcrun", ["xcdevice", "list"], {
+    const { stdout } = await execFileAsync("xcrun", ["xcdevice", "list"], {
       encoding: "utf-8",
       timeout: 10000,
     });
 
-    const entries: XcdeviceEntry[] = JSON.parse(output);
+    const entries: XcdeviceEntry[] = JSON.parse(stdout);
 
     return entries
       .filter((d) => d.platform === "com.apple.platform.iphoneos")
       .map((d) => {
-        // OS version comes as "18.7.1 (22H31)" — extract just the version
         const osMatch = d.operatingSystemVersion?.match(/^([\d.]+)/);
         return {
           name: d.name,
@@ -162,8 +163,10 @@ function detectConnectedDevices(): ConnectedDevice[] {
 
 async function probeMobile(): Promise<MobileStatus> {
   const metroPort = 8081;
-  const metroRunning = await probePort(metroPort);
-  const devices = detectConnectedDevices();
+  const [metroRunning, devices] = await Promise.all([
+    probePort(metroPort),
+    detectConnectedDevices(),
+  ]);
   return {
     metro: metroRunning ? "running" : "stopped",
     metroPort,
@@ -171,13 +174,13 @@ async function probeMobile(): Promise<MobileStatus> {
   };
 }
 
-function probeTailscale(): TailscaleStatus {
+async function probeTailscale(): Promise<TailscaleStatus> {
   try {
-    const output = execFileSync("tailscale", ["status", "--json"], {
+    const { stdout } = await execFileAsync("tailscale", ["status", "--json"], {
       encoding: "utf-8",
       timeout: 5000,
     });
-    const data = JSON.parse(output);
+    const data = JSON.parse(stdout);
     const self = data.Self ?? {};
     const dnsName = (self.DNSName as string ?? "").replace(/\.$/, "");
     const tailscaleIp = (self.TailscaleIPs as string[] ?? [])[0];
@@ -186,12 +189,11 @@ function probeTailscale(): TailscaleStatus {
     let funnelEnabled = false;
     let funnelUrl: string | undefined;
     try {
-      const serveOut = execFileSync("tailscale", ["funnel", "status", "--json"], {
+      const serveResult = await execFileAsync("tailscale", ["funnel", "status", "--json"], {
         encoding: "utf-8",
         timeout: 3000,
       });
-      const serveData = JSON.parse(serveOut);
-      // If there's any serve config with funnel=true, it's enabled
+      const serveData = JSON.parse(serveResult.stdout);
       if (serveData && typeof serveData === "object") {
         const webEntries = serveData.Web as Record<string, unknown> | undefined;
         const allFunnel = serveData.AllowFunnel as Record<string, boolean> | undefined;
@@ -223,15 +225,15 @@ export async function GET() {
   const gwConfig = readGatewayConfig();
   const mcpPort = parseInt(process.env.OMNICLAW_MCP_PORT ?? "9850", 10);
 
-  const [gateway, mcpServer, mobile] = await Promise.all([
+  const [gateway, mcpServer, mobile, tailscale] = await Promise.all([
     probeGateway(gwConfig.port),
     probeMcpServer(mcpPort),
     probeMobile(),
+    probeTailscale(),
   ]);
 
   const agents = readAgents();
   const lanIp = getLanIp();
-  const tailscale = probeTailscale();
 
   const status: SystemStatus = { gateway, mcpServer, mobile, agents, lanIp, tailscale };
   return NextResponse.json(status);

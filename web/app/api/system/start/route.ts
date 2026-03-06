@@ -10,7 +10,7 @@ const BUILD_LOG = join(tmpdir(), "omniclaw-ios-build.log");
 
 async function isPortOpen(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const socket = net.createConnection({ port, host: "localhost" });
+    const socket = net.createConnection({ port, host: "127.0.0.1" });
     const timer = setTimeout(() => {
       socket.destroy();
       resolve(false);

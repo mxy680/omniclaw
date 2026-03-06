@@ -85,8 +85,8 @@ async function probePort(port: number, host = "127.0.0.1", timeoutMs = 2000): Pr
 
 async function probeGateway(port: number): Promise<GatewayStatus> {
   const config = readGatewayConfig();
-  // Try the configured bind address first, fall back to 127.0.0.1
-  const bindHost = config.address === "localhost" ? "127.0.0.1" : config.address;
+  // Always probe 127.0.0.1 — config.address may be a symbolic name like "lan"
+  const bindHost = "127.0.0.1";
   const running = await probePort(port, bindHost);
   return {
     status: running ? "running" : "stopped",

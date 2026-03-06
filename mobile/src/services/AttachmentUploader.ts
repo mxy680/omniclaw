@@ -17,11 +17,11 @@ export async function uploadAttachment(
   }
 
   const url = `http://${host}:${mcpPort}/api/attachments`;
-  const file = new File(attachment.localUri);
 
-  // File implements Blob in SDK 54, so we can read bytes and construct a Blob
-  const bytes = await file.bytes();
-  const blob = new Blob([bytes], { type: attachment.mimeType });
+  // expo-file-system File implements Blob in SDK 54 — use it directly as
+  // the fetch body. Creating a new Blob from ArrayBuffer isn't supported
+  // on Hermes.
+  const file = new File(attachment.localUri);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -30,7 +30,7 @@ export async function uploadAttachment(
       'X-Filename': attachment.filename,
       'Authorization': `Bearer ${authToken}`,
     },
-    body: blob,
+    body: file,
   });
 
   if (!response.ok) {

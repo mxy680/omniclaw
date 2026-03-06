@@ -220,34 +220,6 @@ export function SystemPage() {
 
       <Separator />
 
-      {/* Mobile Connection Info */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Smartphone className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-lg font-medium">Mobile App Connection</h2>
-        </div>
-
-        <Card className="shadow-none">
-          <CardContent className="py-4 px-5 space-y-4">
-            <ConnectionField
-              label="Gateway Address"
-              value={`ws://${status?.lanIp ?? "..."}:${status?.gateway.port ?? 18789}`}
-            />
-            <ConnectionField
-              label="Auth Token"
-              value={status?.gateway.authToken ?? ""}
-              masked
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter these values in the mobile app&apos;s Settings screen to
-              connect.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Separator />
-
       {/* Diagnostics */}
       <div className="space-y-3">
         <h2 className="text-lg font-medium">Diagnostics</h2>
@@ -387,57 +359,6 @@ function StatusDot({ status, label }: { status: "running" | "stopped" | "error";
       <span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
       {label ?? "Stopped"}
     </span>
-  );
-}
-
-function ConnectionField({
-  label,
-  value,
-  masked,
-}: {
-  label: string;
-  value: string;
-  masked?: boolean;
-}) {
-  const [copied, setCopied] = useState(false);
-  const [revealed, setRevealed] = useState(false);
-
-  const displayValue = masked && !revealed
-    ? value.slice(0, 6) + "..." + value.slice(-4)
-    : value;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-muted-foreground w-32 shrink-0">
-        {label}
-      </span>
-      <code className="flex-1 text-xs bg-muted px-2 py-1.5 rounded font-mono truncate">
-        {displayValue}
-      </code>
-      {masked && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-xs h-7 px-2"
-          onClick={() => setRevealed(!revealed)}
-        >
-          {revealed ? "Hide" : "Show"}
-        </Button>
-      )}
-      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy}>
-        {copied ? (
-          <Check className="h-3 w-3 text-emerald-500" />
-        ) : (
-          <Copy className="h-3 w-3" />
-        )}
-      </Button>
-    </div>
   );
 }
 

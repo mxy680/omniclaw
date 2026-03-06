@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -161,12 +162,18 @@ export default function ChatViewScreen() {
         <Pressable
           style={styles.headerButton}
           onPress={() => {
-            // Show action sheet or menu for Clear Chat
-            chat.clear();
+            Alert.alert(
+              'Clear Chat',
+              'This will erase all messages and reset the conversation context.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Clear', style: 'destructive', onPress: () => chat.clear() },
+              ],
+            );
           }}
           hitSlop={8}
         >
-          <Ionicons name="ellipsis-horizontal" size={22} color="#007AFF" />
+          <Ionicons name="trash-outline" size={20} color="#007AFF" />
         </Pressable>
       ),
     });

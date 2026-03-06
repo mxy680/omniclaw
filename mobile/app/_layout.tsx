@@ -19,7 +19,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, headerBackTitle: 'Back' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
         <Stack.Screen name="conversation/[id]" options={{ headerShown: true }} />
         <Stack.Screen name="schedule/[id]" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="schedule/run/[runId]" options={{ headerShown: true, title: 'Run Result' }} />

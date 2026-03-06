@@ -30,7 +30,7 @@ interface SettingsState {
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  host: '100.71.39.86',
+  host: 'localhost',
   port: 18789,
   mcpPort: 9850,
   authToken: DEFAULT_AUTH_TOKEN,
@@ -44,7 +44,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         const raw = await file.text();
         const parsed: Partial<PersistedSettings> = JSON.parse(raw);
         set({
-          host: parsed.host ?? '100.71.39.86',
+          host: parsed.host ?? 'localhost',
           port: parsed.port ?? 18789,
           mcpPort: parsed.mcpPort ?? 9850,
         });

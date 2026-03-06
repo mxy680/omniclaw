@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { spawn, execFileSync } from "child_process";
 import { join } from "path";
-import { openSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { tmpdir, homedir } from "os";
+import { openSync, readFileSync } from "fs";
+import { tmpdir } from "os";
 import net from "net";
 
 const PROJECT_ROOT = join(process.cwd(), "..");
 const BUILD_LOG = join(tmpdir(), "omniclaw-ios-build.log");
+const TUNNEL_LOG = join(tmpdir(), "omniclaw-tunnel.log");
 
 async function isPortOpen(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -107,43 +108,43 @@ export async function POST(request: Request) {
     });
   }
 
-  if (service === "tailscale-funnel") {
+  if (service === "tunnel") {
     const gwPort = (body.port as number) || 18789;
 
-    // Enable Tailscale Funnel in background mode
+    // Check if cloudflared is already running
     try {
-      execFileSync("tailscale", ["funnel", "--bg", String(gwPort)], {
-        encoding: "utf-8",
-        timeout: 15000,
-        env: { ...process.env },
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to enable funnel";
-      // Check if funnel needs to be enabled on the tailnet first
-      if (msg.includes("not enabled on your tailnet") || msg.includes("visit")) {
-        return NextResponse.json({
-          error: "Funnel is not enabled on your tailnet. Visit https://login.tailscale.com/admin/settings/features to enable it first.",
-        }, { status: 400 });
-      }
-      return NextResponse.json({ error: msg }, { status: 500 });
-    }
-
-    // Read the current gateway config and set tailscale mode
-    const configPath = join(homedir(), ".openclaw", "openclaw.json");
-    try {
-      let config: Record<string, unknown> = {};
-      if (existsSync(configPath)) {
-        config = JSON.parse(readFileSync(configPath, "utf-8"));
-      }
-      const gw = (config.gateway ?? {}) as Record<string, unknown>;
-      gw.tailscale = { mode: "funnel" };
-      config.gateway = gw;
-      writeFileSync(configPath, JSON.stringify(config, null, 2));
+      execFileSync("pgrep", ["-f", "cloudflared tunnel"], { encoding: "utf-8" });
+      return NextResponse.json({ error: "Tunnel already running" }, { status: 409 });
     } catch {
-      // Config write is best-effort; funnel is already enabled via CLI
+      // Not running — proceed
     }
 
-    return NextResponse.json({ status: "enabled" });
+    // Spawn cloudflared tunnel with stderr going to a log file
+    const logFd = openSync(TUNNEL_LOG, "w");
+    const child = spawn("cloudflared", ["tunnel", "--url", `http://localhost:${gwPort}`], {
+      detached: true,
+      stdio: ["ignore", "ignore", logFd],
+      env: { ...process.env },
+    });
+    child.unref();
+
+    // Wait for cloudflared to establish the tunnel and write the URL
+    await sleep(6000);
+
+    let url: string | undefined;
+    try {
+      const log = readFileSync(TUNNEL_LOG, "utf-8");
+      const match = log.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
+      if (match) url = match[0];
+    } catch {
+      // ignore
+    }
+
+    return NextResponse.json({
+      status: url ? "started" : "starting",
+      pid: child.pid,
+      url,
+    });
   }
 
   return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { homedir, networkInterfaces } from "os";
+import { homedir, networkInterfaces, tmpdir } from "os";
 import net from "net";
 import { execFile } from "child_process";
 import { promisify } from "util";
@@ -12,7 +12,7 @@ import type {
   MobileStatus,
   ConnectedDevice,
   AgentInfo,
-  TailscaleStatus,
+  TunnelStatus,
 } from "@/lib/system-types";
 
 const execFileAsync = promisify(execFile);
@@ -184,50 +184,32 @@ async function probeMobile(): Promise<MobileStatus> {
   };
 }
 
-async function probeTailscale(): Promise<TailscaleStatus> {
-  try {
-    const { stdout } = await execFileAsync("tailscale", ["status", "--json"], {
-      encoding: "utf-8",
-      timeout: 5000,
-    });
-    const data = JSON.parse(stdout);
-    const self = data.Self ?? {};
-    const dnsName = (self.DNSName as string ?? "").replace(/\.$/, "");
-    const tailscaleIp = (self.TailscaleIPs as string[] ?? [])[0];
+const TUNNEL_LOG = join(tmpdir(), "omniclaw-tunnel.log");
 
-    // Check funnel/serve config
-    let funnelEnabled = false;
-    let funnelUrl: string | undefined;
+async function probeTunnel(): Promise<TunnelStatus> {
+  try {
+    const { stdout } = await execFileAsync("pgrep", ["-f", "cloudflared tunnel"], {
+      encoding: "utf-8",
+      timeout: 2000,
+    });
+    const pid = parseInt(stdout.trim().split("\n")[0], 10);
+    if (isNaN(pid)) return { running: false };
+
+    // Read tunnel URL from log file
+    let url: string | undefined;
     try {
-      const serveResult = await execFileAsync("tailscale", ["funnel", "status", "--json"], {
-        encoding: "utf-8",
-        timeout: 3000,
-      });
-      const serveData = JSON.parse(serveResult.stdout);
-      if (serveData && typeof serveData === "object") {
-        const webEntries = serveData.Web as Record<string, unknown> | undefined;
-        const allFunnel = serveData.AllowFunnel as Record<string, boolean> | undefined;
-        if (webEntries && Object.keys(webEntries).length > 0) {
-          funnelEnabled = allFunnel ? Object.values(allFunnel).some(v => v) : false;
-          if (funnelEnabled && dnsName) {
-            funnelUrl = `wss://${dnsName}`;
-          }
-        }
+      if (existsSync(TUNNEL_LOG)) {
+        const log = readFileSync(TUNNEL_LOG, "utf-8");
+        const match = log.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
+        if (match) url = match[0];
       }
     } catch {
-      // No serve config — funnel not enabled
+      // ignore
     }
 
-    return {
-      installed: true,
-      running: self.Online === true,
-      hostname: dnsName || undefined,
-      tailscaleIp,
-      funnelEnabled,
-      funnelUrl,
-    };
+    return { running: true, url, pid };
   } catch {
-    return { installed: false, running: false, funnelEnabled: false };
+    return { running: false };
   }
 }
 
@@ -235,16 +217,16 @@ export async function GET() {
   const gwConfig = readGatewayConfig();
   const mcpPort = parseInt(process.env.OMNICLAW_MCP_PORT ?? "9850", 10);
 
-  const [gateway, mcpServer, mobile, tailscale] = await Promise.all([
+  const [gateway, mcpServer, mobile, tunnel] = await Promise.all([
     probeGateway(gwConfig.port),
     probeMcpServer(mcpPort),
     probeMobile(),
-    probeTailscale(),
+    probeTunnel(),
   ]);
 
   const agents = readAgents();
   const lanIp = getLanIp();
 
-  const status: SystemStatus = { gateway, mcpServer, mobile, agents, lanIp, tailscale };
+  const status: SystemStatus = { gateway, mcpServer, mobile, agents, lanIp, tunnel };
   return NextResponse.json(status);
 }

@@ -39,13 +39,10 @@ export interface MobileStatus {
   devices: ConnectedDevice[];
 }
 
-export interface TailscaleStatus {
-  installed: boolean;
+export interface TunnelStatus {
   running: boolean;
-  hostname?: string;
-  tailscaleIp?: string;
-  funnelEnabled: boolean;
-  funnelUrl?: string;
+  url?: string;
+  pid?: number;
 }
 
 export interface SystemStatus {
@@ -54,5 +51,5 @@ export interface SystemStatus {
   mobile: MobileStatus;
   agents: AgentInfo[];
   lanIp: string;
-  tailscale: TailscaleStatus;
+  tunnel: TunnelStatus;
 }

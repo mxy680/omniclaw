@@ -18,6 +18,19 @@ export async function POST(request: Request) {
   const body = await request.json();
   const service = body.service as string;
 
+  if (service === "tunnel") {
+    try {
+      const output = execFileSync("pgrep", ["-f", "cloudflared tunnel"], { encoding: "utf-8" }).trim();
+      const pids = output.split("\n").map(s => parseInt(s, 10)).filter(n => !isNaN(n));
+      for (const p of pids) {
+        try { process.kill(p, "SIGTERM"); } catch {}
+      }
+      return NextResponse.json({ status: "stopped", pids });
+    } catch {
+      return NextResponse.json({ error: "No tunnel process found" }, { status: 404 });
+    }
+  }
+
   let port: number;
   if (service === "gateway") {
     port = 18789;

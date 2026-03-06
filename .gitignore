@@ -5,3 +5,4 @@ dist/
 .serena/
 ~/.openclaw/
 *.xcuserstate
+*.tsbuildinfo

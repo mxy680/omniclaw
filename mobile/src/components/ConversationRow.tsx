@@ -15,7 +15,7 @@ export function ConversationRow({ conversation, agent }: Props) {
   const last = lastMessage(conversation);
 
   function preview(): string {
-    if (!last) return agent.role;
+    if (!last) return '';
     if (last.content) return last.content;
     if (last.attachments.length === 0) return '...';
     const imageCount = last.attachments.filter((a: Attachment) => isImage(a)).length;
@@ -50,9 +50,11 @@ export function ConversationRow({ conversation, agent }: Props) {
         {agent.description && (
           <Text style={styles.description} numberOfLines={1}>{agent.description}</Text>
         )}
-        <Text style={[styles.preview, !last && styles.previewDim]} numberOfLines={2}>
-          {preview()}
-        </Text>
+        {last && (
+          <Text style={styles.preview} numberOfLines={2}>
+            {preview()}
+          </Text>
+        )}
       </View>
     </Pressable>
   );
@@ -76,5 +78,4 @@ const styles = StyleSheet.create({
   time: { fontSize: 15, color: '#8E8E93' },
   description: { fontSize: 13, color: '#8E8E93', marginTop: 1 },
   preview: { fontSize: 15, color: '#8E8E93', marginTop: 2 },
-  previewDim: { color: '#C7C7CC' },
 });

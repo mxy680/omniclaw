@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { homedir, networkInterfaces, tmpdir } from "os";
+import { homedir, networkInterfaces } from "os";
 import net from "net";
 import { execFile } from "child_process";
 import { promisify } from "util";
@@ -184,7 +184,7 @@ async function probeMobile(): Promise<MobileStatus> {
   };
 }
 
-const TUNNEL_LOG = join(tmpdir(), "omniclaw-tunnel.log");
+const TUNNEL_URL = "https://omniclaw.mxy680.net";
 
 async function probeTunnel(): Promise<TunnelStatus> {
   try {
@@ -195,19 +195,7 @@ async function probeTunnel(): Promise<TunnelStatus> {
     const pid = parseInt(stdout.trim().split("\n")[0], 10);
     if (isNaN(pid)) return { running: false };
 
-    // Read tunnel URL from log file
-    let url: string | undefined;
-    try {
-      if (existsSync(TUNNEL_LOG)) {
-        const log = readFileSync(TUNNEL_LOG, "utf-8");
-        const match = log.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
-        if (match) url = match[0];
-      }
-    } catch {
-      // ignore
-    }
-
-    return { running: true, url, pid };
+    return { running: true, url: TUNNEL_URL, pid };
   } catch {
     return { running: false };
   }

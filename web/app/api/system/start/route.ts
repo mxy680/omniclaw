@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { spawn, execFileSync } from "child_process";
 import { join } from "path";
-import { openSync, readFileSync } from "fs";
+import { openSync } from "fs";
 import { tmpdir } from "os";
 import net from "net";
 
@@ -109,8 +109,6 @@ export async function POST(request: Request) {
   }
 
   if (service === "tunnel") {
-    const gwPort = (body.port as number) || 18789;
-
     // Check if cloudflared is already running
     try {
       execFileSync("pgrep", ["-f", "cloudflared tunnel"], { encoding: "utf-8" });
@@ -119,31 +117,22 @@ export async function POST(request: Request) {
       // Not running — proceed
     }
 
-    // Spawn cloudflared tunnel with stderr going to a log file
+    // Spawn named cloudflared tunnel (uses ~/.cloudflared/config.yml)
     const logFd = openSync(TUNNEL_LOG, "w");
-    const child = spawn("cloudflared", ["tunnel", "--url", `http://localhost:${gwPort}`], {
+    const child = spawn("cloudflared", ["tunnel", "run", "reef"], {
       detached: true,
-      stdio: ["ignore", "ignore", logFd],
+      stdio: ["ignore", logFd, logFd],
       env: { ...process.env },
     });
     child.unref();
 
-    // Wait for cloudflared to establish the tunnel and write the URL
-    await sleep(6000);
-
-    let url: string | undefined;
-    try {
-      const log = readFileSync(TUNNEL_LOG, "utf-8");
-      const match = log.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
-      if (match) url = match[0];
-    } catch {
-      // ignore
-    }
+    // Wait for tunnel to connect
+    await sleep(4000);
 
     return NextResponse.json({
-      status: url ? "started" : "starting",
+      status: "started",
       pid: child.pid,
-      url,
+      url: "https://omniclaw.mxy680.net",
     });
   }
 

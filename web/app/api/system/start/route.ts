@@ -132,7 +132,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       status: "started",
       pid: child.pid,
-      url: "https://omniclaw.mxy680.net",
+      url: "https://omniclaw.markshteyn.com",
     });
   }
 

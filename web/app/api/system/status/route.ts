@@ -184,7 +184,7 @@ async function probeMobile(): Promise<MobileStatus> {
   };
 }
 
-const TUNNEL_URL = "https://omniclaw.mxy680.net";
+const TUNNEL_URL = "https://omniclaw.markshteyn.com";
 
 async function probeTunnel(): Promise<TunnelStatus> {
   try {

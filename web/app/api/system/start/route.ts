@@ -80,11 +80,16 @@ export async function POST(request: Request) {
   if (service === "mobile-ios") {
     const mobileDir = join(PROJECT_ROOT, "mobile");
     const udid = (body.udid as string) || undefined;
+    const target = (body.target as string) || "device";
 
-    const args = ["expo", "run:ios", "--device"];
-    if (udid) {
-      args.push(udid);
+    const args = ["expo", "run:ios"];
+    if (target === "device") {
+      args.push("--device");
+      if (udid) {
+        args.push(udid);
+      }
     }
+    // target === "simulator" → no --device flag, runs on default simulator
 
     // Write build output to a log file so progress can be tracked
     const logFd = openSync(BUILD_LOG, "w");

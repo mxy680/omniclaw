@@ -149,7 +149,10 @@ export function SystemPage() {
         mobile={status?.mobile}
         actionLoading={actionLoading}
         onLaunch={(udid) =>
-          handleAction("mobile-ios", "start", udid ? { udid } : undefined)
+          handleAction("mobile-ios", "start", udid ? { udid, target: "device" } : { target: "device" })
+        }
+        onSimulator={() =>
+          handleAction("mobile-ios", "start", { target: "simulator" })
         }
       />
 
@@ -466,10 +469,12 @@ function MobileCard({
   mobile,
   actionLoading,
   onLaunch,
+  onSimulator,
 }: {
   mobile?: { metro: "running" | "stopped"; metroPort: number; devices: Array<{ name: string; osVersion: string; udid: string; modelName: string; available: boolean; error?: string }> };
   actionLoading: string | null;
   onLaunch: (udid?: string) => void;
+  onSimulator: () => void;
 }) {
   const isLaunching = actionLoading === "start-mobile-ios";
   const devices = mobile?.devices ?? [];
@@ -561,6 +566,30 @@ function MobileCard({
             No iOS devices connected. Connect your iPhone via USB.
           </p>
         )}
+        <Separator />
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-sm font-medium">Simulator</span>
+            <p className="text-[11px] text-muted-foreground">Run on iOS Simulator</p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setBuilding(true);
+              setBuildLog("Starting simulator build...");
+              onSimulator();
+            }}
+            disabled={isLaunching || building}
+          >
+            {building ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Play className="h-3 w-3" />
+            )}
+            {building ? "Building..." : "Run"}
+          </Button>
+        </div>
         {building && buildLog && (
           <div className="mt-3">
             <pre className="text-[11px] bg-muted rounded-lg p-3 max-h-40 overflow-y-auto font-mono text-muted-foreground whitespace-pre-wrap">

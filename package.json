@@ -38,6 +38,7 @@
     "googleapis": "^144.0.0",
     "mime-types": "^3.0.2",
     "open": "^10.1.0",
+    "ws": "^8.19.0",
     "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {

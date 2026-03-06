@@ -1,10 +1,9 @@
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
 import { Attachment, UploadedAttachment } from '../types/attachment';
 
 /**
  * Uploads a local attachment to the MCP server's /api/attachments endpoint.
- * Uses the new expo-file-system File class which implements Blob,
- * allowing direct use as a fetch body.
+ * Uses expo-file-system uploadAsync for reliable binary uploads on React Native.
  */
 export async function uploadAttachment(
   attachment: Attachment,
@@ -18,20 +17,21 @@ export async function uploadAttachment(
 
   const url = `http://${host}:${mcpPort}/api/attachments`;
 
-  // expo-file-system File implements Blob in SDK 54 — use it directly as
-  // the fetch body. Creating a new Blob from ArrayBuffer isn't supported
-  // on Hermes.
-  const file = new File(attachment.localUri);
-
-  const response = await fetch(url, {
-    method: 'POST',
+  const result = await FileSystem.uploadAsync(url, attachment.localUri, {
+    httpMethod: 'POST',
+    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
     headers: {
       'Content-Type': attachment.mimeType,
       'X-Filename': attachment.filename,
       'Authorization': `Bearer ${authToken}`,
     },
-    body: file,
   });
+
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(`Upload failed (${result.status}): ${result.body || 'Unknown error'}`);
+  }
+
+  return JSON.parse(result.body) as UploadedAttachment;
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');

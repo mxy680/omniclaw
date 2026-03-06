@@ -64,9 +64,9 @@ function readAgents(): AgentInfo[] {
   return [];
 }
 
-async function probePort(port: number, timeoutMs = 2000): Promise<boolean> {
+async function probePort(port: number, host = "127.0.0.1", timeoutMs = 2000): Promise<boolean> {
   return new Promise((resolve) => {
-    const socket = net.createConnection({ port, host: "localhost" });
+    const socket = net.createConnection({ port, host });
     const timer = setTimeout(() => {
       socket.destroy();
       resolve(false);
@@ -85,7 +85,9 @@ async function probePort(port: number, timeoutMs = 2000): Promise<boolean> {
 
 async function probeGateway(port: number): Promise<GatewayStatus> {
   const config = readGatewayConfig();
-  const running = await probePort(port);
+  // Try the configured bind address first, fall back to 127.0.0.1
+  const bindHost = config.address === "localhost" ? "127.0.0.1" : config.address;
+  const running = await probePort(port, bindHost);
   return {
     status: running ? "running" : "stopped",
     port,
@@ -98,7 +100,7 @@ async function probeMcpServer(port: number): Promise<McpServerStatus> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 2000);
-    const res = await fetch(`http://localhost:${port}/health`, {
+    const res = await fetch(`http://127.0.0.1:${port}/health`, {
       signal: controller.signal,
       headers: { Authorization: "Bearer dev" },
     });

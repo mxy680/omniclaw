@@ -11,6 +11,7 @@ import type {
   MobileStatus,
   ConnectedDevice,
   AgentInfo,
+  TailscaleStatus,
 } from "@/lib/system-types";
 
 function getLanIp(): string {
@@ -168,6 +169,54 @@ async function probeMobile(): Promise<MobileStatus> {
   };
 }
 
+function probeTailscale(): TailscaleStatus {
+  try {
+    const output = execFileSync("tailscale", ["status", "--json"], {
+      encoding: "utf-8",
+      timeout: 5000,
+    });
+    const data = JSON.parse(output);
+    const self = data.Self ?? {};
+    const dnsName = (self.DNSName as string ?? "").replace(/\.$/, "");
+    const tailscaleIp = (self.TailscaleIPs as string[] ?? [])[0];
+
+    // Check funnel/serve config
+    let funnelEnabled = false;
+    let funnelUrl: string | undefined;
+    try {
+      const serveOut = execFileSync("tailscale", ["funnel", "status", "--json"], {
+        encoding: "utf-8",
+        timeout: 3000,
+      });
+      const serveData = JSON.parse(serveOut);
+      // If there's any serve config with funnel=true, it's enabled
+      if (serveData && typeof serveData === "object") {
+        const webEntries = serveData.Web as Record<string, unknown> | undefined;
+        const allFunnel = serveData.AllowFunnel as Record<string, boolean> | undefined;
+        if (webEntries && Object.keys(webEntries).length > 0) {
+          funnelEnabled = allFunnel ? Object.values(allFunnel).some(v => v) : false;
+          if (funnelEnabled && dnsName) {
+            funnelUrl = `wss://${dnsName}`;
+          }
+        }
+      }
+    } catch {
+      // No serve config — funnel not enabled
+    }
+
+    return {
+      installed: true,
+      running: self.Online === true,
+      hostname: dnsName || undefined,
+      tailscaleIp,
+      funnelEnabled,
+      funnelUrl,
+    };
+  } catch {
+    return { installed: false, running: false, funnelEnabled: false };
+  }
+}
+
 export async function GET() {
   const gwConfig = readGatewayConfig();
   const mcpPort = parseInt(process.env.OMNICLAW_MCP_PORT ?? "9850", 10);
@@ -180,7 +229,8 @@ export async function GET() {
 
   const agents = readAgents();
   const lanIp = getLanIp();
+  const tailscale = probeTailscale();
 
-  const status: SystemStatus = { gateway, mcpServer, mobile, agents, lanIp };
+  const status: SystemStatus = { gateway, mcpServer, mobile, agents, lanIp, tailscale };
   return NextResponse.json(status);
 }

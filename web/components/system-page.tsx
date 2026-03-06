@@ -25,7 +25,9 @@ import {
   Users,
   Rocket,
   AlertTriangle,
+  Globe,
 } from "lucide-react";
+import type { TailscaleStatus } from "@/lib/system-types";
 import type { SystemStatus } from "@/lib/system-types";
 
 function useSystemStatus(intervalMs = 5000) {
@@ -58,9 +60,9 @@ export function SystemPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const handleAction = async (
-    service: "gateway" | "mcp-server" | "mobile-ios",
+    service: "gateway" | "mcp-server" | "mobile-ios" | "tailscale-funnel",
     action: "start" | "stop",
-    extra?: Record<string, string>,
+    extra?: Record<string, string | number>,
   ) => {
     setActionLoading(`${action}-${service}`);
     try {
@@ -148,6 +150,16 @@ export function SystemPage() {
         actionLoading={actionLoading}
         onLaunch={(udid) =>
           handleAction("mobile-ios", "start", udid ? { udid } : undefined)
+        }
+      />
+
+      {/* Remote Access */}
+      <RemoteAccessCard
+        tailscale={status?.tailscale}
+        gatewayPort={status?.gateway.port ?? 18789}
+        actionLoading={actionLoading}
+        onEnableFunnel={(port) =>
+          handleAction("tailscale-funnel", "start", { port })
         }
       />
 
@@ -564,6 +576,120 @@ function MobileCard({
               Dismiss
             </Button>
           </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function RemoteAccessCard({
+  tailscale,
+  gatewayPort,
+  actionLoading,
+  onEnableFunnel,
+}: {
+  tailscale?: TailscaleStatus;
+  gatewayPort: number;
+  actionLoading: string | null;
+  onEnableFunnel: (port: number) => void;
+}) {
+  const isEnabling = actionLoading === "start-tailscale-funnel";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!tailscale?.installed) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            <CardTitle className="text-base">Remote Access</CardTitle>
+          </div>
+          <CardDescription>
+            Install Tailscale to enable secure remote access via Funnel.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            <CardTitle className="text-base">Remote Access</CardTitle>
+          </div>
+          <StatusDot
+            status={tailscale.funnelEnabled ? "running" : "stopped"}
+            label={tailscale.funnelEnabled ? "Funnel active" : "Funnel inactive"}
+          />
+        </div>
+        <CardDescription>
+          Tailscale Funnel — secure public endpoint with end-to-end TLS
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {tailscale.running ? (
+          <>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-muted-foreground">Hostname</span>
+              <code className="text-xs bg-muted px-1.5 py-0.5 rounded truncate">
+                {tailscale.hostname}
+              </code>
+            </div>
+
+            {tailscale.funnelEnabled && tailscale.funnelUrl ? (
+              <div className="rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    Public endpoint
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleCopy(tailscale.funnelUrl!)}
+                  >
+                    {copied ? (
+                      <Check className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+                <code className="text-xs font-mono text-emerald-700 dark:text-emerald-400 break-all">
+                  {tailscale.funnelUrl}
+                </code>
+                <p className="text-[11px] text-muted-foreground">
+                  Paste this hostname into the mobile app&apos;s Settings with TLS enabled.
+                </p>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => onEnableFunnel(gatewayPort)}
+                disabled={isEnabling}
+              >
+                {isEnabling ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Globe className="h-3 w-3" />
+                )}
+                Enable Funnel
+              </Button>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Tailscale is installed but not running. Start Tailscale to enable remote access.
+          </p>
         )}
       </CardContent>
     </Card>

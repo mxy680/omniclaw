@@ -39,10 +39,20 @@ export interface MobileStatus {
   devices: ConnectedDevice[];
 }
 
+export interface TailscaleStatus {
+  installed: boolean;
+  running: boolean;
+  hostname?: string;
+  tailscaleIp?: string;
+  funnelEnabled: boolean;
+  funnelUrl?: string;
+}
+
 export interface SystemStatus {
   gateway: GatewayStatus;
   mcpServer: McpServerStatus;
   mobile: MobileStatus;
   agents: AgentInfo[];
   lanIp: string;
+  tailscale: TailscaleStatus;
 }

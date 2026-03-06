@@ -21,7 +21,7 @@ export default function ConversationListScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { host, port, authToken, useTLS, isLoaded } = useSettingsStore();
-  const { agents, isLoading, fetch: fetchAgents } = useAgentStore();
+  const { agents, isLoading, error, fetch: fetchAgents } = useAgentStore();
   const { conversations, load: loadConversations, ensureDefaultConversations } = useConversationStore();
 
   const loadData = useCallback(async () => {
@@ -95,7 +95,9 @@ export default function ConversationListScreen() {
       <View style={styles.centered}>
         <Ionicons name="person-outline" size={48} color="#C7C7CC" />
         <Text style={styles.emptyTitle}>No Agents Found</Text>
-        <Text style={styles.emptySubtitle}>Make sure your server is running and reachable.</Text>
+        <Text style={styles.emptySubtitle}>
+          {error || 'Make sure your server is running and reachable.'}
+        </Text>
         <Pressable style={styles.settingsButton} onPress={loadData}>
           <Text style={styles.settingsButtonText}>Retry</Text>
         </Pressable>

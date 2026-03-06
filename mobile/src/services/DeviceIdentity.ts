@@ -3,6 +3,12 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 
+// React Native doesn't provide crypto.getRandomValues, so configure tweetnacl's PRNG
+(nacl as any).setPRNG((x: Uint8Array, n: number) => {
+  const bytes = Crypto.getRandomBytes(n);
+  for (let i = 0; i < n; i++) x[i] = bytes[i];
+});
+
 function toBase64(arr: Uint8Array): string {
   let s = '';
   for (let i = 0; i < arr.length; i++) {

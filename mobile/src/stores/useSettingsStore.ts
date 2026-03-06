@@ -1,8 +1,12 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 
 const AUTH_TOKEN_KEY = 'omniclaw_auth_token';
 const DEFAULT_AUTH_TOKEN = 'e23e564a957acd23de76f2ce31c6a143bc7e6a03dcd17321';
+
+// Simulator uses localhost directly; real devices go through the tunnel
+const isSimulator = !Constants.isDevice;
 
 interface SettingsState {
   host: string;
@@ -21,10 +25,10 @@ export function gatewayWsUrl(state: { host: string; port: number; useTLS: boolea
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
-  host: 'omniclaw.markshteyn.com',
-  port: 443,
+  host: isSimulator ? 'localhost' : 'omniclaw.markshteyn.com',
+  port: isSimulator ? 18789 : 443,
   mcpPort: 9850,
-  useTLS: true,
+  useTLS: !isSimulator,
   authToken: DEFAULT_AUTH_TOKEN,
   isLoaded: false,
 

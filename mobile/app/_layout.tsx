@@ -19,14 +19,6 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="settings"
-          options={{
-            presentation: 'modal',
-            title: 'Settings',
-            headerShown: false,
-          }}
-        />
         <Stack.Screen name="conversation/[id]" options={{ headerShown: true }} />
         <Stack.Screen name="schedule/[id]" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="schedule/run/[runId]" options={{ headerShown: true, title: 'Run Result' }} />

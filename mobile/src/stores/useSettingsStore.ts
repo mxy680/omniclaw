@@ -39,10 +39,10 @@ export function gatewayWsUrl(state: { host: string; port: number; useTLS: boolea
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  host: 'localhost',
-  port: 18789,
+  host: 'omniclaw.markshteyn.com',
+  port: 443,
   mcpPort: 9850,
-  useTLS: false,
+  useTLS: true,
   authToken: DEFAULT_AUTH_TOKEN,
   isLoaded: false,
 
@@ -54,10 +54,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         const raw = await file.text();
         const parsed: Partial<PersistedSettings> = JSON.parse(raw);
         set({
-          host: parsed.host ?? 'localhost',
-          port: parsed.port ?? 18789,
+          host: parsed.host ?? 'omniclaw.markshteyn.com',
+          port: parsed.port ?? 443,
           mcpPort: parsed.mcpPort ?? 9850,
-          useTLS: parsed.useTLS ?? false,
+          useTLS: parsed.useTLS ?? true,
         });
       }
 

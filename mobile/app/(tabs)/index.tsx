@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router, useNavigation } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAgentStore } from '@/stores/useAgentStore';
@@ -49,15 +49,6 @@ export default function ConversationListScreen() {
     navigation.setOptions({
       headerShown: true,
       title: 'Messages',
-      headerLeft: () => (
-        <Pressable
-          style={styles.headerButton}
-          onPress={() => router.push('/settings')}
-          hitSlop={8}
-        >
-          <Ionicons name="settings-outline" size={22} color="#007AFF" />
-        </Pressable>
-      ),
       headerRight: () => (
         <Pressable
           style={styles.headerButton}
@@ -86,19 +77,6 @@ export default function ConversationListScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
-
-  if (!host) {
-    return (
-      <View style={styles.centered}>
-        <Ionicons name="settings-outline" size={48} color="#C7C7CC" />
-        <Text style={styles.emptyTitle}>No Server Configured</Text>
-        <Text style={styles.emptySubtitle}>Configure your server address in Settings.</Text>
-        <Pressable style={styles.settingsButton} onPress={() => router.push('/settings')}>
-          <Text style={styles.settingsButtonText}>Open Settings</Text>
-        </Pressable>
       </View>
     );
   }

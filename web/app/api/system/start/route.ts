@@ -110,15 +110,21 @@ export async function POST(request: Request) {
   if (service === "tailscale-funnel") {
     const gwPort = (body.port as number) || 18789;
 
-    // Enable Tailscale Funnel for the gateway port
+    // Enable Tailscale Funnel in background mode
     try {
-      execFileSync("tailscale", ["funnel", String(gwPort)], {
+      execFileSync("tailscale", ["funnel", "--bg", String(gwPort)], {
         encoding: "utf-8",
-        timeout: 10000,
+        timeout: 15000,
         env: { ...process.env },
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to enable funnel";
+      // Check if funnel needs to be enabled on the tailnet first
+      if (msg.includes("not enabled on your tailnet") || msg.includes("visit")) {
+        return NextResponse.json({
+          error: "Funnel is not enabled on your tailnet. Visit https://login.tailscale.com/admin/settings/features to enable it first.",
+        }, { status: 400 });
+      }
       return NextResponse.json({ error: msg }, { status: 500 });
     }
 

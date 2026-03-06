@@ -154,7 +154,13 @@ export default function ChatViewScreen() {
       headerTitle: () =>
         agent ? (
           <View style={styles.headerTitle}>
-            <AgentAvatar name={agent.name} colorName={agent.colorName} size={32} />
+            <AgentAvatar
+              name={agent.name}
+              colorName={agent.colorName}
+              size={32}
+              avatarIcon={agent.avatarIcon}
+              avatarColor={agent.avatarColor}
+            />
             <Text style={styles.headerName}>{agent.name}</Text>
           </View>
         ) : null,

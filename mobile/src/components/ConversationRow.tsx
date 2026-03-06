@@ -36,12 +36,20 @@ export function ConversationRow({ conversation, agent }: Props) {
         })
       }
     >
-      <AgentAvatar name={agent.name} colorName={agent.colorName} />
+      <AgentAvatar
+        name={agent.name}
+        colorName={agent.colorName}
+        avatarIcon={agent.avatarIcon}
+        avatarColor={agent.avatarColor}
+      />
       <View style={styles.textContainer}>
         <View style={styles.topRow}>
           <Text style={styles.name} numberOfLines={1}>{agent.name}</Text>
           {last && <Text style={styles.time}>{formatTimestamp(last.timestamp)}</Text>}
         </View>
+        {agent.description && (
+          <Text style={styles.description} numberOfLines={1}>{agent.description}</Text>
+        )}
         <Text style={[styles.preview, !last && styles.previewDim]} numberOfLines={2}>
           {preview()}
         </Text>
@@ -66,6 +74,7 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 17, fontWeight: '600', color: '#000', flex: 1, marginRight: 8 },
   time: { fontSize: 15, color: '#8E8E93' },
+  description: { fontSize: 13, color: '#8E8E93', marginTop: 1 },
   preview: { fontSize: 15, color: '#8E8E93', marginTop: 2 },
   previewDim: { color: '#C7C7CC' },
 });

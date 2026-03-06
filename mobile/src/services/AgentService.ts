@@ -1,6 +1,7 @@
 import { Agent } from '../types/agent';
 import { Platform } from 'react-native';
 import { getDeviceIdentity, signChallenge } from './DeviceIdentity';
+import { agentProfiles } from '../config/agentProfiles';
 
 interface AgentServiceConfig {
   host: string;
@@ -69,13 +70,20 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
           const rawAgents = health?.agents as Array<Record<string, unknown>> | undefined;
 
           if (rawAgents && rawAgents.length > 0) {
-            const agents: Agent[] = rawAgents.map((a) => ({
-              id: (a.agentId as string) ?? (a.id as string) ?? 'unknown',
-              name: (a.name as string) ?? (a.agentId as string) ?? 'Unknown',
-              role: (a.role as string) ?? '',
-              colorName: (a.colorName as string) ?? 'blue',
-              services: (a.services as string[]) ?? [],
-            }));
+            const agents: Agent[] = rawAgents.map((a) => {
+              const id = (a.agentId as string) ?? (a.id as string) ?? 'unknown';
+              const profile = agentProfiles[id];
+              return {
+                id,
+                name: (a.name as string) ?? (a.agentId as string) ?? 'Unknown',
+                role: (a.role as string) ?? '',
+                colorName: (a.colorName as string) ?? 'blue',
+                services: (a.services as string[]) ?? [],
+                description: profile?.description,
+                avatarIcon: profile?.avatarIcon,
+                avatarColor: profile?.avatarColor,
+              };
+            });
             resolve(agents);
           } else {
             resolve([]);

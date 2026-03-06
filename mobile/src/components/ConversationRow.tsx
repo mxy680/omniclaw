@@ -15,7 +15,7 @@ export function ConversationRow({ conversation, agent }: Props) {
   const last = lastMessage(conversation);
 
   function preview(): string {
-    if (!last) return agent.role;
+    if (!last) return '';
     if (last.content) return last.content;
     if (last.attachments.length === 0) return '...';
     const imageCount = last.attachments.filter((a: Attachment) => isImage(a)).length;
@@ -36,15 +36,25 @@ export function ConversationRow({ conversation, agent }: Props) {
         })
       }
     >
-      <AgentAvatar name={agent.name} colorName={agent.colorName} />
+      <AgentAvatar
+        name={agent.name}
+        colorName={agent.colorName}
+        avatarIcon={agent.avatarIcon}
+        avatarColor={agent.avatarColor}
+      />
       <View style={styles.textContainer}>
         <View style={styles.topRow}>
           <Text style={styles.name} numberOfLines={1}>{agent.name}</Text>
           {last && <Text style={styles.time}>{formatTimestamp(last.timestamp)}</Text>}
         </View>
-        <Text style={[styles.preview, !last && styles.previewDim]} numberOfLines={2}>
-          {preview()}
-        </Text>
+        {agent.description && (
+          <Text style={styles.description} numberOfLines={1}>{agent.description}</Text>
+        )}
+        {last && (
+          <Text style={styles.preview} numberOfLines={2}>
+            {preview()}
+          </Text>
+        )}
       </View>
     </Pressable>
   );
@@ -66,6 +76,6 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 17, fontWeight: '600', color: '#000', flex: 1, marginRight: 8 },
   time: { fontSize: 15, color: '#8E8E93' },
+  description: { fontSize: 13, color: '#8E8E93', marginTop: 1 },
   preview: { fontSize: 15, color: '#8E8E93', marginTop: 2 },
-  previewDim: { color: '#C7C7CC' },
 });

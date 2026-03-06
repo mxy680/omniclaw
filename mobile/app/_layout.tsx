@@ -1,6 +1,9 @@
+import '../src/polyfills/crypto';
+import '../global.css';
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { PortalHost } from '@rn-primitives/portal';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
 export default function RootLayout() {
@@ -16,19 +19,12 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="settings"
-          options={{
-            presentation: 'modal',
-            title: 'Settings',
-            headerShown: false,
-          }}
-        />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
         <Stack.Screen name="conversation/[id]" options={{ headerShown: true }} />
         <Stack.Screen name="schedule/[id]" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="schedule/run/[runId]" options={{ headerShown: true, title: 'Run Result' }} />
       </Stack>
+      <PortalHost />
     </SafeAreaProvider>
   );
 }

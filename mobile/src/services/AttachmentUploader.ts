@@ -1,10 +1,9 @@
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { Attachment, UploadedAttachment } from '../types/attachment';
 
 /**
  * Uploads a local attachment to the MCP server's /api/attachments endpoint.
- * Uses the file:// URI directly — React Native's fetch supports it for uploads.
- * Falls back to base64 read + Blob construction if needed.
+ * Reads raw bytes via expo-file-system File.bytes() and sends via XHR.
  */
 export async function uploadAttachment(
   attachment: Attachment,
@@ -17,35 +16,25 @@ export async function uploadAttachment(
   }
 
   const url = `http://${host}:${mcpPort}/api/attachments`;
+  const file = new File(attachment.localUri);
+  const bytes = await file.bytes();
 
-  // Read file as base64 and construct a Blob so we can send binary data via fetch.
-  // This is the most reliable cross-platform approach in React Native / Expo.
-  const base64 = await FileSystem.readAsStringAsync(attachment.localUri, {
-    encoding: FileSystem.EncodingType.Base64,
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Content-Type', attachment.mimeType);
+    xhr.setRequestHeader('X-Filename', attachment.filename);
+    xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+    xhr.responseType = 'text';
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText) as UploadedAttachment);
+      } else {
+        reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText || 'Unknown error'}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Upload failed: network error'));
+    xhr.send(bytes);
   });
-
-  // Convert base64 to a Uint8Array for binary upload
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  const blob = new Blob([bytes], { type: attachment.mimeType });
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': attachment.mimeType,
-      'X-Filename': attachment.filename,
-      'Authorization': `Bearer ${authToken}`,
-    },
-    body: blob,
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`Upload failed (${response.status}): ${body || response.statusText}`);
-  }
-
-  return response.json() as Promise<UploadedAttachment>;
 }

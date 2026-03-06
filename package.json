@@ -9,6 +9,7 @@
     "dev": "tsc --watch",
     "mcp": "node dist/mcp-server.js",
     "mcp:dev": "tsx src/mcp-server.ts",
+    "start:dev": "bash scripts/setup.sh",
     "test": "vitest run --exclude 'tests/integration/**'",
     "test:watch": "vitest --exclude 'tests/integration/**'",
     "test:integration": "vitest run tests/integration",
@@ -37,6 +38,7 @@
     "googleapis": "^144.0.0",
     "mime-types": "^3.0.2",
     "open": "^10.1.0",
+    "ws": "^8.19.0",
     "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {

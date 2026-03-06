@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router, useNavigation } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAgentStore } from '@/stores/useAgentStore';
@@ -20,14 +20,14 @@ export default function ConversationListScreen() {
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { host, port, authToken, isLoaded } = useSettingsStore();
-  const { agents, isLoading, fetch: fetchAgents } = useAgentStore();
+  const { host, port, authToken, useTLS, isLoaded } = useSettingsStore();
+  const { agents, isLoading, error, fetch: fetchAgents } = useAgentStore();
   const { conversations, load: loadConversations, ensureDefaultConversations } = useConversationStore();
 
   const loadData = useCallback(async () => {
     if (!isLoaded || !host) return;
-    await fetchAgents(host, port, authToken);
-  }, [isLoaded, host, port, authToken, fetchAgents]);
+    await fetchAgents(host, port, authToken, useTLS);
+  }, [isLoaded, host, port, authToken, useTLS, fetchAgents]);
 
   // Initial load: conversations from disk, then agents from server
   useEffect(() => {
@@ -49,15 +49,6 @@ export default function ConversationListScreen() {
     navigation.setOptions({
       headerShown: true,
       title: 'Messages',
-      headerLeft: () => (
-        <Pressable
-          style={styles.headerButton}
-          onPress={() => router.push('/settings')}
-          hitSlop={8}
-        >
-          <Ionicons name="settings-outline" size={22} color="#007AFF" />
-        </Pressable>
-      ),
       headerRight: () => (
         <Pressable
           style={styles.headerButton}
@@ -90,19 +81,6 @@ export default function ConversationListScreen() {
     );
   }
 
-  if (!host) {
-    return (
-      <View style={styles.centered}>
-        <Ionicons name="settings-outline" size={48} color="#C7C7CC" />
-        <Text style={styles.emptyTitle}>No Server Configured</Text>
-        <Text style={styles.emptySubtitle}>Configure your server address in Settings.</Text>
-        <Pressable style={styles.settingsButton} onPress={() => router.push('/settings')}>
-          <Text style={styles.settingsButtonText}>Open Settings</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   if (isLoading && agents.length === 0) {
     return (
       <View style={styles.centered}>
@@ -117,7 +95,9 @@ export default function ConversationListScreen() {
       <View style={styles.centered}>
         <Ionicons name="person-outline" size={48} color="#C7C7CC" />
         <Text style={styles.emptyTitle}>No Agents Found</Text>
-        <Text style={styles.emptySubtitle}>Make sure your server is running and reachable.</Text>
+        <Text style={styles.emptySubtitle}>
+          {error || 'Make sure your server is running and reachable.'}
+        </Text>
         <Pressable style={styles.settingsButton} onPress={loadData}>
           <Text style={styles.settingsButtonText}>Retry</Text>
         </Pressable>

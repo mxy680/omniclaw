@@ -17,7 +17,7 @@ export function useChat(conversationId: string, _agentId: string) {
 
   const { addMessage, updateLastMessage, clearConversation, conversations } =
     useConversationStore();
-  const { host, port, authToken } = useSettingsStore();
+  const { host, port, authToken, useTLS } = useSettingsStore();
 
   const syncState = useCallback(() => {
     const svc = chatServiceRef.current;
@@ -35,7 +35,7 @@ export function useChat(conversationId: string, _agentId: string) {
 
   const connect = useCallback(async () => {
     const svc = getOrCreateService();
-    const config: ServerConfig = { host, port, authToken };
+    const config: ServerConfig = { host, port, authToken, useTLS };
     try {
       await svc.connect(config);
       setIsConnected(true);
@@ -46,7 +46,7 @@ export function useChat(conversationId: string, _agentId: string) {
       setError(msg);
       setIsConnected(false);
     }
-  }, [getOrCreateService, host, port, authToken]);
+  }, [getOrCreateService, host, port, authToken, useTLS]);
 
   const disconnect = useCallback(() => {
     chatServiceRef.current?.disconnect();

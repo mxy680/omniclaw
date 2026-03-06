@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -112,7 +113,7 @@ export default function ChatViewScreen() {
   const [inputText, setInputText] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const { host, port, mcpPort, authToken, isLoaded, load: loadSettings } = useSettingsStore();
+  const { host, port, mcpPort, authToken, useTLS, isLoaded, load: loadSettings } = useSettingsStore();
   const { agents, fetch: fetchAgents } = useAgentStore();
   const { conversations } = useConversationStore();
 
@@ -131,7 +132,7 @@ export default function ChatViewScreen() {
 
   useEffect(() => {
     if (isLoaded && host && agents.length === 0) {
-      fetchAgents(host, port, authToken);
+      fetchAgents(host, port, authToken, useTLS);
     }
   }, [isLoaded, host, port, authToken, agents.length, fetchAgents]);
 
@@ -153,7 +154,13 @@ export default function ChatViewScreen() {
       headerTitle: () =>
         agent ? (
           <View style={styles.headerTitle}>
-            <AgentAvatar name={agent.name} colorName={agent.colorName} size={32} />
+            <AgentAvatar
+              name={agent.name}
+              colorName={agent.colorName}
+              size={32}
+              avatarIcon={agent.avatarIcon}
+              avatarColor={agent.avatarColor}
+            />
             <Text style={styles.headerName}>{agent.name}</Text>
           </View>
         ) : null,
@@ -161,12 +168,18 @@ export default function ChatViewScreen() {
         <Pressable
           style={styles.headerButton}
           onPress={() => {
-            // Show action sheet or menu for Clear Chat
-            chat.clear();
+            Alert.alert(
+              'Clear Chat',
+              'This will erase all messages and reset the conversation context.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Clear', style: 'destructive', onPress: () => chat.clear() },
+              ],
+            );
           }}
           hitSlop={8}
         >
-          <Ionicons name="ellipsis-horizontal" size={22} color="#007AFF" />
+          <Ionicons name="trash-outline" size={20} color="#007AFF" />
         </Pressable>
       ),
     });

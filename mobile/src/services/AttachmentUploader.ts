@@ -3,7 +3,8 @@ import { Attachment, UploadedAttachment } from '../types/attachment';
 
 /**
  * Uploads a local attachment to the MCP server's /api/attachments endpoint.
- * Uses expo-file-system uploadAsync for reliable binary uploads on React Native.
+ * Reads the file as base64 via expo-file-system, then sends as raw binary
+ * using XMLHttpRequest (which handles base64→binary correctly on RN).
  */
 export async function uploadAttachment(
   attachment: Attachment,
@@ -17,26 +18,35 @@ export async function uploadAttachment(
 
   const url = `http://${host}:${mcpPort}/api/attachments`;
 
-  const result = await FileSystem.uploadAsync(url, attachment.localUri, {
-    httpMethod: 'POST',
-    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-    headers: {
-      'Content-Type': attachment.mimeType,
-      'X-Filename': attachment.filename,
-      'Authorization': `Bearer ${authToken}`,
-    },
+  // Read file as base64
+  const base64 = await FileSystem.readAsStringAsync(attachment.localUri, {
+    encoding: FileSystem.EncodingType.Base64,
   });
 
-  if (result.status < 200 || result.status >= 300) {
-    throw new Error(`Upload failed (${result.status}): ${result.body || 'Unknown error'}`);
-  }
+  // Use XMLHttpRequest which supports base64→binary on React Native
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Content-Type', attachment.mimeType);
+    xhr.setRequestHeader('X-Filename', attachment.filename);
+    xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+    xhr.responseType = 'text';
 
-  return JSON.parse(result.body) as UploadedAttachment;
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText) as UploadedAttachment);
+      } else {
+        reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText || 'Unknown error'}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Upload failed: network error'));
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`Upload failed (${response.status}): ${body || response.statusText}`);
-  }
-
-  return response.json() as Promise<UploadedAttachment>;
+    // Convert base64 to Uint8Array for sending
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    xhr.send(bytes);
+  });
 }

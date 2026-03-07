@@ -16,11 +16,14 @@ export const useScheduleStore = create<ScheduleState>((set) => ({
   error: null,
 
   fetchSchedules: async (host, mcpPort, authToken) => {
+    console.log('[schedules] fetching', { host, mcpPort, authToken, url: `http://${host}:${mcpPort}/api/schedules` });
     set({ isLoading: true, error: null });
     try {
       const jobs = await ScheduleService.fetchSchedules(host, mcpPort, authToken);
+      console.log('[schedules] got jobs:', jobs.length, jobs.map((j: ScheduleJob) => j.id));
       set({ jobs, isLoading: false });
     } catch (err: any) {
+      console.error('[schedules] fetch error:', err.message);
       set({ error: err.message, isLoading: false });
     }
   },

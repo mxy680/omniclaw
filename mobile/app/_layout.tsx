@@ -5,6 +5,12 @@ import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PortalHost } from '@rn-primitives/portal';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useScheduleSync } from '@/hooks/useScheduleSync';
+
+function ScheduleSyncProvider() {
+  useScheduleSync();
+  return null;
+}
 
 export default function RootLayout() {
   const { isLoaded, load } = useSettingsStore();
@@ -18,11 +24,13 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <ScheduleSyncProvider />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
         <Stack.Screen name="conversation/[id]" options={{ headerShown: true }} />
         <Stack.Screen name="schedule/[id]" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="schedule/run/[runId]" options={{ headerShown: true, title: 'Run Result' }} />
+        <Stack.Screen name="report/[id]" options={{ headerShown: true, title: 'Report' }} />
       </Stack>
       <PortalHost />
     </SafeAreaProvider>

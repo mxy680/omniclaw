@@ -23,7 +23,7 @@ export default function ScheduleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
 
-  const { host, mcpPort, authToken } = useSettingsStore();
+  const { host, mcpPort, mcpToken } = useSettingsStore();
   const { agent } = useAgentStore();
   const { jobs, triggerJob } = useScheduleStore();
 
@@ -44,12 +44,12 @@ export default function ScheduleDetailScreen() {
     if (!id || !host) return;
     setRunsLoading(true);
     try {
-      const fetched = await ScheduleService.fetchRuns(id, host, mcpPort, authToken);
+      const fetched = await ScheduleService.fetchRuns(id, host, mcpPort, mcpToken);
       setRuns(fetched);
     } finally {
       setRunsLoading(false);
     }
-  }, [id, host, mcpPort, authToken]);
+  }, [id, host, mcpPort, mcpToken]);
 
   useEffect(() => {
     loadRuns();
@@ -59,7 +59,7 @@ export default function ScheduleDetailScreen() {
     if (!id) return;
     setTriggering(true);
     try {
-      const success = await triggerJob(id, host, mcpPort, authToken);
+      const success = await triggerJob(id, host, mcpPort, mcpToken);
       if (success) {
         // Reload runs after a brief moment
         setTimeout(() => loadRuns(), 1000);

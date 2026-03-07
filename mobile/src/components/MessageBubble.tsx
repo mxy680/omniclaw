@@ -1,4 +1,6 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Message } from '../types/message';
 import { Attachment, isImage, isPDF } from '../types/attachment';
 import { TypingIndicator } from './TypingIndicator';
@@ -71,6 +73,34 @@ export function MessageBubble({ message, position }: Props) {
   const textColor = isUser ? styles.userText : styles.assistantText;
 
   const showTyping = !isUser && message.isStreaming && !message.content;
+  const isSchedule = message.metadata?.source === 'schedule';
+
+  if (isSchedule && message.metadata) {
+    return (
+      <View style={[styles.row, styles.rowLeft]}>
+        <Pressable
+          style={[styles.scheduleBubble, assistantRadii('standalone')]}
+          onPress={() =>
+            router.push({
+              pathname: '/report/[id]',
+              params: {
+                id: message.metadata!.runId,
+                jobName: message.metadata!.jobName,
+                response: message.metadata!.response,
+                timestamp: message.timestamp,
+              },
+            })
+          }
+        >
+          <View style={styles.scheduleContent}>
+            <Ionicons name="document-text-outline" size={16} color="#007AFF" />
+            <Text style={styles.scheduleTitle}>{message.content}</Text>
+            <Ionicons name="chevron-forward" size={14} color="#C7C7CC" />
+          </View>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
@@ -137,5 +167,21 @@ const styles = StyleSheet.create({
   attachmentLabel: {
     fontSize: 13,
     color: '#FFFFFF',
+  },
+  scheduleBubble: {
+    backgroundColor: '#E9E9EB',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  scheduleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  scheduleTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#007AFF',
+    flex: 1,
   },
 });

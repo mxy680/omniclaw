@@ -28,6 +28,7 @@ export interface SchedulesFile {
 export interface ScheduleRunResult {
   id: string;
   jobId: string;
+  jobName?: string;
   agentId: string;
   startedAt: string;
   completedAt: string | null;

@@ -29,3 +29,17 @@ export async function triggerJob(jobId: string, host: string, mcpPort: number, a
   });
   return response.ok;
 }
+
+export async function fetchRecentRuns(
+  host: string, mcpPort: number, authToken: string, since?: string, limit = 50,
+): Promise<ScheduleRun[]> {
+  const params = new URLSearchParams();
+  if (since) params.set('since', since);
+  params.set('limit', String(limit));
+  const response = await fetch(`${baseURL(host, mcpPort)}/api/schedule-runs/recent?${params}`, {
+    headers: { 'Authorization': `Bearer ${authToken}` },
+  });
+  if (!response.ok) return [];
+  const data = await response.json();
+  return data.runs ?? [];
+}

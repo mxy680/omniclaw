@@ -76,7 +76,7 @@ export class GatewayClient {
             params: {
               minProtocol: 3,
               maxProtocol: 3,
-              client: { id: "openclaw-scheduler", version: "1.0.0", platform: "node", mode: "cli" },
+              client: { id: "openclaw-cli", version: "1.0.0", platform: "node", mode: "cli" },
               role: "operator",
               scopes: ["operator.read", "operator.write"],
               auth: { token: this.config.authToken },

@@ -102,7 +102,7 @@ export function getToolService(toolName: string): string {
 }
 
 /** Tools that are always available regardless of agent service permissions. */
-const GLOBAL_TOOLS = new Set(["view_attachment"]);
+const GLOBAL_TOOLS = new Set(["view_attachment", "soul_read", "soul_write"]);
 
 export function isToolAllowed(toolName: string, permissions: AgentPermissions): boolean {
   if (GLOBAL_TOOLS.has(toolName)) {
@@ -146,5 +146,44 @@ export function ensureAgentWorkspaces(agents: AgentConfig[]): void {
     for (const dir of dirs) {
       fs.mkdirSync(dir, { recursive: true });
     }
+
+    // Create default soul.md if it doesn't exist
+    const soulPath = path.join(agent.workspace, "soul.md");
+    if (!fs.existsSync(soulPath)) {
+      fs.writeFileSync(
+        soulPath,
+        DEFAULT_SOUL_TEMPLATE.replace("{{name}}", agent.name),
+        "utf-8",
+      );
+    }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Soul
+// ---------------------------------------------------------------------------
+
+const DEFAULT_SOUL_TEMPLATE = `# Soul
+
+## Identity
+<!-- Who is {{name}}? What is their core purpose? -->
+
+## Personality
+<!-- How does {{name}} communicate? What's their tone and style? -->
+
+## Expertise
+<!-- What domains, skills, or knowledge areas does {{name}} specialize in? -->
+
+## Goals
+<!-- What does {{name}} aim to achieve? What are its priorities? -->
+
+## Guidelines
+<!-- Any rules, constraints, or preferences {{name}} should follow? -->
+`;
+
+export function loadAgentSoul(agent: AgentConfig): string | null {
+  const soulPath = path.join(agent.workspace, "soul.md");
+  if (!fs.existsSync(soulPath)) return null;
+  const content = fs.readFileSync(soulPath, "utf-8").trim();
+  return content.length > 0 ? content : null;
 }

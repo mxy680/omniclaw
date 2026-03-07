@@ -18,7 +18,7 @@ export default function ScheduleRunScreen() {
   const { runId } = useLocalSearchParams<{ runId: string }>();
   const navigation = useNavigation();
 
-  const { host, mcpPort, authToken } = useSettingsStore();
+  const { host, mcpPort, mcpToken } = useSettingsStore();
   const { agent } = useAgentStore();
   const { jobs } = useScheduleStore();
 
@@ -36,7 +36,7 @@ export default function ScheduleRunScreen() {
       // We need to search through jobs to find the matching run
       for (const job of jobs) {
         try {
-          const runs = await ScheduleService.fetchRuns(job.id, host, mcpPort, authToken, 50);
+          const runs = await ScheduleService.fetchRuns(job.id, host, mcpPort, mcpToken, 50);
           const found = runs.find(r => r.id === runId);
           if (found) {
             setRun(found);
@@ -49,7 +49,7 @@ export default function ScheduleRunScreen() {
       setLoading(false);
     }
     loadRun();
-  }, [runId, jobs, host, mcpPort, authToken]);
+  }, [runId, jobs, host, mcpPort, mcpToken]);
 
   if (loading) {
     return (

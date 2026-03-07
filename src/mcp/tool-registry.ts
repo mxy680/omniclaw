@@ -110,6 +110,8 @@ import { createScheduleCreateTool } from "../tools/schedule-create.js";
 import { createScheduleGetTool } from "../tools/schedule-get.js";
 import { createScheduleUpdateTool } from "../tools/schedule-update.js";
 import { createScheduleDeleteTool } from "../tools/schedule-delete.js";
+import { createSoulReadTool } from "../tools/soul-read.js";
+import { createSoulWriteTool } from "../tools/soul-write.js";
 import { createViewAttachmentTool } from "../tools/attachment-view.js";
 import { ScheduleStore } from "../scheduler/schedule-store.js";
 import { loadAgentConfigs } from "./agent-config.js";
@@ -265,6 +267,10 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
   add(createScheduleGetTool(scheduleStore, agentConfigs));
   add(createScheduleUpdateTool(scheduleStore, agentConfigs));
   add(createScheduleDeleteTool(scheduleStore));
+
+  // Soul tools — always available (in GLOBAL_TOOLS)
+  add(createSoulReadTool(agentConfigs));
+  add(createSoulWriteTool(agentConfigs));
 
   // Attachment viewing tool — always available
   add(createViewAttachmentTool());

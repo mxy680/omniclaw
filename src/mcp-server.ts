@@ -35,6 +35,7 @@ import { bearerAuth } from "./mcp/auth-middleware.js";
 import { createAllTools, type OmniclawTool } from "./mcp/tool-registry.js";
 import {
   loadAgentConfigs,
+  loadAgentSoul,
   filterToolsForAgent,
   ensureAgentWorkspaces,
   type AgentConfig,
@@ -210,6 +211,7 @@ app.get("/agents", (_req: Request, res: Response) => {
     role: a.role,
     colorName: a.colorName,
     services: a.permissions.services,
+    soul: loadAgentSoul(a),
   }));
   res.json({ agents });
 });
@@ -402,6 +404,15 @@ app.post("/api/schedules/reload", (_req: Request, res: Response) => {
   if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
   scheduler.reload();
   res.json({ status: "reloaded" });
+});
+
+// GET /api/schedule-runs/recent — list recent completed runs across all agents
+app.get("/api/schedule-runs/recent", (req: Request, res: Response) => {
+  if (!scheduler) { res.status(503).json({ error: "Scheduler not enabled" }); return; }
+  const since = req.query.since as string | undefined;
+  const limit = parseInt(req.query.limit as string) || 50;
+  const runs = scheduler.listRecentRuns(since, limit);
+  res.json({ runs });
 });
 
 // ---------------------------------------------------------------------------

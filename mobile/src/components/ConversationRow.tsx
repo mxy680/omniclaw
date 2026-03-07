@@ -9,10 +9,12 @@ import { AgentAvatar } from './AgentAvatar';
 interface Props {
   conversation: Conversation;
   agent: Agent;
+  unreadCount?: number;
 }
 
-export function ConversationRow({ conversation, agent }: Props) {
+export function ConversationRow({ conversation, agent, unreadCount = 0 }: Props) {
   const last = lastMessage(conversation);
+  const isUnread = unreadCount > 0;
 
   function preview(): string {
     if (!last) return '';
@@ -44,14 +46,23 @@ export function ConversationRow({ conversation, agent }: Props) {
       />
       <View style={styles.textContainer}>
         <View style={styles.topRow}>
-          <Text style={styles.name} numberOfLines={1}>{agent.name}</Text>
-          {last && <Text style={styles.time}>{formatTimestamp(last.timestamp)}</Text>}
+          <Text style={[styles.name, isUnread && styles.nameUnread]} numberOfLines={1}>
+            {agent.name}
+          </Text>
+          <View style={styles.timeRow}>
+            {last && (
+              <Text style={[styles.time, isUnread && styles.timeUnread]}>
+                {formatTimestamp(last.timestamp)}
+              </Text>
+            )}
+            {isUnread && <View style={styles.unreadDot} />}
+          </View>
         </View>
         {agent.description && (
           <Text style={styles.description} numberOfLines={1}>{agent.description}</Text>
         )}
         {last && (
-          <Text style={styles.preview} numberOfLines={2}>
+          <Text style={[styles.preview, isUnread && styles.previewUnread]} numberOfLines={2}>
             {preview()}
           </Text>
         )}
@@ -75,7 +86,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   name: { fontSize: 17, fontWeight: '600', color: '#000', flex: 1, marginRight: 8 },
+  nameUnread: { fontWeight: '700' },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   time: { fontSize: 15, color: '#8E8E93' },
+  timeUnread: { color: '#007AFF' },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#007AFF',
+  },
   description: { fontSize: 13, color: '#8E8E93', marginTop: 1 },
   preview: { fontSize: 15, color: '#8E8E93', marginTop: 2 },
+  previewUnread: { color: '#000000' },
 });

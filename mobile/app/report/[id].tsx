@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import Markdown from 'react-native-markdown-display';
+import Markdown from '@ronradtke/react-native-markdown-display';
 
 export default function ReportScreen() {
   const { jobName, response } = useLocalSearchParams<{

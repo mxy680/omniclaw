@@ -18,6 +18,7 @@ export type RunStatus = 'running' | 'completed' | 'error';
 export interface ScheduleRun {
   id: string;
   jobId: string;
+  jobName?: string;
   agentId: string;
   startedAt: string;
   completedAt?: string;

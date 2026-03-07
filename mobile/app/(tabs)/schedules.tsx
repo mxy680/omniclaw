@@ -17,14 +17,14 @@ import { ScheduleJob } from '@/types/schedule';
 export default function ScheduleListScreen() {
   const navigation = useNavigation();
 
-  const { host, mcpPort, authToken, isLoaded } = useSettingsStore();
+  const { host, mcpPort, mcpToken, isLoaded } = useSettingsStore();
   const { agent } = useAgentStore();
   const { jobs, isLoading, fetchSchedules } = useScheduleStore();
 
   const loadData = useCallback(async () => {
     if (!isLoaded || !host) return;
-    await fetchSchedules(host, mcpPort, authToken);
-  }, [isLoaded, host, mcpPort, authToken, fetchSchedules]);
+    await fetchSchedules(host, mcpPort, mcpToken);
+  }, [isLoaded, host, mcpPort, mcpToken, fetchSchedules]);
 
   useEffect(() => {
     loadData();

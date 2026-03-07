@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAgentStore } from '@/stores/useAgentStore';
 import { useConversationStore } from '@/stores/useConversationStore';
+import { useScheduleSyncStore } from '@/stores/useScheduleSyncStore';
 import { ConversationRow } from '@/components/ConversationRow';
 import { Conversation } from '@/types/conversation';
 
@@ -23,6 +24,7 @@ export default function ConversationListScreen() {
   const { host, port, authToken, useTLS, isLoaded } = useSettingsStore();
   const { agents, isLoading, error, fetch: fetchAgents } = useAgentStore();
   const { conversations, load: loadConversations, ensureDefaultConversations } = useConversationStore();
+  const unreadCounts = useScheduleSyncStore((s) => s.unreadCounts);
 
   const loadData = useCallback(async () => {
     if (!isLoaded || !host) return;
@@ -126,7 +128,13 @@ export default function ConversationListScreen() {
         renderItem={({ item }) => {
           const agent = agentMap.get(item.agentId);
           if (!agent) return null;
-          return <ConversationRow conversation={item} agent={agent} />;
+          return (
+            <ConversationRow
+              conversation={item}
+              agent={agent}
+              unreadCount={unreadCounts[item.id] ?? 0}
+            />
+          );
         }}
         refreshing={isLoading}
         onRefresh={loadData}

@@ -4,7 +4,7 @@ import { ScheduleStore } from "./schedule-store.js";
 import { ResultStore } from "./result-store.js";
 import { GatewayClient, type GatewayConfig } from "./gateway-client.js";
 import type { ScheduleJob, ScheduleRunResult } from "./types.js";
-import type { AgentConfig } from "../mcp/agent-config.js";
+import { type AgentConfig, loadAgentSoul } from "../mcp/agent-config.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -133,6 +133,44 @@ export class SchedulerService {
     };
   }
 
+  /** List recent runs across all agents and jobs (completed, error, and running). */
+  listRecentRuns(since?: string, limit = 50): ScheduleRunResult[] {
+    const sinceMs = since ? new Date(since).getTime() : 0;
+    const allRuns: ScheduleRunResult[] = [];
+
+    const { jobs } = this.store.load();
+    for (const job of jobs) {
+      const agent = this.agentMap.get(job.agentId);
+      if (!agent) continue;
+      const runs = this.resultStore.listRuns(agent.workspace, job.id);
+      for (const run of runs) {
+        // Enrich with job name if missing (for older results)
+        if (!run.jobName) run.jobName = job.name;
+
+        if (run.status === "running") {
+          allRuns.push(run);
+        } else if (run.completedAt && new Date(run.completedAt).getTime() > sinceMs) {
+          allRuns.push(run);
+        }
+      }
+    }
+
+    // Also include in-memory active runs (not yet saved as completed)
+    for (const run of this.activeRuns.values()) {
+      if (!allRuns.some((r) => r.id === run.id)) {
+        allRuns.push(run);
+      }
+    }
+
+    allRuns.sort((a, b) => {
+      const ta = a.completedAt ? new Date(a.completedAt).getTime() : a.startedAt ? new Date(a.startedAt).getTime() : 0;
+      const tb = b.completedAt ? new Date(b.completedAt).getTime() : b.startedAt ? new Date(b.startedAt).getTime() : 0;
+      return tb - ta;
+    });
+
+    return allRuns.slice(0, limit);
+  }
+
   // -----------------------------------------------------------------------
   // Internal
   // -----------------------------------------------------------------------
@@ -180,6 +218,7 @@ export class SchedulerService {
       console.error(`[scheduler] Failed to read instruction for "${job.id}": ${errorMsg}`);
       this.resultStore.saveRun(agent.workspace, {
         id: runId,
+        jobName: job.name,
         jobId: job.id,
         agentId: job.agentId,
         startedAt,
@@ -197,6 +236,7 @@ export class SchedulerService {
     const run: ScheduleRunResult = {
       id: runId,
       jobId: job.id,
+      jobName: job.name,
       agentId: job.agentId,
       startedAt,
       completedAt: null,
@@ -207,10 +247,16 @@ export class SchedulerService {
     this.activeRuns.set(runId, run);
     this.resultStore.saveRun(agent.workspace, run);
 
+    // Prepend soul context if available
+    const soul = loadAgentSoul(agent);
+    const fullInstruction = soul
+      ? `<agent-soul>\n${soul}\n</agent-soul>\n\n${instruction}`
+      : instruction;
+
     // Execute via gateway
     const startTime = Date.now();
     try {
-      const result = await this.gatewayClient.executeChat(job.agentId, instruction, `${job.id}-${runId}`);
+      const result = await this.gatewayClient.executeChat(job.agentId, fullInstruction, `${job.id}-${runId}`);
       run.response = result.response;
       run.status = "completed";
       run.completedAt = new Date().toISOString();

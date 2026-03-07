@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -16,6 +16,7 @@ import { useAttachments } from '@/hooks/useAttachments';
 import { useConversationStore } from '@/stores/useConversationStore';
 import { useAgentStore } from '@/stores/useAgentStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useScheduleSyncStore } from '@/stores/useScheduleSyncStore';
 import { MessageBubble, BubblePosition } from '@/components/MessageBubble';
 import { MessageInputBar } from '@/components/MessageInputBar';
 import { DateHeader } from '@/components/DateHeader';
@@ -113,15 +114,23 @@ export default function ChatViewScreen() {
   const [inputText, setInputText] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const { host, port, mcpPort, authToken, useTLS, isLoaded, load: loadSettings } = useSettingsStore();
+  const { host, port, mcpPort, authToken, mcpToken, useTLS, isLoaded, load: loadSettings } = useSettingsStore();
   const { agents, fetch: fetchAgents } = useAgentStore();
   const { conversations } = useConversationStore();
 
   const chat = useChat(conversationId, agentId);
   const attachments = useAttachments();
+  const markRead = useScheduleSyncStore((s) => s.markRead);
+  const activeAgentIds = useScheduleSyncStore((s) => s.activeAgentIds);
+  const isAgentBusy = activeAgentIds.includes(agentId);
 
   const conversation = conversations.find(c => c.id === conversationId);
   const agent = agents.find(a => a.id === agentId);
+
+  // Mark conversation as read when opened
+  useEffect(() => {
+    if (conversationId) markRead(conversationId);
+  }, [conversationId, markRead]);
 
   // Load settings and agents on mount if needed
   useEffect(() => {
@@ -185,7 +194,26 @@ export default function ChatViewScreen() {
     });
   }, [navigation, agent, chat]);
 
-  const listItems = conversation ? computeListItems(conversation.messages) : [];
+  const listItems = useMemo(() => {
+    const items = conversation ? computeListItems(conversation.messages) : [];
+    // Append a typing placeholder when the agent is running a scheduled job
+    if (isAgentBusy && !chat.isStreaming) {
+      items.push({
+        kind: 'message',
+        message: {
+          id: '__typing-placeholder__',
+          role: 'assistant',
+          content: '',
+          timestamp: new Date().toISOString(),
+          isStreaming: true,
+          attachments: [],
+        },
+        position: 'standalone',
+        topPadding: 8,
+      });
+    }
+    return items;
+  }, [conversation, isAgentBusy, chat.isStreaming]);
 
   const scrollToBottom = useCallback(() => {
     if (listItems.length > 0) {
@@ -214,7 +242,7 @@ export default function ChatViewScreen() {
       try {
         await Promise.all(
           pending.map(async (a) => {
-            const uploaded = await uploadAttachment(a, host, mcpPort, authToken);
+            const uploaded = await uploadAttachment(a, host, mcpPort, mcpToken);
             uploadedIds.set(a.id, uploaded.id);
           }),
         );
@@ -302,7 +330,7 @@ export default function ChatViewScreen() {
         text={inputText}
         onChangeText={setInputText}
         pendingAttachments={attachments.pendingAttachments}
-        isStreaming={chat.isStreaming}
+        isStreaming={chat.isStreaming || isAgentBusy}
         onSend={handleSend}
         onCancel={handleCancel}
         onPickFromLibrary={attachments.pickFromLibrary}

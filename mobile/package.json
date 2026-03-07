@@ -13,6 +13,7 @@
     "@expo/vector-icons": "^15.0.0",
     "@rn-primitives/portal": "^1.3.0",
     "@rn-primitives/slot": "^1.2.0",
+    "@ronradtke/react-native-markdown-display": "^8.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

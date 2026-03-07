@@ -182,6 +182,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#007AFF',
-    flex: 1,
   },
 });

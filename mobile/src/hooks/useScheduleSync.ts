@@ -14,21 +14,27 @@ export function useScheduleSync() {
   const initializedRef = useRef(false);
 
   const { host, mcpPort, mcpToken, isLoaded: settingsLoaded } = useSettingsStore();
-  const conversations = useConversationStore((s) => s.conversations);
-  const addMessage = useConversationStore((s) => s.addMessage);
 
-  const syncStore = useScheduleSyncStore();
+  // Read isLoaded reactively so the effect triggers when it becomes true
+  const syncIsLoaded = useScheduleSyncStore((s) => s.isLoaded);
 
   const poll = useCallback(async () => {
-    if (!host || !settingsLoaded || !syncStore.isLoaded) return;
+    if (!host || !settingsLoaded) return;
+
+    // Read latest state directly to avoid stale closures and effect re-triggers
+    const syncState = useScheduleSyncStore.getState();
+    if (!syncState.isLoaded) return;
+
+    const conversations = useConversationStore.getState().conversations;
+    const addMessage = useConversationStore.getState().addMessage;
 
     try {
       const runs = await fetchRecentRuns(
         host, mcpPort, mcpToken,
-        syncStore.lastSyncTimestamp ?? undefined,
+        syncState.lastSyncTimestamp ?? undefined,
       );
 
-      let newestTimestamp = syncStore.lastSyncTimestamp;
+      let newestTimestamp = syncState.lastSyncTimestamp;
 
       // Track which agents currently have running jobs
       const runningAgentIds: string[] = [];
@@ -42,7 +48,8 @@ export function useScheduleSync() {
           continue;
         }
 
-        if (syncStore.injectedRunIds.has(run.id)) continue;
+        // Re-read injectedRunIds each iteration (may have been updated)
+        if (useScheduleSyncStore.getState().injectedRunIds.has(run.id)) continue;
         if (run.status !== 'completed' && run.status !== 'error') continue;
 
         // Find conversation for this agent
@@ -73,8 +80,8 @@ export function useScheduleSync() {
         };
 
         addMessage(msg, conversation.id);
-        syncStore.markRunInjected(run.id);
-        syncStore.incrementUnread(conversation.id);
+        syncState.markRunInjected(run.id);
+        syncState.incrementUnread(conversation.id);
 
         const ts = run.completedAt ?? run.startedAt;
         if (!newestTimestamp || ts > newestTimestamp) {
@@ -83,28 +90,28 @@ export function useScheduleSync() {
       }
 
       // Update active agents for typing indicator
-      syncStore.setActiveAgents(runningAgentIds);
+      syncState.setActiveAgents(runningAgentIds);
 
-      if (newestTimestamp && newestTimestamp !== syncStore.lastSyncTimestamp) {
-        syncStore.updateLastSync(newestTimestamp);
+      if (newestTimestamp && newestTimestamp !== syncState.lastSyncTimestamp) {
+        syncState.updateLastSync(newestTimestamp);
       }
     } catch (err) {
       // Silent — will retry next poll
       console.warn('[schedule-sync] poll failed:', err);
     }
-  }, [host, mcpPort, mcpToken, settingsLoaded, syncStore, conversations, addMessage]);
+  }, [host, mcpPort, mcpToken, settingsLoaded]);
 
   // Load sync state on mount
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    syncStore.load();
-  }, [syncStore]);
+    useScheduleSyncStore.getState().load();
+  }, []);
 
   // Start/stop polling interval
   useEffect(() => {
-    if (!syncStore.isLoaded) return;
+    if (!syncIsLoaded) return;
 
     poll();
     intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
@@ -112,7 +119,7 @@ export function useScheduleSync() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [poll, syncStore.isLoaded]);
+  }, [poll, syncIsLoaded]);
 
   // Poll when app returns to foreground
   useEffect(() => {

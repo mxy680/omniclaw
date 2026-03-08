@@ -19,7 +19,7 @@ export function createGeminiAuthSetupTool(client: GeminiClient): any {
       const ai = client.getClient();
       try {
         const response = await ai.models.generateContent({
-          model: "gemini-2.0-flash-001",
+          model: "gemini-2.5-flash",
           contents: "Reply with exactly: ok",
         });
         const text = response.text?.trim();

@@ -33,7 +33,9 @@ Env vars: `OMNICLAW_GATEWAY_URL` (default `ws://localhost:18789`), `OMNICLAW_SCH
 - `pnpm test:integration` — integration tests (requires real credentials)
 - `OMNICLAW_MCP_TOKEN=dev pnpm mcp:dev` — start MCP server locally
 
-**Important:** Each integration has a dedicated omniclaw test account. Tests must always use the `"default"` account — never a personal account. The `"default"` key in the token/session stores (`~/.openclaw/omniclaw-tokens.json`, `~/.openclaw/linkedin-sessions.json`) and single-token config values (`github_token`, `gemini_api_key`, `wolfram_appid`) all point to omniclaw test accounts. Do not override `GMAIL_ACCOUNT`, `YOUTUBE_ACCOUNT`, or similar env vars to use non-default accounts in tests.
+**Important:** Each integration has a dedicated omniclaw test account. Tests must always use the `"default"` account — never a personal account. The `"default"` key in the token/session stores (`~/.openclaw/omniclaw-tokens.json`, `~/.openclaw/linkedin-sessions.json`) and single-token config values (`gemini_api_key`, `wolfram_appid`) all point to omniclaw test accounts. Do not override `GMAIL_ACCOUNT`, `YOUTUBE_ACCOUNT`, or similar env vars to use non-default accounts in tests.
+
+**Exception — GitHub:** GitHub prohibits multiple accounts, so `github_token` uses a personal account. GitHub read tests default to `octocat/Hello-World` (public repo) and write tests require `RUN_WRITE_TESTS=1`. Keep GitHub tests safe for a personal account — never create/modify repos, issues, or PRs on real projects without explicit opt-in.
 
 # currentDate
 Today's date is 2026-03-08.

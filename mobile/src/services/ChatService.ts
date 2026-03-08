@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { ChatSendFrame, ChatAbortFrame } from '../types/protocol';
 import { getDeviceIdentity, signChallenge, type DeviceKeys } from './DeviceIdentity';
 
@@ -41,7 +42,9 @@ export class ChatService {
 
   async connect(config: ServerConfig): Promise<void> {
     // Load device identity (generates Ed25519 keypair on first use)
-    const deviceKeys = await getDeviceIdentity();
+    // Skip device signing on simulator — crypto can be unreliable there
+    const isSimulator = !Constants.isDevice;
+    const deviceKeys = isSimulator ? null : await getDeviceIdentity();
 
     return new Promise((resolve, reject) => {
       if (this.ws) {
@@ -80,26 +83,30 @@ export class ChatService {
         // Wait for connect.challenge event, then sign and send connect frame
         if (json.type === 'event' && json.event === 'connect.challenge') {
           const payload = json.payload as { nonce: string };
-          const device = signChallenge(deviceKeys, payload.nonce, authToken, scopes);
+
+          const connectParams: Record<string, unknown> = {
+            minProtocol: 3,
+            maxProtocol: 3,
+            client: {
+              id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android',
+              version: '1.0.0',
+              platform: Platform.OS,
+              mode: 'ui',
+            },
+            role: 'operator',
+            scopes,
+            auth: { token: authToken },
+          };
+
+          if (deviceKeys) {
+            connectParams.device = signChallenge(deviceKeys, payload.nonce, authToken, scopes);
+          }
 
           ws.send(JSON.stringify({
             type: 'req',
             id: this.nextId(),
             method: 'connect',
-            params: {
-              minProtocol: 3,
-              maxProtocol: 3,
-              client: {
-                id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android',
-                version: '1.0.0',
-                platform: Platform.OS,
-                mode: 'ui',
-              },
-              role: 'operator',
-              scopes,
-              auth: { token: authToken },
-              device,
-            },
+            params: connectParams,
           }));
           return;
         }

@@ -88,8 +88,10 @@ export async function POST(request: Request) {
       if (udid) {
         args.push(udid);
       }
+    } else {
+      // Force iPhone simulator instead of defaulting to iPad
+      args.push("--device", "iPhone 16 Pro");
     }
-    // target === "simulator" → no --device flag, runs on default simulator
 
     // Write build output to a log file so progress can be tracked
     const logFd = openSync(BUILD_LOG, "w");

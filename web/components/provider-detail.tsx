@@ -223,7 +223,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
                   {provider.services.length} services available with this integration
                 </p>
               </div>
-              {Object.keys(serviceTools).length > 0 && (
+              {provider.services.some((s) => serviceTools[s.id]) && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -262,7 +262,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
                   />
                 ))}
               </div>
-            ) : Object.keys(serviceTools).length > 0 ? (
+            ) : provider.services.some((s) => serviceTools[s.id]) ? (
               <div className="space-y-2">
                 {provider.services.map((service) => {
                   const data = serviceTools[service.id];

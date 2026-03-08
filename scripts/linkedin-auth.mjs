@@ -9,10 +9,16 @@
  * and writes them to ~/.openclaw/linkedin-sessions.json.
  */
 
-import { chromium } from "playwright";
+import { createRequire } from "module";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { homedir } from "os";
+
+// Resolve playwright from the plugin's node_modules, not from the script's
+// real path (which may differ due to Conductor workspace symlinks).
+const pluginRoot = join(homedir(), ".openclaw", "current-plugin");
+const require = createRequire(join(pluginRoot, "node_modules", "_placeholder.js"));
+const { chromium } = require("playwright");
 
 const account = process.argv[2] || "default";
 const SESSIONS_PATH = join(homedir(), ".openclaw", "linkedin-sessions.json");

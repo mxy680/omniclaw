@@ -1,10 +1,12 @@
-import { chromium } from "playwright";
 import type { SessionStore, SessionData } from "./session-store.js";
 
 export async function authenticateLinkedin(
   sessionStore: SessionStore,
   account: string = "default",
 ): Promise<SessionData> {
+  // Dynamic import so playwright is only loaded when auth is actually called,
+  // not at MCP server startup. This avoids crashes if playwright isn't installed.
+  const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();

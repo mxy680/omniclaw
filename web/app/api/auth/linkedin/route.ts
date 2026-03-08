@@ -8,11 +8,16 @@ export async function POST(request: NextRequest) {
     const account = (body.account as string)?.trim() || "default";
 
     // Spawn the standalone auth script which uses Playwright.
-    // The web app runs from <root>/web, so go up one level to reach scripts/.
-    const scriptPath = join(process.cwd(), "..", "scripts", "linkedin-auth.mjs");
+    // The web app runs from <root>/web, so go up one level to reach the project root.
+    const projectRoot = join(process.cwd(), "..");
+    const scriptPath = join(projectRoot, "scripts", "linkedin-auth.mjs");
 
     const result = await new Promise<string>((resolve, reject) => {
-      execFile("node", [scriptPath, account], { timeout: 130_000 }, (err, stdout, stderr) => {
+      execFile("node", [scriptPath, account], {
+        timeout: 130_000,
+        cwd: projectRoot,
+        env: { ...process.env, NODE_PATH: join(projectRoot, "node_modules") },
+      }, (err, stdout, stderr) => {
         if (err) {
           try {
             const parsed = JSON.parse(stderr);

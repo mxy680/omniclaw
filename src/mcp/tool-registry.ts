@@ -207,6 +207,15 @@ import {
   createGitHubTeamListTool,
 } from "../tools/github-users.js";
 import {
+  createGitHubUserUpdateTool,
+  createGitHubUserFollowersListTool,
+  createGitHubUserFollowingListTool,
+  createGitHubUserFollowTool,
+  createGitHubUserUnfollowTool,
+  createGitHubUserEventsListTool,
+  createGitHubRepoTopicsReplaceTool,
+} from "../tools/github-profile.js";
+import {
   createGitHubGistListTool,
   createGitHubGistGetTool,
   createGitHubGistCreateTool,
@@ -396,6 +405,7 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createGitHubRepoContentCreateTool(gh));
     add(createGitHubRepoContentDeleteTool(gh));
     add(createGitHubRepoTopicsTool(gh));
+    add(createGitHubRepoTopicsReplaceTool(gh));
     add(createGitHubRepoContributorsTool(gh));
     add(createGitHubRepoLanguagesTool(gh));
 
@@ -471,6 +481,12 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createGitHubOrgMembersTool(gh));
     add(createGitHubOrgReposTool(gh));
     add(createGitHubTeamListTool(gh));
+    add(createGitHubUserUpdateTool(gh));
+    add(createGitHubUserFollowersListTool(gh));
+    add(createGitHubUserFollowingListTool(gh));
+    add(createGitHubUserFollowTool(gh));
+    add(createGitHubUserUnfollowTool(gh));
+    add(createGitHubUserEventsListTool(gh));
 
     // Gists
     add(createGitHubGistListTool(gh));

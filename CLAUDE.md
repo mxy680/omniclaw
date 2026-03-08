@@ -26,12 +26,14 @@ Key files: `src/scheduler/` (types, stores, gateway-client, scheduler-service), 
 
 Env vars: `OMNICLAW_GATEWAY_URL` (default `ws://localhost:18789`), `OMNICLAW_SCHEDULER_ENABLED` (default `true`).
 
-## Commands
+## Testing
 
 - `pnpm build` — TypeScript compilation
 - `pnpm test` — unit tests
 - `pnpm test:integration` — integration tests (requires real credentials)
 - `OMNICLAW_MCP_TOKEN=dev pnpm mcp:dev` — start MCP server locally
 
+**Important:** Each integration has a dedicated omniclaw test account. Tests must always use the `"default"` account — never a personal account. The `"default"` key in the token/session stores (`~/.openclaw/omniclaw-tokens.json`, `~/.openclaw/linkedin-sessions.json`) and single-token config values (`github_token`, `gemini_api_key`, `wolfram_appid`) all point to omniclaw test accounts. Do not override `GMAIL_ACCOUNT`, `YOUTUBE_ACCOUNT`, or similar env vars to use non-default accounts in tests.
+
 # currentDate
-Today's date is 2026-03-02.
+Today's date is 2026-03-08.

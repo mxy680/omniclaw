@@ -93,7 +93,7 @@ export function deleteTokens(account: string): boolean {
 export interface AccountInfo {
   name: string;
   email: string | null;
-  provider: "google" | "github" | "gemini" | "wolfram";
+  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin";
   hasTokens: boolean;
   isExpired: boolean;
 }
@@ -131,6 +131,11 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   if (!provider || provider === "wolfram-alpha") {
     const wolframAccount = getWolframAccount();
     if (wolframAccount) accounts.push(wolframAccount);
+  }
+
+  if (!provider || provider === "linkedin") {
+    const linkedinAccounts = getLinkedinAccounts();
+    accounts.push(...linkedinAccounts);
   }
 
   return accounts;
@@ -181,6 +186,36 @@ function getWolframAccount(): AccountInfo | null {
     };
   } catch {
     return null;
+  }
+}
+
+import { join } from "path";
+import { homedir } from "os";
+import { SessionStore } from "../../src/auth/session-store";
+
+function getLinkedinAccounts(): AccountInfo[] {
+  try {
+    const sessionsPath = join(homedir(), ".openclaw", "linkedin-sessions.json");
+    const store = new SessionStore(sessionsPath);
+    return store.list().map((name) => ({
+      name,
+      email: null,
+      provider: "linkedin" as const,
+      hasTokens: true,
+      isExpired: false,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function revokeLinkedinSession(account: string): boolean {
+  try {
+    const sessionsPath = join(homedir(), ".openclaw", "linkedin-sessions.json");
+    const store = new SessionStore(sessionsPath);
+    return store.delete(account);
+  } catch {
+    return false;
   }
 }
 

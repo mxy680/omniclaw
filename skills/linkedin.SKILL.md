@@ -10,10 +10,12 @@ Access LinkedIn through the Voyager API using browser-based session cookie authe
 
 ## First-Time Setup
 
-1. Run `linkedin_auth_setup` — a browser window will open
-2. Log in to LinkedIn manually (supports SSO, MFA, passkeys)
+1. Click **Connect Account** on the LinkedIn integration in the web dashboard
+2. A browser window will open — log in to LinkedIn manually (supports SSO, MFA, passkeys)
 3. The browser closes automatically once authenticated
 4. Session cookies are captured and stored locally
+
+Alternatively, call `linkedin_auth_setup` directly from an agent conversation.
 
 **Note:** Sessions typically last 24h–30d. Re-authenticate with `linkedin_auth_setup` when the session expires.
 

@@ -23,6 +23,10 @@
       "github_token": {
         "type": "string",
         "description": "GitHub Personal Access Token (classic or fine-grained). Required for GitHub tools."
+      },
+      "gemini_api_key": {
+        "type": "string",
+        "description": "Gemini API key from Google AI Studio. Required for image/video generation tools."
       }
     },
     "required": []
@@ -36,6 +40,9 @@
     },
     "github_token": {
       "label": "GitHub Personal Access Token"
+    },
+    "gemini_api_key": {
+      "label": "Gemini API Key"
     }
   }
 }

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@google/genai':
+        specifier: ^1.44.0
+        version: 1.44.0(@modelcontextprotocol/sdk@1.27.1(zod@4.3.6))
       '@modelcontextprotocol/sdk':
         specifier: ^1.27.1
         version: 1.27.1(zod@4.3.6)
@@ -1272,8 +1275,8 @@ packages:
     resolution: {integrity: sha512-KZNxZvnGCtiM2aYYZ6Wz0Ix5r47dAvpNLApFtZWnSoERzAdOMzVBOPysBoM0JlF6FKWZ8GPqgn6qt3dV/8Zlpg==}
     hasBin: true
 
-  '@google/genai@1.42.0':
-    resolution: {integrity: sha512-+3nlMTcrQufbQ8IumGkOphxD5Pd5kKyJOzLcnY0/1IuE8upJk5aLmoexZ2BJhBp1zAjRJMEB4a2CJwKI9e2EYw==}
+  '@google/genai@1.44.0':
+    resolution: {integrity: sha512-kRt9ZtuXmz+tLlcNntN/VV4LRdpl6ZOu5B1KbfNgfR65db15O6sUQcwnwLka8sT/V6qysD93fWrgJHF2L7dA9A==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@modelcontextprotocol/sdk': ^1.25.2
@@ -8836,7 +8839,7 @@ snapshots:
       chalk: 4.1.2
       js-yaml: 4.1.1
 
-  '@google/genai@1.42.0(@modelcontextprotocol/sdk@1.27.1(zod@4.3.6))':
+  '@google/genai@1.44.0(@modelcontextprotocol/sdk@1.27.1(zod@4.3.6))':
     dependencies:
       google-auth-library: 10.5.0
       p-retry: 4.6.2
@@ -9243,7 +9246,7 @@ snapshots:
     dependencies:
       '@anthropic-ai/sdk': 0.73.0(zod@4.3.6)
       '@aws-sdk/client-bedrock-runtime': 3.997.0
-      '@google/genai': 1.42.0(@modelcontextprotocol/sdk@1.27.1(zod@4.3.6))
+      '@google/genai': 1.44.0(@modelcontextprotocol/sdk@1.27.1(zod@4.3.6))
       '@mistralai/mistralai': 1.10.0
       '@sinclair/typebox': 0.34.48
       ajv: 8.18.0

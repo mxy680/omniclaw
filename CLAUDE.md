@@ -15,6 +15,7 @@ This project is an MCP server providing tools for Gmail, Calendar, Drive, Docs, 
 | YouTube | 10 | `youtube` | `docs/youtube.md` |
 | GitHub | 95 | `github` | `docs/github.md` |
 | Gemini | 4 | `gemini` | `skills/gemini.SKILL.md` |
+| Wolfram Alpha | 2 | `wolfram` | `docs/wolfram.md` |
 
 ## Scheduler
 

@@ -67,6 +67,17 @@ export const PROVIDERS: Provider[] = [
     ],
   },
   {
+    id: "wolfram-alpha",
+    name: "Wolfram Alpha",
+    icon: "Sigma",
+    color: "#DD1100",
+    description: "Computational knowledge engine for math, science, conversions, data lookups, and more.",
+    available: true,
+    services: [
+      { id: "wolfram", name: "Wolfram Alpha", icon: "Sigma", color: "#DD1100" },
+    ],
+  },
+  {
     id: "instagram",
     name: "Instagram",
     icon: "Instagram",

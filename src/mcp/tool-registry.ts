@@ -253,6 +253,8 @@ import {
   createGitHubSecretScanningAlertsTool,
   createGitHubSecurityAdvisoriesTool,
 } from "../tools/github-security.js";
+import { WolframClient } from "../auth/wolfram-client.js";
+import { createWolframQueryTool, createWolframQueryFullTool } from "../tools/wolfram-query.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface OmniclawTool {
@@ -535,6 +537,13 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createGeminiGenerateImageTool(gemini));
     add(createGeminiImagenTool(gemini));
     add(createGeminiGenerateVideoTool(gemini));
+  }
+
+  // Wolfram Alpha tools
+  {
+    const wolfram = new WolframClient(config.wolfram_appid);
+    add(createWolframQueryTool(wolfram));
+    add(createWolframQueryFullTool(wolfram));
   }
 
   return tools;

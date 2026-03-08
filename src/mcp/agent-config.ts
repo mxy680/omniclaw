@@ -41,6 +41,7 @@ export const VALID_SERVICES = [
   "schedule",
   "github",
   "gemini",
+  "wolfram",
 ] as const;
 
 const DEFAULT_AGENTS_FILE: AgentsFile = {

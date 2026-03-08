@@ -12,18 +12,87 @@ Create a new specialized agent in the Omniclaw system. This skill walks you thro
 
 When this skill is invoked, you MUST complete this planning phase before writing any files. Use plan mode or AskUserQuestion to interact with the user.
 
+### Step 0: Discovery — Understand what the user actually needs
+
+Before asking structured questions, have a **conversation** to understand the user's intent. Most users don't arrive with a precise agent spec — they have a problem, a vague idea, or a domain they want automated. Your job is to extract the real need.
+
+#### Start with an open-ended question
+
+Don't jump straight to "what domain?" — start broader:
+
+- _"What problem are you trying to solve, or what part of your workflow feels tedious?"_
+- _"What would this agent do for you on a typical day?"_
+- _"Is there something you find yourself doing repeatedly that you'd like automated?"_
+
+If the user gives a vague answer like "I want a productivity agent" or "something for my calendar," probe deeper:
+
+- _"When you think about your calendar, what's the most annoying part? Scheduling conflicts? Forgetting meetings? Not knowing what's coming up?"_
+- _"Walk me through your morning — what do you check first? What takes the most time?"_
+- _"What would make you feel like this agent earned its keep after a week?"_
+
+#### Research before brainstorming
+
+Before proposing tasks, do your homework:
+
+1. **Check what's already configured** — Read `~/.openclaw/agents.json` to see existing agents. Don't propose an agent that overlaps with one that already exists. If there's overlap, suggest extending the existing agent instead.
+
+2. **Check available services** — Read the plugin config to see which services have credentials configured. An agent that needs Google Calendar is useless if OAuth isn't set up. If needed services aren't configured, note this as a prerequisite.
+
+3. **Look at existing agent patterns** — Read the soul files and instruction files of existing agents (`~/.openclaw/agents/*/soul.md`, `~/.openclaw/agents/*/instructions/*.md`) to understand what good agents look like in this system. Borrow patterns that work.
+
+4. **Check the user's tools** — Look at what MCP tools are available for the services the agent would use. This grounds your brainstorming in what's actually possible. Don't propose tasks that require tools that don't exist.
+
+#### Draw out implicit needs
+
+Users often forget to mention things they'd want until prompted. Ask about:
+
+- **Frequency**: "Should this run once a day, or do you need it checking throughout the day?"
+- **Urgency handling**: "Are there situations where the agent should interrupt you vs. just log it for later?"
+- **Reporting style**: "Do you want a daily digest, or should it only speak up when something needs attention?"
+- **Learning**: "Should the agent learn your preferences over time, or is it more of a fixed routine?"
+- **Safety boundaries**: "What should this agent absolutely never do? Any actions that should always require your approval?"
+- **Overlap**: "Should this agent coordinate with [existing agent]? For example, should it cross-reference calendar when triaging emails?"
+
+#### Handle multi-agent ideas
+
+If the user describes something that spans multiple domains (e.g., "I want an agent that manages my email AND my GitHub"), help them decide:
+- **One multi-service agent** — simpler, shared context, but broader permissions
+- **Multiple specialized agents** — tighter permissions, clearer responsibilities, but no shared memory
+
+The existing pattern favors **specialized agents** (Hermes does email, GitBot does GitHub). Recommend this unless the user's use case genuinely requires cross-domain context in a single agent.
+
+#### When to move on
+
+Move to Step 1 once you can answer:
+1. What is the agent's core purpose? (one sentence)
+2. What 3-5 concrete tasks would it perform?
+3. Is it reactive, proactive, or both?
+4. What services does it need?
+5. Are there any hard safety boundaries?
+
+You don't need perfect answers — you'll refine in later steps. But you should understand the user's intent well enough to brainstorm intelligently.
+
+---
+
 ### Step 1: Define the agent's purpose
 
-Ask the user:
-- What domain will this agent manage? (email, code, docs, calendar, research, social media, multi-service, etc.)
-- What is the agent's primary mission in one sentence?
-- Should it be **reactive** (responds to user requests), **proactive** (runs on schedules), or **both**?
+Now formalize what you learned in Step 0. Confirm with the user:
+- **Domain**: What service(s) does this agent manage?
+- **Mission**: One sentence describing the agent's primary purpose.
+- **Mode**: Reactive (responds to requests), proactive (runs on schedules), or both?
 
 Then brainstorm an exhaustive list of 5-10 specific tasks this agent should perform. Organize them by category. For example, for a calendar management agent:
 
 - **Daily Ops**: morning agenda summary, upcoming meeting prep, conflict detection
 - **Organization**: color-code events by category, auto-decline overlaps, block focus time
 - **Proactive**: end-of-day recap, weekly schedule overview, travel time alerts
+
+**Brainstorming tips:**
+- Start with what the user mentioned in Step 0, then expand
+- Think about the full lifecycle: setup/onboarding, daily operations, periodic maintenance, edge cases
+- Consider what existing agents do (Hermes has morning briefing + ongoing triage + EOD recap — that's a full day coverage pattern)
+- Ask "what about X?" for capabilities the user might not have considered
+- Group tasks by frequency: continuous, daily, weekly, on-demand
 
 Present the full brainstormed list to the user and ask which tasks they want to include. The user may add, remove, or reprioritize. Do not proceed until you have a confirmed task list.
 

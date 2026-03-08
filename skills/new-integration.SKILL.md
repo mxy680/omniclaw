@@ -8,6 +8,8 @@ metadata: {"openclaw": {"emoji": "🔌"}}
 
 Add a new service integration to the Omniclaw MCP server. This skill uses a web-app-first, auth-first, test-driven workflow: connect the service to the dashboard, authenticate the user, then build and test each tool one at a time against real credentials.
 
+**IMPORTANT: No unit tests. Only integration tests using real credentials are allowed.** Do not write mocks, stubs, or unit tests. Every test must hit the real API with the user's authenticated credentials.
+
 ## Phase 0: Ask Every Question
 
 When this skill is invoked, you MUST complete this questionnaire before writing any code. Use AskUserQuestion to interact with the user. Do NOT proceed until every question is answered.
@@ -527,6 +529,8 @@ pnpm build
 ```
 
 ### Step 3.4: Write the integration test for THIS tool
+
+**No unit tests. No mocks. No stubs.** Every test must call the real API with the user's real credentials. If a test can't run without credentials, use `describe.skipIf(!credentialsExist)` — never fake the response.
 
 Add to `tests/integration/{service}.test.ts`. Create the file if it doesn't exist yet.
 

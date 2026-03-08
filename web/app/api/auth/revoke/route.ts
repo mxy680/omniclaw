@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revokeTokens, revokeGitHubToken, revokeGeminiApiKey } from "@/lib/auth";
+import { revokeTokens, revokeGitHubToken, revokeGeminiApiKey, revokeWolframAppId } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
       deleted = revokeGitHubToken();
     } else if (provider === "gemini") {
       deleted = revokeGeminiApiKey();
+    } else if (provider === "wolfram-alpha") {
+      deleted = revokeWolframAppId();
     } else {
       deleted = await revokeTokens(account);
     }

@@ -8,6 +8,7 @@ interface McpServerConfig {
   oauth_port?: number;
   github_token?: string;
   gemini_api_key?: string;
+  wolfram_appid?: string;
 }
 
 let cached: McpServerConfig | null = null;

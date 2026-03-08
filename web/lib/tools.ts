@@ -37,6 +37,7 @@ const SERVICE_NAMES: Record<string, string> = {
   github: "GitHub",
   gemini: "Gemini",
   wolfram: "Wolfram Alpha",
+  linkedin: "LinkedIn",
 };
 
 let cached: ToolRegistry | null = null;

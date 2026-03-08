@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubWebhookListTool(gh: GitHubClient): any {
+export function createGitHubWebhookListTool(manager: GitHubClientManager): any {
   return {
     name: "github_webhook_list",
     label: "GitHub List Webhooks",
@@ -15,11 +15,14 @@ export function createGitHubWebhookListTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; per_page?: number; page?: number },
+      params: { owner: string; repo: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -42,7 +45,7 @@ export function createGitHubWebhookListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubWebhookCreateTool(gh: GitHubClient): any {
+export function createGitHubWebhookCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_webhook_create",
     label: "GitHub Create Webhook",
@@ -59,14 +62,17 @@ export function createGitHubWebhookCreateTool(gh: GitHubClient): any {
       secret: Type.Optional(Type.String({ description: "Webhook secret." })),
       events: Type.Optional(Type.Array(Type.String(), { description: "Events to subscribe to. Default: ['push']." })),
       active: Type.Optional(Type.Boolean({ description: "Whether the webhook is active.", default: true })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
       params: {
         owner: string; repo: string; url: string; content_type?: string;
-        secret?: string; events?: string[]; active?: boolean;
+        secret?: string; events?: string[]; active?: boolean; account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -89,7 +95,7 @@ export function createGitHubWebhookCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubWebhookUpdateTool(gh: GitHubClient): any {
+export function createGitHubWebhookUpdateTool(manager: GitHubClientManager): any {
   return {
     name: "github_webhook_update",
     label: "GitHub Update Webhook",
@@ -105,14 +111,17 @@ export function createGitHubWebhookUpdateTool(gh: GitHubClient): any {
       secret: Type.Optional(Type.String({ description: "New webhook secret." })),
       events: Type.Optional(Type.Array(Type.String(), { description: "Events to subscribe to." })),
       active: Type.Optional(Type.Boolean({ description: "Whether the webhook is active." })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
       params: {
         owner: string; repo: string; hook_id: number; url?: string;
-        content_type?: string; secret?: string; events?: string[]; active?: boolean;
+        content_type?: string; secret?: string; events?: string[]; active?: boolean; account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -135,7 +144,7 @@ export function createGitHubWebhookUpdateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubWebhookDeleteTool(gh: GitHubClient): any {
+export function createGitHubWebhookDeleteTool(manager: GitHubClientManager): any {
   return {
     name: "github_webhook_delete",
     label: "GitHub Delete Webhook",
@@ -144,8 +153,11 @@ export function createGitHubWebhookDeleteTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       hook_id: Type.Number({ description: "Webhook ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; hook_id: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; hook_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

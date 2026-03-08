@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { WolframClient } from "../auth/wolfram-client.js";
+import type { WolframClientManager } from "../auth/wolfram-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("wolfram");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createWolframQueryTool(wolfram: WolframClient): any {
+export function createWolframQueryTool(manager: WolframClientManager): any {
   return {
     name: "wolfram_query",
     label: "Wolfram Alpha Query",
@@ -25,11 +25,16 @@ export function createWolframQueryTool(wolfram: WolframClient): any {
       location: Type.Optional(
         Type.String({ description: "Geographic context for location-aware queries (e.g. 'New York, NY')." }),
       ),
+      account: Type.Optional(
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
+      ),
     }),
     async execute(
       _toolCallId: string,
-      params: { input: string; maxchars?: number; units?: "metric" | "imperial"; location?: string },
+      params: { input: string; maxchars?: number; units?: "metric" | "imperial"; location?: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const wolfram = manager.getClient(account);
       if (!wolfram.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const text = await wolfram.queryLLM(params.input, {
@@ -49,7 +54,7 @@ export function createWolframQueryTool(wolfram: WolframClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createWolframQueryFullTool(wolfram: WolframClient): any {
+export function createWolframQueryFullTool(manager: WolframClientManager): any {
   return {
     name: "wolfram_query_full",
     label: "Wolfram Alpha Full Query",
@@ -81,6 +86,9 @@ export function createWolframQueryFullTool(wolfram: WolframClient): any {
       location: Type.Optional(
         Type.String({ description: "Geographic context for location-aware queries." }),
       ),
+      account: Type.Optional(
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
+      ),
     }),
     async execute(
       _toolCallId: string,
@@ -92,8 +100,11 @@ export function createWolframQueryFullTool(wolfram: WolframClient): any {
         podindex?: string;
         units?: "metric" | "imperial";
         location?: string;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const wolfram = manager.getClient(account);
       if (!wolfram.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const data = await wolfram.queryFull(params.input, {

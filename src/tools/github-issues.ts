@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueListTool(gh: GitHubClient): any {
+export function createGitHubIssueListTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_list",
     label: "GitHub List Issues",
@@ -37,6 +37,7 @@ export function createGitHubIssueListTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
@@ -50,8 +51,11 @@ export function createGitHubIssueListTool(gh: GitHubClient): any {
         direction?: string;
         per_page?: number;
         page?: number;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -91,7 +95,7 @@ export function createGitHubIssueListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueGetTool(gh: GitHubClient): any {
+export function createGitHubIssueGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_get",
     label: "GitHub Get Issue",
@@ -100,11 +104,14 @@ export function createGitHubIssueGetTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       issue_number: Type.Number({ description: "Issue number." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; issue_number: number },
+      params: { owner: string; repo: string; issue_number: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -125,7 +132,7 @@ export function createGitHubIssueGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueCreateTool(gh: GitHubClient): any {
+export function createGitHubIssueCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_create",
     label: "GitHub Create Issue",
@@ -138,6 +145,7 @@ export function createGitHubIssueCreateTool(gh: GitHubClient): any {
       labels: Type.Optional(Type.Array(Type.String(), { description: "Label names." })),
       assignees: Type.Optional(Type.Array(Type.String(), { description: "Assignee logins." })),
       milestone: Type.Optional(Type.Number({ description: "Milestone number." })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
@@ -149,8 +157,11 @@ export function createGitHubIssueCreateTool(gh: GitHubClient): any {
         labels?: string[];
         assignees?: string[];
         milestone?: number;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -175,7 +186,7 @@ export function createGitHubIssueCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueUpdateTool(gh: GitHubClient): any {
+export function createGitHubIssueUpdateTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_update",
     label: "GitHub Update Issue",
@@ -193,6 +204,7 @@ export function createGitHubIssueUpdateTool(gh: GitHubClient): any {
       ),
       labels: Type.Optional(Type.Array(Type.String(), { description: "Replace labels." })),
       assignees: Type.Optional(Type.Array(Type.String(), { description: "Replace assignees." })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
@@ -205,8 +217,11 @@ export function createGitHubIssueUpdateTool(gh: GitHubClient): any {
         state?: string;
         labels?: string[];
         assignees?: string[];
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -237,7 +252,7 @@ export function createGitHubIssueUpdateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueCommentListTool(gh: GitHubClient): any {
+export function createGitHubIssueCommentListTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_comment_list",
     label: "GitHub List Issue Comments",
@@ -248,6 +263,7 @@ export function createGitHubIssueCommentListTool(gh: GitHubClient): any {
       issue_number: Type.Number({ description: "Issue number." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
@@ -257,8 +273,11 @@ export function createGitHubIssueCommentListTool(gh: GitHubClient): any {
         issue_number: number;
         per_page?: number;
         page?: number;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -289,7 +308,7 @@ export function createGitHubIssueCommentListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueCommentCreateTool(gh: GitHubClient): any {
+export function createGitHubIssueCommentCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_comment_create",
     label: "GitHub Create Issue Comment",
@@ -299,11 +318,14 @@ export function createGitHubIssueCommentCreateTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       issue_number: Type.Number({ description: "Issue number." }),
       body: Type.String({ description: "Comment body (markdown)." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; issue_number: number; body: string },
+      params: { owner: string; repo: string; issue_number: number; body: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -325,7 +347,7 @@ export function createGitHubIssueCommentCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueCommentUpdateTool(gh: GitHubClient): any {
+export function createGitHubIssueCommentUpdateTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_comment_update",
     label: "GitHub Update Issue Comment",
@@ -335,11 +357,14 @@ export function createGitHubIssueCommentUpdateTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       comment_id: Type.Number({ description: "Comment ID." }),
       body: Type.String({ description: "New comment body." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; comment_id: number; body: string },
+      params: { owner: string; repo: string; comment_id: number; body: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -361,7 +386,7 @@ export function createGitHubIssueCommentUpdateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueCommentDeleteTool(gh: GitHubClient): any {
+export function createGitHubIssueCommentDeleteTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_comment_delete",
     label: "GitHub Delete Issue Comment",
@@ -370,11 +395,14 @@ export function createGitHubIssueCommentDeleteTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       comment_id: Type.Number({ description: "Comment ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; comment_id: number },
+      params: { owner: string; repo: string; comment_id: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -395,7 +423,7 @@ export function createGitHubIssueCommentDeleteTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueLabelListTool(gh: GitHubClient): any {
+export function createGitHubIssueLabelListTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_label_list",
     label: "GitHub List Labels",
@@ -405,11 +433,14 @@ export function createGitHubIssueLabelListTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; per_page?: number; page?: number },
+      params: { owner: string; repo: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -433,7 +464,7 @@ export function createGitHubIssueLabelListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueLabelCreateTool(gh: GitHubClient): any {
+export function createGitHubIssueLabelCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_label_create",
     label: "GitHub Create Label",
@@ -444,6 +475,7 @@ export function createGitHubIssueLabelCreateTool(gh: GitHubClient): any {
       name: Type.String({ description: "Label name." }),
       color: Type.String({ description: "Hex color code without #." }),
       description: Type.Optional(Type.String({ description: "Label description." })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
@@ -453,8 +485,11 @@ export function createGitHubIssueLabelCreateTool(gh: GitHubClient): any {
         name: string;
         color: string;
         description?: string;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -477,7 +512,7 @@ export function createGitHubIssueLabelCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueMilestoneListTool(gh: GitHubClient): any {
+export function createGitHubIssueMilestoneListTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_milestone_list",
     label: "GitHub List Milestones",
@@ -491,11 +526,14 @@ export function createGitHubIssueMilestoneListTool(gh: GitHubClient): any {
           { description: "Filter by state.", default: "open" },
         ),
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; state?: string },
+      params: { owner: string; repo: string; state?: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -526,7 +564,7 @@ export function createGitHubIssueMilestoneListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubIssueMilestoneCreateTool(gh: GitHubClient): any {
+export function createGitHubIssueMilestoneCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_issue_milestone_create",
     label: "GitHub Create Milestone",
@@ -543,6 +581,7 @@ export function createGitHubIssueMilestoneCreateTool(gh: GitHubClient): any {
           default: "open",
         }),
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
@@ -553,8 +592,11 @@ export function createGitHubIssueMilestoneCreateTool(gh: GitHubClient): any {
         description?: string;
         due_on?: string;
         state?: string;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

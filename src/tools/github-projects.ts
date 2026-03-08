@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
@@ -8,7 +8,7 @@ const AUTH_REQUIRED = authRequired("github");
 // .rest.projects methods were removed in newer @octokit/rest versions.
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubProjectListTool(gh: GitHubClient): any {
+export function createGitHubProjectListTool(manager: GitHubClientManager): any {
   return {
     name: "github_project_list",
     label: "GitHub List Projects",
@@ -24,11 +24,14 @@ export function createGitHubProjectListTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; state?: string; per_page?: number; page?: number },
+      params: { owner: string; repo: string; state?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -53,15 +56,18 @@ export function createGitHubProjectListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubProjectGetTool(gh: GitHubClient): any {
+export function createGitHubProjectGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_project_get",
     label: "GitHub Get Project",
     description: "Get a classic (v1) project by ID.",
     parameters: Type.Object({
       project_id: Type.Number({ description: "Project ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { project_id: number }) {
+    async execute(_toolCallId: string, params: { project_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -78,7 +84,7 @@ export function createGitHubProjectGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubProjectColumnsTool(gh: GitHubClient): any {
+export function createGitHubProjectColumnsTool(manager: GitHubClientManager): any {
   return {
     name: "github_project_columns",
     label: "GitHub Project Columns",
@@ -87,11 +93,14 @@ export function createGitHubProjectColumnsTool(gh: GitHubClient): any {
       project_id: Type.Number({ description: "Project ID." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { project_id: number; per_page?: number; page?: number },
+      params: { project_id: number; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -113,7 +122,7 @@ export function createGitHubProjectColumnsTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubProjectCardsTool(gh: GitHubClient): any {
+export function createGitHubProjectCardsTool(manager: GitHubClientManager): any {
   return {
     name: "github_project_cards",
     label: "GitHub Project Cards",
@@ -122,11 +131,14 @@ export function createGitHubProjectCardsTool(gh: GitHubClient): any {
       column_id: Type.Number({ description: "Column ID." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { column_id: number; per_page?: number; page?: number },
+      params: { column_id: number; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

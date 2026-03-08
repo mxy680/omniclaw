@@ -1,9 +1,9 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult } from "./shared.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubAuthSetupTool(gh: GitHubClient): any {
+export function createGitHubAuthSetupTool(manager: GitHubClientManager): any {
   return {
     name: "github_auth_setup",
     label: "GitHub Auth Setup",
@@ -13,9 +13,11 @@ export function createGitHubAuthSetupTool(gh: GitHubClient): any {
       token: Type.String({
         description: "GitHub Personal Access Token (classic or fine-grained).",
       }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { token: string }) {
-      gh.setToken(params.token);
+    async execute(_toolCallId: string, params: { token: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.setToken(account, params.token);
       const octokit = gh.getClient();
       try {
         const { data } = await octokit.rest.users.getAuthenticated();

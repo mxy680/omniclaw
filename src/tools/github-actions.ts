@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubWorkflowListTool(gh: GitHubClient): any {
+export function createGitHubWorkflowListTool(manager: GitHubClientManager): any {
   return {
     name: "github_workflow_list",
     label: "GitHub List Workflows",
@@ -15,11 +15,14 @@ export function createGitHubWorkflowListTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; per_page?: number; page?: number },
+      params: { owner: string; repo: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -41,7 +44,7 @@ export function createGitHubWorkflowListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubWorkflowGetTool(gh: GitHubClient): any {
+export function createGitHubWorkflowGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_workflow_get",
     label: "GitHub Get Workflow",
@@ -50,8 +53,11 @@ export function createGitHubWorkflowGetTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       workflow_id: Type.Number({ description: "Workflow ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; workflow_id: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; workflow_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -67,7 +73,7 @@ export function createGitHubWorkflowGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubWorkflowDispatchTool(gh: GitHubClient): any {
+export function createGitHubWorkflowDispatchTool(manager: GitHubClientManager): any {
   return {
     name: "github_workflow_dispatch",
     label: "GitHub Dispatch Workflow",
@@ -80,11 +86,14 @@ export function createGitHubWorkflowDispatchTool(gh: GitHubClient): any {
       inputs: Type.Optional(
         Type.Record(Type.String(), Type.String(), { description: "Workflow input key-value pairs." }),
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; workflow_id: number; ref: string; inputs?: Record<string, string> },
+      params: { owner: string; repo: string; workflow_id: number; ref: string; inputs?: Record<string, string>; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -101,7 +110,7 @@ export function createGitHubWorkflowDispatchTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubRunListTool(gh: GitHubClient): any {
+export function createGitHubRunListTool(manager: GitHubClientManager): any {
   return {
     name: "github_run_list",
     label: "GitHub List Workflow Runs",
@@ -125,14 +134,17 @@ export function createGitHubRunListTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
       params: {
         owner: string; repo: string; workflow_id?: number; branch?: string;
-        status?: string; per_page?: number; page?: number;
+        status?: string; per_page?: number; page?: number; account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -167,7 +179,7 @@ export function createGitHubRunListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubRunGetTool(gh: GitHubClient): any {
+export function createGitHubRunGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_run_get",
     label: "GitHub Get Workflow Run",
@@ -176,8 +188,11 @@ export function createGitHubRunGetTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       run_id: Type.Number({ description: "Run ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; run_id: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; run_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -193,7 +208,7 @@ export function createGitHubRunGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubRunCancelTool(gh: GitHubClient): any {
+export function createGitHubRunCancelTool(manager: GitHubClientManager): any {
   return {
     name: "github_run_cancel",
     label: "GitHub Cancel Run",
@@ -202,8 +217,11 @@ export function createGitHubRunCancelTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       run_id: Type.Number({ description: "Run ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; run_id: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; run_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -219,7 +237,7 @@ export function createGitHubRunCancelTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubRunRerunTool(gh: GitHubClient): any {
+export function createGitHubRunRerunTool(manager: GitHubClientManager): any {
   return {
     name: "github_run_rerun",
     label: "GitHub Re-run Workflow",
@@ -228,8 +246,11 @@ export function createGitHubRunRerunTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       run_id: Type.Number({ description: "Run ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; run_id: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; run_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -245,7 +266,7 @@ export function createGitHubRunRerunTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubJobListTool(gh: GitHubClient): any {
+export function createGitHubJobListTool(manager: GitHubClientManager): any {
   return {
     name: "github_job_list",
     label: "GitHub List Jobs",
@@ -256,11 +277,14 @@ export function createGitHubJobListTool(gh: GitHubClient): any {
       run_id: Type.Number({ description: "Run ID." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; run_id: number; per_page?: number; page?: number },
+      params: { owner: string; repo: string; run_id: number; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -283,7 +307,7 @@ export function createGitHubJobListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubRunLogsTool(gh: GitHubClient): any {
+export function createGitHubRunLogsTool(manager: GitHubClientManager): any {
   return {
     name: "github_run_logs",
     label: "GitHub Run Logs",
@@ -292,8 +316,11 @@ export function createGitHubRunLogsTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       run_id: Type.Number({ description: "Run ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; run_id: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; run_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

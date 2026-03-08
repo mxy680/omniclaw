@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubBranchListTool(gh: GitHubClient): any {
+export function createGitHubBranchListTool(manager: GitHubClientManager): any {
   return {
     name: "github_branch_list",
     label: "GitHub List Branches",
@@ -16,11 +16,14 @@ export function createGitHubBranchListTool(gh: GitHubClient): any {
       protected: Type.Optional(Type.Boolean({ description: "Filter to protected branches only." })),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; protected?: boolean; per_page?: number; page?: number },
+      params: { owner: string; repo: string; protected?: boolean; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -37,7 +40,7 @@ export function createGitHubBranchListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubBranchGetTool(gh: GitHubClient): any {
+export function createGitHubBranchGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_branch_get",
     label: "GitHub Get Branch",
@@ -46,8 +49,11 @@ export function createGitHubBranchGetTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       branch: Type.String({ description: "Branch name." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; branch: string }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; branch: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -63,7 +69,7 @@ export function createGitHubBranchGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubBranchCreateTool(gh: GitHubClient): any {
+export function createGitHubBranchCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_branch_create",
     label: "GitHub Create Branch",
@@ -73,8 +79,11 @@ export function createGitHubBranchCreateTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       branch: Type.String({ description: "New branch name." }),
       sha: Type.String({ description: "Commit SHA to branch from." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; branch: string; sha: string }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; branch: string; sha: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -91,7 +100,7 @@ export function createGitHubBranchCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubBranchDeleteTool(gh: GitHubClient): any {
+export function createGitHubBranchDeleteTool(manager: GitHubClientManager): any {
   return {
     name: "github_branch_delete",
     label: "GitHub Delete Branch",
@@ -100,8 +109,11 @@ export function createGitHubBranchDeleteTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       branch: Type.String({ description: "Branch name to delete." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; branch: string }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; branch: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -117,7 +129,7 @@ export function createGitHubBranchDeleteTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubBranchProtectionGetTool(gh: GitHubClient): any {
+export function createGitHubBranchProtectionGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_branch_protection_get",
     label: "GitHub Get Branch Protection",
@@ -126,8 +138,11 @@ export function createGitHubBranchProtectionGetTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       branch: Type.String({ description: "Branch name." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; branch: string }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; branch: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -143,7 +158,7 @@ export function createGitHubBranchProtectionGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubTagListTool(gh: GitHubClient): any {
+export function createGitHubTagListTool(manager: GitHubClientManager): any {
   return {
     name: "github_tag_list",
     label: "GitHub List Tags",
@@ -153,11 +168,14 @@ export function createGitHubTagListTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; per_page?: number; page?: number },
+      params: { owner: string; repo: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -179,7 +197,7 @@ export function createGitHubTagListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubReleaseListTool(gh: GitHubClient): any {
+export function createGitHubReleaseListTool(manager: GitHubClientManager): any {
   return {
     name: "github_release_list",
     label: "GitHub List Releases",
@@ -189,11 +207,14 @@ export function createGitHubReleaseListTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; per_page?: number; page?: number },
+      params: { owner: string; repo: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -217,7 +238,7 @@ export function createGitHubReleaseListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubReleaseGetTool(gh: GitHubClient): any {
+export function createGitHubReleaseGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_release_get",
     label: "GitHub Get Release",
@@ -226,8 +247,11 @@ export function createGitHubReleaseGetTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       release_id: Type.Number({ description: "Release ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; release_id: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; release_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -243,7 +267,7 @@ export function createGitHubReleaseGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubReleaseCreateTool(gh: GitHubClient): any {
+export function createGitHubReleaseCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_release_create",
     label: "GitHub Create Release",
@@ -257,14 +281,17 @@ export function createGitHubReleaseCreateTool(gh: GitHubClient): any {
       draft: Type.Optional(Type.Boolean({ description: "Create as draft.", default: false })),
       prerelease: Type.Optional(Type.Boolean({ description: "Mark as prerelease.", default: false })),
       target_commitish: Type.Optional(Type.String({ description: "Branch or commit SHA for the tag." })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
       params: {
         owner: string; repo: string; tag_name: string; name?: string; body?: string;
-        draft?: boolean; prerelease?: boolean; target_commitish?: string;
+        draft?: boolean; prerelease?: boolean; target_commitish?: string; account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -282,7 +309,7 @@ export function createGitHubReleaseCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubReleaseDeleteTool(gh: GitHubClient): any {
+export function createGitHubReleaseDeleteTool(manager: GitHubClientManager): any {
   return {
     name: "github_release_delete",
     label: "GitHub Delete Release",
@@ -291,8 +318,11 @@ export function createGitHubReleaseDeleteTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       release_id: Type.Number({ description: "Release ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; release_id: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; release_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

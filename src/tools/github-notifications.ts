@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubNotificationListTool(gh: GitHubClient): any {
+export function createGitHubNotificationListTool(manager: GitHubClientManager): any {
   return {
     name: "github_notification_list",
     label: "GitHub List Notifications",
@@ -15,11 +15,14 @@ export function createGitHubNotificationListTool(gh: GitHubClient): any {
       participating: Type.Optional(Type.Boolean({ description: "Only participating notifications.", default: false })),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { all?: boolean; participating?: boolean; per_page?: number; page?: number },
+      params: { all?: boolean; participating?: boolean; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -42,7 +45,7 @@ export function createGitHubNotificationListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubNotificationMarkReadTool(gh: GitHubClient): any {
+export function createGitHubNotificationMarkReadTool(manager: GitHubClientManager): any {
   return {
     name: "github_notification_mark_read",
     label: "GitHub Mark Notifications Read",
@@ -51,8 +54,11 @@ export function createGitHubNotificationMarkReadTool(gh: GitHubClient): any {
       last_read_at: Type.Optional(
         Type.String({ description: "Timestamp (ISO 8601). Notifications updated before this will be marked read." }),
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { last_read_at?: string }) {
+    async execute(_toolCallId: string, params: { last_read_at?: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -68,15 +74,18 @@ export function createGitHubNotificationMarkReadTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubNotificationThreadReadTool(gh: GitHubClient): any {
+export function createGitHubNotificationThreadReadTool(manager: GitHubClientManager): any {
   return {
     name: "github_notification_thread_read",
     label: "GitHub Mark Thread Read",
     description: "Mark a specific notification thread as read.",
     parameters: Type.Object({
       thread_id: Type.Number({ description: "Notification thread ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { thread_id: number }) {
+    async execute(_toolCallId: string, params: { thread_id: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -90,7 +99,7 @@ export function createGitHubNotificationThreadReadTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubNotificationThreadSubscribeTool(gh: GitHubClient): any {
+export function createGitHubNotificationThreadSubscribeTool(manager: GitHubClientManager): any {
   return {
     name: "github_notification_thread_subscribe",
     label: "GitHub Subscribe to Thread",
@@ -98,8 +107,11 @@ export function createGitHubNotificationThreadSubscribeTool(gh: GitHubClient): a
     parameters: Type.Object({
       thread_id: Type.Number({ description: "Notification thread ID." }),
       ignored: Type.Optional(Type.Boolean({ description: "Set to true to mute/ignore the thread.", default: false })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { thread_id: number; ignored?: boolean }) {
+    async execute(_toolCallId: string, params: { thread_id: number; ignored?: boolean; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

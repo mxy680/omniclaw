@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubUserUpdateTool(gh: GitHubClient): any {
+export function createGitHubUserUpdateTool(manager: GitHubClientManager): any {
   return {
     name: "github_user_update",
     label: "GitHub Update Profile",
@@ -18,14 +18,17 @@ export function createGitHubUserUpdateTool(gh: GitHubClient): any {
       location: Type.Optional(Type.String({ description: "Location." })),
       twitter_username: Type.Optional(Type.String({ description: "Twitter username (without @)." })),
       hireable: Type.Optional(Type.Boolean({ description: "Whether the user is hireable." })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
       params: {
         name?: string; bio?: string; blog?: string; company?: string;
-        location?: string; twitter_username?: string; hireable?: boolean;
+        location?: string; twitter_username?: string; hireable?: boolean; account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -43,7 +46,7 @@ export function createGitHubUserUpdateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubUserFollowersListTool(gh: GitHubClient): any {
+export function createGitHubUserFollowersListTool(manager: GitHubClientManager): any {
   return {
     name: "github_user_followers_list",
     label: "GitHub List Followers",
@@ -51,8 +54,11 @@ export function createGitHubUserFollowersListTool(gh: GitHubClient): any {
     parameters: Type.Object({
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { per_page?: number; page?: number }) {
+    async execute(_toolCallId: string, params: { per_page?: number; page?: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -68,7 +74,7 @@ export function createGitHubUserFollowersListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubUserFollowingListTool(gh: GitHubClient): any {
+export function createGitHubUserFollowingListTool(manager: GitHubClientManager): any {
   return {
     name: "github_user_following_list",
     label: "GitHub List Following",
@@ -76,8 +82,11 @@ export function createGitHubUserFollowingListTool(gh: GitHubClient): any {
     parameters: Type.Object({
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { per_page?: number; page?: number }) {
+    async execute(_toolCallId: string, params: { per_page?: number; page?: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -93,15 +102,18 @@ export function createGitHubUserFollowingListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubUserFollowTool(gh: GitHubClient): any {
+export function createGitHubUserFollowTool(manager: GitHubClientManager): any {
   return {
     name: "github_user_follow",
     label: "GitHub Follow User",
     description: "Follow a GitHub user.",
     parameters: Type.Object({
       username: Type.String({ description: "GitHub username to follow." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { username: string }) {
+    async execute(_toolCallId: string, params: { username: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -115,15 +127,18 @@ export function createGitHubUserFollowTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubUserUnfollowTool(gh: GitHubClient): any {
+export function createGitHubUserUnfollowTool(manager: GitHubClientManager): any {
   return {
     name: "github_user_unfollow",
     label: "GitHub Unfollow User",
     description: "Unfollow a GitHub user.",
     parameters: Type.Object({
       username: Type.String({ description: "GitHub username to unfollow." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { username: string }) {
+    async execute(_toolCallId: string, params: { username: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -137,7 +152,7 @@ export function createGitHubUserUnfollowTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubUserEventsListTool(gh: GitHubClient): any {
+export function createGitHubUserEventsListTool(manager: GitHubClientManager): any {
   return {
     name: "github_user_events_list",
     label: "GitHub User Events",
@@ -146,8 +161,11 @@ export function createGitHubUserEventsListTool(gh: GitHubClient): any {
       username: Type.String({ description: "GitHub username." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { username: string; per_page?: number; page?: number }) {
+    async execute(_toolCallId: string, params: { username: string; per_page?: number; page?: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -169,7 +187,7 @@ export function createGitHubUserEventsListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubRepoTopicsReplaceTool(gh: GitHubClient): any {
+export function createGitHubRepoTopicsReplaceTool(manager: GitHubClientManager): any {
   return {
     name: "github_repo_topics_replace",
     label: "GitHub Replace Repo Topics",
@@ -178,8 +196,11 @@ export function createGitHubRepoTopicsReplaceTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       names: Type.Array(Type.String(), { description: "Array of topic names to set." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; names: string[] }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; names: string[]; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

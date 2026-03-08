@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubSearchReposTool(gh: GitHubClient): any {
+export function createGitHubSearchReposTool(manager: GitHubClientManager): any {
   return {
     name: "github_search_repos",
     label: "GitHub Search Repos",
@@ -23,11 +23,14 @@ export function createGitHubSearchReposTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number },
+      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -51,7 +54,7 @@ export function createGitHubSearchReposTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubSearchCodeTool(gh: GitHubClient): any {
+export function createGitHubSearchCodeTool(manager: GitHubClientManager): any {
   return {
     name: "github_search_code",
     label: "GitHub Search Code",
@@ -66,11 +69,14 @@ export function createGitHubSearchCodeTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number },
+      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -94,7 +100,7 @@ export function createGitHubSearchCodeTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubSearchIssuesTool(gh: GitHubClient): any {
+export function createGitHubSearchIssuesTool(manager: GitHubClientManager): any {
   return {
     name: "github_search_issues",
     label: "GitHub Search Issues/PRs",
@@ -113,11 +119,14 @@ export function createGitHubSearchIssuesTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number },
+      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -141,7 +150,7 @@ export function createGitHubSearchIssuesTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubSearchCommitsTool(gh: GitHubClient): any {
+export function createGitHubSearchCommitsTool(manager: GitHubClientManager): any {
   return {
     name: "github_search_commits",
     label: "GitHub Search Commits",
@@ -159,11 +168,14 @@ export function createGitHubSearchCommitsTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number },
+      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -188,7 +200,7 @@ export function createGitHubSearchCommitsTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubSearchUsersTool(gh: GitHubClient): any {
+export function createGitHubSearchUsersTool(manager: GitHubClientManager): any {
   return {
     name: "github_search_users",
     label: "GitHub Search Users",
@@ -206,11 +218,14 @@ export function createGitHubSearchUsersTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number },
+      params: { q: string; sort?: string; order?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

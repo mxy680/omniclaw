@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullListTool(gh: GitHubClient): any {
+export function createGitHubPullListTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_list",
     label: "GitHub List Pull Requests",
@@ -32,14 +32,17 @@ export function createGitHubPullListTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
       params: {
         owner: string; repo: string; state?: string; head?: string; base?: string;
-        sort?: string; direction?: string; per_page?: number; page?: number;
+        sort?: string; direction?: string; per_page?: number; page?: number; account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -76,7 +79,7 @@ export function createGitHubPullListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullGetTool(gh: GitHubClient): any {
+export function createGitHubPullGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_get",
     label: "GitHub Get Pull Request",
@@ -85,8 +88,11 @@ export function createGitHubPullGetTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       pull_number: Type.Number({ description: "Pull request number." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; pull_number: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; pull_number: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -102,7 +108,7 @@ export function createGitHubPullGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullCreateTool(gh: GitHubClient): any {
+export function createGitHubPullCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_create",
     label: "GitHub Create Pull Request",
@@ -115,11 +121,14 @@ export function createGitHubPullCreateTool(gh: GitHubClient): any {
       head: Type.String({ description: "Branch containing changes." }),
       base: Type.String({ description: "Target branch." }),
       draft: Type.Optional(Type.Boolean({ description: "Create as draft.", default: false })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; title: string; body?: string; head: string; base: string; draft?: boolean },
+      params: { owner: string; repo: string; title: string; body?: string; head: string; base: string; draft?: boolean; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -136,7 +145,7 @@ export function createGitHubPullCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullUpdateTool(gh: GitHubClient): any {
+export function createGitHubPullUpdateTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_update",
     label: "GitHub Update Pull Request",
@@ -151,11 +160,14 @@ export function createGitHubPullUpdateTool(gh: GitHubClient): any {
         Type.Union([Type.Literal("open"), Type.Literal("closed")], { description: "New state." }),
       ),
       base: Type.Optional(Type.String({ description: "New base branch." })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; pull_number: number; title?: string; body?: string; state?: string; base?: string },
+      params: { owner: string; repo: string; pull_number: number; title?: string; body?: string; state?: string; base?: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -173,7 +185,7 @@ export function createGitHubPullUpdateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullMergeTool(gh: GitHubClient): any {
+export function createGitHubPullMergeTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_merge",
     label: "GitHub Merge Pull Request",
@@ -190,11 +202,14 @@ export function createGitHubPullMergeTool(gh: GitHubClient): any {
           { description: "Merge method.", default: "merge" },
         ),
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; pull_number: number; commit_title?: string; commit_message?: string; merge_method?: string },
+      params: { owner: string; repo: string; pull_number: number; commit_title?: string; commit_message?: string; merge_method?: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -212,7 +227,7 @@ export function createGitHubPullMergeTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullFilesTool(gh: GitHubClient): any {
+export function createGitHubPullFilesTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_files",
     label: "GitHub PR Files",
@@ -223,11 +238,14 @@ export function createGitHubPullFilesTool(gh: GitHubClient): any {
       pull_number: Type.Number({ description: "Pull request number." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; pull_number: number; per_page?: number; page?: number },
+      params: { owner: string; repo: string; pull_number: number; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -250,7 +268,7 @@ export function createGitHubPullFilesTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullDiffTool(gh: GitHubClient): any {
+export function createGitHubPullDiffTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_diff",
     label: "GitHub PR Diff",
@@ -259,8 +277,11 @@ export function createGitHubPullDiffTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       pull_number: Type.Number({ description: "Pull request number." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; pull_number: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; pull_number: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -277,7 +298,7 @@ export function createGitHubPullDiffTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullReviewListTool(gh: GitHubClient): any {
+export function createGitHubPullReviewListTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_review_list",
     label: "GitHub List PR Reviews",
@@ -286,8 +307,11 @@ export function createGitHubPullReviewListTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       pull_number: Type.Number({ description: "Pull request number." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; pull_number: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; pull_number: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -308,7 +332,7 @@ export function createGitHubPullReviewListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullReviewCreateTool(gh: GitHubClient): any {
+export function createGitHubPullReviewCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_review_create",
     label: "GitHub Create PR Review",
@@ -322,11 +346,14 @@ export function createGitHubPullReviewCreateTool(gh: GitHubClient): any {
         [Type.Literal("APPROVE"), Type.Literal("REQUEST_CHANGES"), Type.Literal("COMMENT")],
         { description: "Review action." },
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; pull_number: number; body?: string; event: string },
+      params: { owner: string; repo: string; pull_number: number; body?: string; event: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -343,7 +370,7 @@ export function createGitHubPullReviewCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullReviewCommentsTool(gh: GitHubClient): any {
+export function createGitHubPullReviewCommentsTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_review_comments",
     label: "GitHub PR Review Comments",
@@ -354,11 +381,14 @@ export function createGitHubPullReviewCommentsTool(gh: GitHubClient): any {
       pull_number: Type.Number({ description: "Pull request number." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; pull_number: number; per_page?: number; page?: number },
+      params: { owner: string; repo: string; pull_number: number; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -380,7 +410,7 @@ export function createGitHubPullReviewCommentsTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullRequestReviewersTool(gh: GitHubClient): any {
+export function createGitHubPullRequestReviewersTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_request_reviewers",
     label: "GitHub Request PR Reviewers",
@@ -391,11 +421,14 @@ export function createGitHubPullRequestReviewersTool(gh: GitHubClient): any {
       pull_number: Type.Number({ description: "Pull request number." }),
       reviewers: Type.Optional(Type.Array(Type.String(), { description: "User logins to request." })),
       team_reviewers: Type.Optional(Type.Array(Type.String(), { description: "Team slugs to request." })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; pull_number: number; reviewers?: string[]; team_reviewers?: string[] },
+      params: { owner: string; repo: string; pull_number: number; reviewers?: string[]; team_reviewers?: string[]; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -415,7 +448,7 @@ export function createGitHubPullRequestReviewersTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubPullChecksTool(gh: GitHubClient): any {
+export function createGitHubPullChecksTool(manager: GitHubClientManager): any {
   return {
     name: "github_pull_checks",
     label: "GitHub PR Checks",
@@ -424,8 +457,11 @@ export function createGitHubPullChecksTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       pull_number: Type.Number({ description: "Pull request number." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; pull_number: number }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; pull_number: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

@@ -1,19 +1,22 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubUserGetTool(gh: GitHubClient): any {
+export function createGitHubUserGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_user_get",
     label: "GitHub Get User",
     description: "Get public information about a GitHub user.",
     parameters: Type.Object({
       username: Type.String({ description: "GitHub username." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { username: string }) {
+    async execute(_toolCallId: string, params: { username: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -32,7 +35,7 @@ export function createGitHubUserGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubUserReposTool(gh: GitHubClient): any {
+export function createGitHubUserReposTool(manager: GitHubClientManager): any {
   return {
     name: "github_user_repos",
     label: "GitHub User Repos",
@@ -47,11 +50,14 @@ export function createGitHubUserReposTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { username: string; sort?: string; per_page?: number; page?: number },
+      params: { username: string; sort?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -73,15 +79,18 @@ export function createGitHubUserReposTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubOrgGetTool(gh: GitHubClient): any {
+export function createGitHubOrgGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_org_get",
     label: "GitHub Get Organization",
     description: "Get information about a GitHub organization.",
     parameters: Type.Object({
       org: Type.String({ description: "Organization login." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { org: string }) {
+    async execute(_toolCallId: string, params: { org: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -100,7 +109,7 @@ export function createGitHubOrgGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubOrgMembersTool(gh: GitHubClient): any {
+export function createGitHubOrgMembersTool(manager: GitHubClientManager): any {
   return {
     name: "github_org_members",
     label: "GitHub Org Members",
@@ -114,11 +123,14 @@ export function createGitHubOrgMembersTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { org: string; role?: string; per_page?: number; page?: number },
+      params: { org: string; role?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -135,7 +147,7 @@ export function createGitHubOrgMembersTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubOrgReposTool(gh: GitHubClient): any {
+export function createGitHubOrgReposTool(manager: GitHubClientManager): any {
   return {
     name: "github_org_repos",
     label: "GitHub Org Repos",
@@ -157,11 +169,14 @@ export function createGitHubOrgReposTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { org: string; type?: string; sort?: string; per_page?: number; page?: number },
+      params: { org: string; type?: string; sort?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -184,7 +199,7 @@ export function createGitHubOrgReposTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubTeamListTool(gh: GitHubClient): any {
+export function createGitHubTeamListTool(manager: GitHubClientManager): any {
   return {
     name: "github_team_list",
     label: "GitHub List Teams",
@@ -193,11 +208,14 @@ export function createGitHubTeamListTool(gh: GitHubClient): any {
       org: Type.String({ description: "Organization login." }),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { org: string; per_page?: number; page?: number },
+      params: { org: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

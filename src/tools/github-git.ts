@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubCommitListTool(gh: GitHubClient): any {
+export function createGitHubCommitListTool(manager: GitHubClientManager): any {
   return {
     name: "github_commit_list",
     label: "GitHub List Commits",
@@ -20,14 +20,17 @@ export function createGitHubCommitListTool(gh: GitHubClient): any {
       until: Type.Optional(Type.String({ description: "Only commits before this date (ISO 8601)." })),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
       params: {
         owner: string; repo: string; sha?: string; path?: string; author?: string;
-        since?: string; until?: string; per_page?: number; page?: number;
+        since?: string; until?: string; per_page?: number; page?: number; account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -53,7 +56,7 @@ export function createGitHubCommitListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubCommitGetTool(gh: GitHubClient): any {
+export function createGitHubCommitGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_commit_get",
     label: "GitHub Get Commit",
@@ -62,8 +65,11 @@ export function createGitHubCommitGetTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       ref: Type.String({ description: "Commit SHA." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; ref: string }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; ref: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -88,7 +94,7 @@ export function createGitHubCommitGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubCompareTool(gh: GitHubClient): any {
+export function createGitHubCompareTool(manager: GitHubClientManager): any {
   return {
     name: "github_compare",
     label: "GitHub Compare",
@@ -98,8 +104,11 @@ export function createGitHubCompareTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       base: Type.String({ description: "Base branch, tag, or SHA." }),
       head: Type.String({ description: "Head branch, tag, or SHA." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; base: string; head: string }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; base: string; head: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -124,7 +133,7 @@ export function createGitHubCompareTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubRefListTool(gh: GitHubClient): any {
+export function createGitHubRefListTool(manager: GitHubClientManager): any {
   return {
     name: "github_ref_list",
     label: "GitHub List Refs",
@@ -133,8 +142,11 @@ export function createGitHubRefListTool(gh: GitHubClient): any {
       owner: Type.String({ description: "Repository owner." }),
       repo: Type.String({ description: "Repository name." }),
       ref: Type.String({ description: "Ref pattern, e.g. 'heads', 'tags', 'heads/main'." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { owner: string; repo: string; ref: string }) {
+    async execute(_toolCallId: string, params: { owner: string; repo: string; ref: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -150,7 +162,7 @@ export function createGitHubRefListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubTreeGetTool(gh: GitHubClient): any {
+export function createGitHubTreeGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_tree_get",
     label: "GitHub Get Tree",
@@ -160,11 +172,14 @@ export function createGitHubTreeGetTool(gh: GitHubClient): any {
       repo: Type.String({ description: "Repository name." }),
       tree_sha: Type.String({ description: "Tree SHA." }),
       recursive: Type.Optional(Type.Boolean({ description: "Recursively list all files.", default: false })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; tree_sha: string; recursive?: boolean },
+      params: { owner: string; repo: string; tree_sha: string; recursive?: boolean; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

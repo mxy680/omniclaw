@@ -6,3 +6,4 @@ dist/
 ~/.openclaw/
 *.xcuserstate
 *.tsbuildinfo
+*.png

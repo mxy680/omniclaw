@@ -35,6 +35,7 @@ export function ConnectDialog({
   const [loading, setLoading] = useState(false);
 
   const isGitHub = providerId === "github";
+  const isGemini = providerId === "gemini";
 
   async function handleGoogleConnect() {
     if (!accountName.trim()) return;
@@ -81,6 +82,33 @@ export function ConnectDialog({
     }
   }
 
+  async function handleGeminiConnect() {
+    if (!token.trim()) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: token.trim() }),
+      });
+
+      if (res.ok) {
+        toast.success("Gemini API key saved");
+        setOpen(false);
+        setToken("");
+        onConnected?.();
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to save API key");
+      }
+    } catch {
+      toast.error("Failed to save API key");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -95,7 +123,9 @@ export function ConnectDialog({
           <DialogDescription>
             {isGitHub
               ? "Enter a GitHub Personal Access Token (PAT) with the scopes you need."
-              : `Enter a name for this account, then sign in with ${providerName}.`}
+              : isGemini
+                ? "Enter a Gemini API key from Google AI Studio."
+                : `Enter a name for this account, then sign in with ${providerName}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -128,6 +158,35 @@ export function ConnectDialog({
               )}
             </div>
           </div>
+        ) : isGemini ? (
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="gemini-key">API Key</Label>
+              <Input
+                id="gemini-key"
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="AIza..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Get an API key at{" "}
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  aistudio.google.com/apikey
+                </a>
+              </p>
+              {existingAccounts.length > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  This will replace the existing API key.
+                </p>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -149,12 +208,12 @@ export function ConnectDialog({
 
         <DialogFooter>
           <Button
-            onClick={isGitHub ? handleGitHubConnect : handleGoogleConnect}
-            disabled={isGitHub ? !token.trim() || loading : !accountName.trim() || loading}
+            onClick={isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
+            disabled={isGitHub || isGemini ? !token.trim() || loading : !accountName.trim() || loading}
           >
             {loading
-              ? isGitHub ? "Saving..." : "Redirecting..."
-              : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
+              ? isGitHub || isGemini ? "Saving..." : "Redirecting..."
+              : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
           </Button>
         </DialogFooter>
       </DialogContent>

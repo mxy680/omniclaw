@@ -116,6 +116,13 @@ import { createViewAttachmentTool } from "../tools/attachment-view.js";
 import { ScheduleStore } from "../scheduler/schedule-store.js";
 import { loadAgentConfigs } from "./agent-config.js";
 import { GitHubClient } from "../auth/github-client.js";
+import { GeminiClient } from "../auth/gemini-client.js";
+import { createGeminiAuthSetupTool } from "../tools/gemini-auth.js";
+import {
+  createGeminiGenerateImageTool,
+  createGeminiImagenTool,
+} from "../tools/gemini-generate-image.js";
+import { createGeminiGenerateVideoTool } from "../tools/gemini-generate-video.js";
 import { createGitHubAuthSetupTool } from "../tools/github-auth.js";
 import {
   createGitHubRepoListTool,
@@ -518,6 +525,16 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createGitHubCodeScanningAlertsTool(gh));
     add(createGitHubSecretScanningAlertsTool(gh));
     add(createGitHubSecurityAdvisoriesTool(gh));
+  }
+
+  // Gemini tools — API key auth (like GitHub)
+  {
+    const gemini = new GeminiClient(config.gemini_api_key);
+
+    add(createGeminiAuthSetupTool(gemini));
+    add(createGeminiGenerateImageTool(gemini));
+    add(createGeminiImagenTool(gemini));
+    add(createGeminiGenerateVideoTool(gemini));
   }
 
   return tools;

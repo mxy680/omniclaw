@@ -1,6 +1,6 @@
-# Google Workspace & GitHub MCP Server
+# Google Workspace, GitHub & Gemini MCP Server
 
-This project is an MCP server providing tools for Gmail, Calendar, Drive, Docs, Sheets, Slides, YouTube, and GitHub.
+This project is an MCP server providing tools for Gmail, Calendar, Drive, Docs, Sheets, Slides, YouTube, GitHub, and Gemini media generation.
 
 ## Integrations
 
@@ -14,6 +14,7 @@ This project is an MCP server providing tools for Gmail, Calendar, Drive, Docs, 
 | Google Slides | 9 | `slides` | `docs/google-workspace.md` |
 | YouTube | 10 | `youtube` | `docs/youtube.md` |
 | GitHub | 95 | `github` | `docs/github.md` |
+| Gemini | 4 | `gemini` | `skills/gemini.SKILL.md` |
 
 ## Scheduler
 

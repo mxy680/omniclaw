@@ -55,6 +55,18 @@ export const PROVIDERS: Provider[] = [
     ],
   },
   {
+    id: "gemini",
+    name: "Gemini",
+    icon: "Sparkles",
+    color: "#4285F4",
+    description:
+      "Generate images with Gemini and Imagen, and videos with Veo. Requires a Gemini API key from Google AI Studio.",
+    available: true,
+    services: [
+      { id: "gemini", name: "Gemini", icon: "Sparkles", color: "#4285F4" },
+    ],
+  },
+  {
     id: "instagram",
     name: "Instagram",
     icon: "Instagram",

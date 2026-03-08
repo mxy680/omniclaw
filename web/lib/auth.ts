@@ -93,7 +93,7 @@ export function deleteTokens(account: string): boolean {
 export interface AccountInfo {
   name: string;
   email: string | null;
-  provider: "google" | "github";
+  provider: "google" | "github" | "gemini";
   hasTokens: boolean;
   isExpired: boolean;
 }
@@ -123,6 +123,11 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
     if (ghAccount) accounts.push(ghAccount);
   }
 
+  if (!provider || provider === "gemini") {
+    const geminiAccount = getGeminiAccount();
+    if (geminiAccount) accounts.push(geminiAccount);
+  }
+
   return accounts;
 }
 
@@ -139,6 +144,37 @@ function getGitHubAccount(): AccountInfo | null {
     };
   } catch {
     return null;
+  }
+}
+
+function getGeminiAccount(): AccountInfo | null {
+  try {
+    const config = getConfig();
+    if (!config.gemini_api_key) return null;
+    return {
+      name: "default",
+      email: null,
+      provider: "gemini",
+      hasTokens: true,
+      isExpired: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function setGeminiApiKey(apiKey: string): void {
+  updateConfig({ gemini_api_key: apiKey });
+}
+
+export function revokeGeminiApiKey(): boolean {
+  try {
+    const config = getConfig();
+    if (!config.gemini_api_key) return false;
+    updateConfig({ gemini_api_key: undefined });
+    return true;
+  } catch {
+    return false;
   }
 }
 

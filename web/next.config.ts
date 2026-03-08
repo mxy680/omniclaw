@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     "open",
     "mime-types",
     "youtube-transcript",
+    "@google/genai",
   ],
 };
 

@@ -36,6 +36,8 @@ export async function POST(request: Request) {
     port = 18789;
   } else if (service === "mcp-server") {
     port = 9850;
+  } else if (service === "mobile-ios") {
+    port = 8081;
   } else {
     return NextResponse.json(
       { error: `Unknown service: ${service}` },

@@ -1,5 +1,6 @@
 import { Agent } from '../types/agent';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { getDeviceIdentity, signChallenge } from './DeviceIdentity';
 import { agentProfiles } from '../config/agentProfiles';
 
@@ -19,7 +20,8 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
   const { host, port, authToken, useTLS } = config;
   if (!host) return [];
 
-  const deviceKeys = await getDeviceIdentity();
+  const isSimulator = !Constants.isDevice;
+  const deviceKeys = isSimulator ? null : await getDeviceIdentity();
   const scopes = ['operator.read', 'operator.write'];
 
   return new Promise((resolve, reject) => {
@@ -37,24 +39,28 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
         return;
       }
 
-      // Sign the challenge nonce and send connect frame with device identity
+      // Send connect frame, with device signature on real devices only
       if (json.type === 'event' && json.event === 'connect.challenge') {
         const payload = json.payload as { nonce: string };
-        const device = signChallenge(deviceKeys, payload.nonce, authToken, scopes);
+
+        const connectParams: Record<string, unknown> = {
+          minProtocol: 3,
+          maxProtocol: 3,
+          client: { id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android', version: '1.0.0', platform: Platform.OS, mode: 'ui' },
+          role: 'operator',
+          scopes,
+          auth: { token: authToken },
+        };
+
+        if (deviceKeys) {
+          connectParams.device = signChallenge(deviceKeys, payload.nonce, authToken, scopes);
+        }
 
         ws.send(JSON.stringify({
           type: 'req',
           id: 'agent-svc-1',
           method: 'connect',
-          params: {
-            minProtocol: 3,
-            maxProtocol: 3,
-            client: { id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android', version: '1.0.0', platform: Platform.OS, mode: 'ui' },
-            role: 'operator',
-            scopes,
-            auth: { token: authToken },
-            device,
-          },
+          params: connectParams,
         }));
         return;
       }

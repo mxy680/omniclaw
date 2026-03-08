@@ -19,12 +19,11 @@ import {
   Check,
   Play,
   Square,
+  RotateCcw,
   Loader2,
   CheckCircle2,
   XCircle,
   Users,
-  Rocket,
-  AlertTriangle,
   Globe,
 } from "lucide-react";
 import type { TunnelStatus } from "@/lib/system-types";
@@ -81,6 +80,31 @@ export function SystemPage() {
     }
   };
 
+  const handleRestart = async (
+    service: "gateway" | "mcp-server",
+  ) => {
+    setActionLoading(`restart-${service}`);
+    try {
+      await fetch("/api/system/stop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service }),
+      });
+      await new Promise((r) => setTimeout(r, 2000));
+      await fetch("/api/system/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service }),
+      });
+      await new Promise((r) => setTimeout(r, 1000));
+      await refresh();
+    } catch {
+      // ignore
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading && !status) {
     return (
       <div className="space-y-6">
@@ -125,6 +149,7 @@ export function SystemPage() {
           service="gateway"
           onStart={() => handleAction("gateway", "start")}
           onStop={() => handleAction("gateway", "stop")}
+          onRestart={() => handleRestart("gateway")}
         />
         <ServiceCard
           title="MCP Server"
@@ -141,6 +166,7 @@ export function SystemPage() {
           service="mcp-server"
           onStart={() => handleAction("mcp-server", "start")}
           onStop={() => handleAction("mcp-server", "stop")}
+          onRestart={() => handleRestart("mcp-server")}
         />
       </div>
 
@@ -148,12 +174,32 @@ export function SystemPage() {
       <MobileCard
         mobile={status?.mobile}
         actionLoading={actionLoading}
-        onLaunch={(udid) =>
-          handleAction("mobile-ios", "start", udid ? { udid, target: "device" } : { target: "device" })
-        }
         onSimulator={() =>
           handleAction("mobile-ios", "start", { target: "simulator" })
         }
+        onStop={() => handleAction("mobile-ios", "stop")}
+        onRestart={async () => {
+          setActionLoading("restart-mobile-ios");
+          try {
+            await fetch("/api/system/stop", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ service: "mobile-ios" }),
+            });
+            await new Promise((r) => setTimeout(r, 2000));
+            await fetch("/api/system/start", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ service: "mobile-ios", target: "simulator" }),
+            });
+            await new Promise((r) => setTimeout(r, 1000));
+            await refresh();
+          } catch {
+            // ignore
+          } finally {
+            setActionLoading(null);
+          }
+        }}
       />
 
       {/* Remote Access */}
@@ -263,6 +309,7 @@ function ServiceCard({
   service,
   onStart,
   onStop,
+  onRestart,
 }: {
   title: string;
   description: string;
@@ -274,9 +321,11 @@ function ServiceCard({
   service: string;
   onStart: () => void;
   onStop: () => void;
+  onRestart?: () => void;
 }) {
   const isStarting = actionLoading === `start-${service}`;
   const isStopping = actionLoading === `stop-${service}`;
+  const isRestarting = actionLoading === `restart-${service}`;
 
   return (
     <Card>
@@ -305,19 +354,36 @@ function ServiceCard({
         </div>
         <div className="flex gap-2">
           {status === "running" ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onStop}
-              disabled={isStopping}
-            >
-              {isStopping ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Square className="h-3 w-3" />
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onStop}
+                disabled={isStopping || isRestarting}
+              >
+                {isStopping ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Square className="h-3 w-3" />
+                )}
+                Stop
+              </Button>
+              {onRestart && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRestart}
+                  disabled={isRestarting || isStopping}
+                >
+                  {isRestarting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-3 w-3" />
+                  )}
+                  Restart
+                </Button>
               )}
-              Stop
-            </Button>
+            </>
           ) : (
             <Button size="sm" onClick={onStart} disabled={isStarting}>
               {isStarting ? (
@@ -389,16 +455,20 @@ function DiagnosticItem({
 function MobileCard({
   mobile,
   actionLoading,
-  onLaunch,
   onSimulator,
+  onStop,
+  onRestart,
 }: {
-  mobile?: { metro: "running" | "stopped"; metroPort: number; devices: Array<{ name: string; osVersion: string; udid: string; modelName: string; available: boolean; error?: string }> };
+  mobile?: { metro: "running" | "stopped"; metroPort: number };
   actionLoading: string | null;
-  onLaunch: (udid?: string) => void;
   onSimulator: () => void;
+  onStop: () => void;
+  onRestart: () => void;
 }) {
   const isLaunching = actionLoading === "start-mobile-ios";
-  const devices = mobile?.devices ?? [];
+  const isStopping = actionLoading === "stop-mobile-ios";
+  const isRestarting = actionLoading === "restart-mobile-ios";
+  const metroRunning = mobile?.metro === "running";
   const [building, setBuilding] = useState(false);
   const [buildLog, setBuildLog] = useState("");
 
@@ -415,11 +485,13 @@ function MobileCard({
     return () => clearInterval(id);
   }, [building]);
 
-  const handleLaunch = (udid?: string) => {
-    setBuilding(true);
-    setBuildLog("Starting build...");
-    onLaunch(udid);
-  };
+  // Clear building state when metro comes up
+  useEffect(() => {
+    if (metroRunning && building) {
+      setBuilding(false);
+      setBuildLog("");
+    }
+  }, [metroRunning, building]);
 
   return (
     <Card>
@@ -429,87 +501,67 @@ function MobileCard({
             <Smartphone className="h-4 w-4" />
             <CardTitle className="text-base">Mobile App</CardTitle>
           </div>
-          <StatusDot status={mobile?.metro === "running" ? "running" : "stopped"} label={mobile?.metro === "running" ? "Metro running" : "Metro stopped"} />
+          <StatusDot status={metroRunning ? "running" : "stopped"} label={metroRunning ? "Metro running" : "Metro stopped"} />
         </div>
         <CardDescription>
           Expo dev client (Metro on port {mobile?.metroPort ?? 8081})
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {devices.length > 0 ? (
-          <div className="space-y-2">
-            {devices.map((device) => (
-              <div
-                key={device.udid}
-                className="rounded-lg border px-3 py-2 space-y-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm font-medium">{device.name}</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      iOS {device.osVersion}
-                    </Badge>
-                    {device.modelName && (
-                      <span className="text-[10px] text-muted-foreground">{device.modelName}</span>
-                    )}
-                  </div>
-                  {device.available ? (
-                    <Button
-                      size="sm"
-                      onClick={() => handleLaunch(device.udid)}
-                      disabled={isLaunching || building}
-                    >
-                      {isLaunching || building ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Rocket className="h-3 w-3" />
-                      )}
-                      {building ? "Building..." : "Launch"}
-                    </Button>
-                  ) : (
-                    <Badge variant="secondary" className="text-[10px] text-amber-600 dark:text-amber-400">
-                      Unavailable
-                    </Badge>
-                  )}
-                </div>
-                {!device.available && device.error && (
-                  <div className="flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-1.5">
-                    <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-                    <span>{device.error}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No iOS devices connected. Connect your iPhone via USB.
-          </p>
-        )}
-        <Separator />
         <div className="flex items-center justify-between">
           <div>
             <span className="text-sm font-medium">Simulator</span>
             <p className="text-[11px] text-muted-foreground">Run on iOS Simulator</p>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setBuilding(true);
-              setBuildLog("Starting simulator build...");
-              onSimulator();
-            }}
-            disabled={isLaunching || building}
-          >
-            {building ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
+          <div className="flex gap-2">
+            {metroRunning ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onStop}
+                  disabled={isStopping || isRestarting}
+                >
+                  {isStopping ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Square className="h-3 w-3" />
+                  )}
+                  Stop
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRestart}
+                  disabled={isRestarting || isStopping}
+                >
+                  {isRestarting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-3 w-3" />
+                  )}
+                  Restart
+                </Button>
+              </>
             ) : (
-              <Play className="h-3 w-3" />
+              <Button
+                size="sm"
+                onClick={() => {
+                  setBuilding(true);
+                  setBuildLog("Starting simulator build...");
+                  onSimulator();
+                }}
+                disabled={isLaunching || building}
+              >
+                {building ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Play className="h-3 w-3" />
+                )}
+                {building ? "Building..." : "Run"}
+              </Button>
             )}
-            {building ? "Building..." : "Run"}
-          </Button>
+          </div>
         </div>
         {building && buildLog && (
           <div className="mt-3">

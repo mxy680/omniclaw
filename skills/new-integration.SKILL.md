@@ -78,6 +78,10 @@ Edit `web/lib/integrations.ts` — add to the `PROVIDERS` array:
 
 Edit `src/mcp/agent-config.ts` — add `"{service}"` to the `VALID_SERVICES` array.
 
+### Step 1.2b: Add to SERVICE_NAMES
+
+Edit `web/lib/tools.ts` — add `{service}: "{Service}"` to the `SERVICE_NAMES` map. Without this, the dashboard will show "Run `pnpm build` first to load tool definitions" even after tools are registered.
+
 ### Step 1.3: Add config (Strategy B and C only)
 
 **Strategy B** — add token field:
@@ -882,6 +886,7 @@ pnpm test:integration
 - **Conductor workspace symlinks**: pnpm workspace symlinks cause module resolution to use the real path (e.g., `/Users/x/projects/...`) instead of the workspace path (e.g., `/Users/x/conductor/workspaces/...`). `NODE_PATH` does NOT work with ESM. Use `createRequire(join(homedir(), ".openclaw", "current-plugin", "node_modules", "_placeholder.js"))` in standalone scripts.
 - **Next.js build boundary**: The web app (`web/`) CANNOT import from `src/`. Inline any shared logic using plain `fs` operations, or use `child_process.execFile` to spawn standalone scripts.
 - **Tool count test**: After adding tools, update the expected count in `tests/unit/tool-registry.test.ts`.
+- **SERVICE_NAMES in web/lib/tools.ts**: The web dashboard filters tools by a `SERVICE_NAMES` map. If you add a new service but don't add its ID to this map, the dashboard will show "Run `pnpm build` first to load tool definitions" even though the tools exist. You MUST add `{service}: "{Service}"` to `SERVICE_NAMES`.
 
 ---
 
@@ -903,13 +908,14 @@ pnpm test:integration
 | 12 | `src/tools/{service}-auth.ts` | Create (auth setup tool) | | x | x |
 | 13 | `src/tools/{service}-{feature}.ts` | Create (1+ files) | x | x | x |
 | 14 | `src/mcp/tool-registry.ts` | Modify (register tools) | x | x | x |
-| 15 | `scripts/{service}-auth.mjs` | Create (standalone Playwright script) | | | x |
-| 16 | `web/app/api/auth/{service}/route.ts` | Create (API route spawning script) | | | x |
-| 17 | `web/components/connect-dialog.tsx` | Modify (add service branch) | | | x |
-| 18 | `web/lib/auth.ts` | Modify (account listing + revocation) | | | x |
-| 19 | `web/app/api/auth/revoke/route.ts` | Modify (add revoke case) | | | x |
-| 20 | `tests/integration/{service}.test.ts` | Create (tests) | x | x | x |
-| 21 | `tests/unit/tool-registry.test.ts` | Modify (update tool count) | x | x | x |
-| 22 | `web/lib/test-plans.ts` | Modify (SERVICE_TESTS) | x | x | x |
-| 23 | `skills/{service}.SKILL.md` | Create | x | x | x |
-| 24 | `CLAUDE.md` | Modify (integrations table) | x | x | x |
+| 15 | `web/lib/tools.ts` | Modify (add to SERVICE_NAMES) | x | x | x |
+| 16 | `scripts/{service}-auth.mjs` | Create (standalone Playwright script) | | | x |
+| 17 | `web/app/api/auth/{service}/route.ts` | Create (API route spawning script) | | | x |
+| 18 | `web/components/connect-dialog.tsx` | Modify (add service branch) | | | x |
+| 19 | `web/lib/auth.ts` | Modify (account listing + revocation) | | | x |
+| 20 | `web/app/api/auth/revoke/route.ts` | Modify (add revoke case) | | | x |
+| 21 | `tests/integration/{service}.test.ts` | Create (tests) | x | x | x |
+| 22 | `tests/unit/tool-registry.test.ts` | Modify (update tool count) | x | x | x |
+| 23 | `web/lib/test-plans.ts` | Modify (SERVICE_TESTS) | x | x | x |
+| 24 | `skills/{service}.SKILL.md` | Create | x | x | x |
+| 25 | `CLAUDE.md` | Modify (integrations table) | x | x | x |

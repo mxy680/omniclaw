@@ -32,7 +32,7 @@ export function createLinkedinSearchPeopleTool(client: LinkedinSessionClient): a
         const count = params.count ?? 10;
         const keywords = encodeURIComponent(params.keywords);
         const result = await client.request<Record<string, unknown>>({
-          path: `/search/dash/clusters?q=all&keywords=${keywords}&origin=GLOBAL_SEARCH_HEADER&start=${start}&count=${count}`,
+          path: `/graphql?variables=(start:${start},origin:GLOBAL_SEARCH_HEADER,query:(keywords:${keywords},flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:resultType,value:List(PEOPLE))),includeFiltersInResponse:false))&queryId=voyagerSearchDashClusters.b0928897b71bd00a5a7291755dcd64f0`,
         });
         return jsonResult(result);
       } catch (err: unknown) {

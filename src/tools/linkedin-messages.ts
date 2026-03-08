@@ -26,7 +26,10 @@ export function createLinkedinMessagesListTool(client: LinkedinSessionClient): a
       try {
         const count = params.count ?? 20;
         const result = await client.request<Record<string, unknown>>({
-          path: `/messaging/dash/conversations?q=search&count=${count}`,
+          path: `/messaging/conversations?keyVersion=LEGACY_INBOX&count=${count}`,
+          headers: {
+            Accept: "application/vnd.linkedin.normalized+json+2.1",
+          },
         });
         return jsonResult(result);
       } catch (err: unknown) {
@@ -67,12 +70,22 @@ export function createLinkedinMessagesSendTool(client: LinkedinSessionClient): a
     ) {
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
-        const encodedUrn = encodeURIComponent(params.conversation_urn);
         const result = await client.request<Record<string, unknown>>({
           method: "POST",
-          path: `/messaging/dash/conversations/${encodedUrn}/messages`,
+          path: `/messaging/conversations/${params.conversation_urn}/events?action=create`,
           body: {
-            body: params.text,
+            eventCreate: {
+              value: {
+                "com.linkedin.voyager.messaging.create.MessageCreate": {
+                  attributedBody: {
+                    text: params.text,
+                    attributes: [],
+                  },
+                  attachments: [],
+                },
+              },
+            },
+            dedupeByClientGeneratedToken: false,
           },
         });
         return jsonResult({ status: "sent", ...result });

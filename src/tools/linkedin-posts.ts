@@ -30,7 +30,10 @@ export function createLinkedinPostListTool(client: LinkedinSessionClient): any {
         const count = params.count ?? 10;
         const start = params.start ?? 0;
         const result = await client.request<Record<string, unknown>>({
-          path: `/feed/dash/feedUpdates?q=contextQuery&count=${count}&start=${start}`,
+          path: `/feed/updatesV2?count=${count}&start=${start}&q=chronFeed`,
+          headers: {
+            Accept: "application/vnd.linkedin.normalized+json+2.1",
+          },
         });
         return jsonResult(result);
       } catch (err: unknown) {

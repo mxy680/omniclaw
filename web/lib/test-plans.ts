@@ -924,6 +924,30 @@ const wolframTest: ServiceTestFn = async (execute) => {
   return steps;
 };
 
+const linkedinTest: ServiceTestFn = async (execute) => {
+  const steps: TestStepResult[] = [];
+
+  const s1 = await runStep("Get profile", "linkedin_profile_get", {}, execute);
+  steps.push(s1.result);
+
+  const s2 = await runStep("List connections", "linkedin_connections_list", { count: 5 }, execute);
+  steps.push(s2.result);
+
+  const s3 = await runStep("Search people", "linkedin_search_people", {
+    keywords: "test",
+    count: 3,
+  }, execute);
+  steps.push(s3.result);
+
+  const s4 = await runStep("List feed posts", "linkedin_post_list", { count: 3 }, execute);
+  steps.push(s4.result);
+
+  const s5 = await runStep("List messages", "linkedin_messages_list", { count: 3 }, execute);
+  steps.push(s5.result);
+
+  return steps;
+};
+
 const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   gmail: gmailTest,
   calendar: calendarTest,
@@ -935,6 +959,7 @@ const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   github: githubTest,
   gemini: geminiTest,
   wolfram: wolframTest,
+  linkedin: linkedinTest,
 };
 
 export async function runServiceTest(

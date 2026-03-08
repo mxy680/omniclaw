@@ -93,7 +93,7 @@ export function deleteTokens(account: string): boolean {
 export interface AccountInfo {
   name: string;
   email: string | null;
-  provider: "google" | "github" | "gemini" | "wolfram";
+  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin";
   hasTokens: boolean;
   isExpired: boolean;
 }
@@ -131,6 +131,11 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   if (!provider || provider === "wolfram-alpha") {
     const wolframAccount = getWolframAccount();
     if (wolframAccount) accounts.push(wolframAccount);
+  }
+
+  if (!provider || provider === "linkedin") {
+    const linkedinAccounts = getLinkedinAccounts();
+    accounts.push(...linkedinAccounts);
   }
 
   return accounts;
@@ -181,6 +186,47 @@ function getWolframAccount(): AccountInfo | null {
     };
   } catch {
     return null;
+  }
+}
+
+import { join } from "path";
+import { homedir } from "os";
+
+const LINKEDIN_SESSIONS_PATH = join(homedir(), ".openclaw", "linkedin-sessions.json");
+
+function loadLinkedinSessions(): Record<string, unknown> {
+  if (!existsSync(LINKEDIN_SESSIONS_PATH)) return {};
+  try {
+    return JSON.parse(readFileSync(LINKEDIN_SESSIONS_PATH, "utf-8")) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function getLinkedinAccounts(): AccountInfo[] {
+  try {
+    const sessions = loadLinkedinSessions();
+    return Object.keys(sessions).map((name) => ({
+      name,
+      email: null,
+      provider: "linkedin" as const,
+      hasTokens: true,
+      isExpired: false,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function revokeLinkedinSession(account: string): boolean {
+  try {
+    const sessions = loadLinkedinSessions();
+    if (!(account in sessions)) return false;
+    delete sessions[account];
+    writeFileSync(LINKEDIN_SESSIONS_PATH, JSON.stringify(sessions, null, 2), "utf-8");
+    return true;
+  } catch {
+    return false;
   }
 }
 

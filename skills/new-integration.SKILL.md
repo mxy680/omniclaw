@@ -78,6 +78,10 @@ Edit `web/lib/integrations.ts` — add to the `PROVIDERS` array:
 
 Edit `src/mcp/agent-config.ts` — add `"{service}"` to the `VALID_SERVICES` array.
 
+### Step 1.2b: Add to SERVICE_NAMES
+
+Edit `web/lib/tools.ts` — add `{service}: "{Service}"` to the `SERVICE_NAMES` map. Without this, the dashboard will show "Run `pnpm build` first to load tool definitions" even after tools are registered.
+
 ### Step 1.3: Add config (Strategy B and C only)
 
 **Strategy B** — add token field:
@@ -261,14 +265,18 @@ export class SessionStore {
 
 The browser auth module MUST launch a real Playwright browser window and navigate to the service's login page. It does NOT automate the login itself — the user authenticates manually using whatever method they choose (password, SSO, MFA, social login, passkey, etc.). The browser stays open until the user completes login and lands on an authenticated page, at which point cookies are captured automatically.
 
+**CRITICAL: Use dynamic `import("playwright")`, NOT a static top-level import.** A static import will crash the MCP server at startup if Playwright can't resolve (e.g., missing from node_modules). Dynamic import defers resolution to when auth is actually called.
+
 ```typescript
-import { chromium } from "playwright";
 import type { SessionStore, SessionData } from "./session-store.js";
 
 export async function authenticate{Service}(
   sessionStore: SessionStore,
   account: string = "default",
 ): Promise<SessionData> {
+  // MUST use dynamic import — static import crashes MCP server at startup
+  const { chromium } = await import("playwright");
+
   // Always launch a VISIBLE browser — never headless.
   // The user must be able to see and interact with the login page
   // to complete auth however they want (password, SSO, MFA, passkey, etc.)
@@ -361,7 +369,130 @@ export class {Service}SessionClient {
 }
 ```
 
-**C5. Create auth setup tool** — `src/tools/{service}-auth.ts`:
+**C5. Wire web app "Connect Account" button** (Strategy C only):
+
+The web dashboard's "Connect Account" button must trigger the Playwright browser login. The web app (`web/`) runs in Next.js and **cannot import from `src/`** (separate module boundary). Also, **`NODE_PATH` does not work with ESM** modules. To solve both problems:
+
+1. Create a standalone auth script at `scripts/{service}-auth.mjs`
+2. Create an API route that spawns it via `child_process.execFile`
+3. Update the connect dialog to call the API route
+
+**C5a. Create standalone auth script** — `scripts/{service}-auth.mjs`:
+
+This script runs outside the web app process. It must resolve Playwright via `createRequire` from `~/.openclaw/current-plugin/node_modules/` — this symlink always points to the correct Conductor workspace, avoiding pnpm workspace symlink resolution issues.
+
+```javascript
+#!/usr/bin/env node
+import { createRequire } from "module";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join, dirname } from "path";
+import { homedir } from "os";
+
+// Resolve playwright from the plugin's node_modules.
+// IMPORTANT: NODE_PATH doesn't work with ESM. Use createRequire instead.
+// ~/.openclaw/current-plugin is a stable symlink to the active workspace.
+const pluginRoot = join(homedir(), ".openclaw", "current-plugin");
+const require = createRequire(join(pluginRoot, "node_modules", "_placeholder.js"));
+const { chromium } = require("playwright");
+
+const account = process.argv[2] || "default";
+const SESSIONS_PATH = join(homedir(), ".openclaw", "{service}-sessions.json");
+
+function loadSessions() {
+  if (!existsSync(SESSIONS_PATH)) return {};
+  try { return JSON.parse(readFileSync(SESSIONS_PATH, "utf-8")); }
+  catch { return {}; }
+}
+
+function saveSessions(data) {
+  const dir = dirname(SESSIONS_PATH);
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  writeFileSync(SESSIONS_PATH, JSON.stringify(data, null, 2), "utf-8");
+}
+
+try {
+  const browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto("https://{service}.com/login");
+  await page.waitForURL(
+    (url) => !url.pathname.includes("/login") && !url.pathname.includes("/signin"),
+    { timeout: 120_000 },
+  );
+  const allCookies = await context.cookies();
+  const cookies = {};
+  for (const c of allCookies) cookies[c.name] = c.value;
+  const csrfToken = cookies["{csrf_cookie}"] ?? "";
+  const userAgent = await page.evaluate(() => navigator.userAgent);
+  await browser.close();
+
+  const session = { cookies, csrfToken, userAgent, capturedAt: Date.now() };
+  const sessions = loadSessions();
+  sessions[account] = session;
+  saveSessions(sessions);
+  console.log(JSON.stringify({ success: true, account }));
+} catch (err) {
+  console.error(JSON.stringify({ error: err.message }));
+  process.exit(1);
+}
+```
+
+**C5b. Create API route** — `web/app/api/auth/{service}/route.ts`:
+
+Uses `execFile` (NOT `exec`) to safely spawn the script without shell injection risk.
+
+```typescript
+import { NextRequest, NextResponse } from "next/server";
+import { execFile } from "child_process";
+import { join } from "path";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const account = (body.account as string)?.trim() || "default";
+    const projectRoot = join(process.cwd(), "..");
+    const scriptPath = join(projectRoot, "scripts", "{service}-auth.mjs");
+
+    const result = await new Promise<string>((resolve, reject) => {
+      execFile("node", [scriptPath, account], {
+        timeout: 130_000,
+        cwd: projectRoot,
+      }, (err, stdout, stderr) => {
+        if (err) {
+          try {
+            const parsed = JSON.parse(stderr);
+            reject(new Error(parsed.error ?? "Authentication failed"));
+          } catch {
+            reject(new Error(stderr || err.message));
+          }
+          return;
+        }
+        resolve(stdout);
+      });
+    });
+
+    const parsed = JSON.parse(result);
+    return NextResponse.json(parsed);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+```
+
+**C5c. Update connect dialog** — `web/components/connect-dialog.tsx`:
+
+Add a branch for the new service. When the provider ID matches, show an account name input and an "Open {Service} Login" button that POSTs to `/api/auth/{service}`. The button should show "Waiting for login..." while the request is pending (the script keeps the HTTP connection open until the user finishes logging in).
+
+**C5d. Update web/lib/auth.ts**:
+
+Add `get{Service}Accounts()` and `revoke{Service}Session()` functions. These must read/write `~/.openclaw/{service}-sessions.json` directly using `fs` — do NOT import from `src/auth/session-store.ts` (cross-boundary import will fail Next.js build). Also add the provider to the `AccountInfo.provider` type union.
+
+**C5e. Update revoke route** — `web/app/api/auth/revoke/route.ts`:
+
+Add a case for the new provider that calls `revoke{Service}Session()`.
+
+**C6. Create auth setup tool** — `src/tools/{service}-auth.ts`:
 
 ```typescript
 import { Type } from "@sinclair/typebox";
@@ -739,18 +870,23 @@ pnpm test:integration
 
 | Platform | Key Cookies | CSRF | Required Headers | API Base URL | TLS FP | Notes |
 |---|---|---|---|---|---|---|
-| **LinkedIn** | `li_at`, `JSESSIONID` | `Csrf-Token` = `JSESSIONID` (strip quotes) | `X-Restli-Protocol-Version: 2.0.0` | `https://www.linkedin.com/voyager/api/` | Yes | Voyager API |
+| **LinkedIn** | `li_at`, `JSESSIONID` | `Csrf-Token` = `JSESSIONID` (strip quotes) | `X-Restli-Protocol-Version: 2.0.0` | `https://www.linkedin.com/voyager/api/` | No* | Voyager API. *Plain `fetch` works; `tls-client` fails on Node 24. |
 | **Instagram** | `sessionid`, `csrftoken`, `ds_user_id`, `mid`, `ig_did` | `X-CSRFToken` = `csrftoken` cookie | `X-IG-App-ID: 936619743392459` | `https://i.instagram.com/api/v1/` | Yes | `csrftoken` rotates every response |
 | **Slack** | `d` (starts with `xoxd-`) | N/A | `Authorization: Bearer xoxc-...` (from localStorage) | `https://slack.com/api/` | Yes | Two tokens: `xoxc-` + `d` cookie. All POST. |
 | **Canvas** | `canvas_session`, `_csrf_token` | `csrf-token` meta tag | Standard | `{BASE_URL}/api/v1/` | No | SSO + Duo MFA. Link-header pagination. |
 
 ### Session-cookie gotchas
 
-- **TLS fingerprinting**: LinkedIn, Instagram, Slack need `tls-client`. Node's native `fetch` will be blocked.
+- **TLS fingerprinting**: LinkedIn, Instagram, Slack may need `tls-client`. However, `tls-client` uses `ffi-napi` which **fails to compile on Node 24+**. Start with plain `fetch` first — it works for LinkedIn. Only add `tls-client` if requests are actively being blocked.
 - **CSRF rotation**: Some platforms rotate CSRF tokens every response. Parse `Set-Cookie` and update.
 - **Cookie expiry**: Sessions last 24h–30d. No refresh — user must re-authenticate.
 - **Headless detection**: Always `headless: false` for login flows.
 - **MFA/CAPTCHA**: Cannot be automated. Browser must be visible. Use 120s+ timeouts.
+- **Dynamic imports**: ALWAYS use `await import("playwright")` in `src/auth/` files, never static `import { chromium } from "playwright"`. Static imports crash the MCP server at startup.
+- **Conductor workspace symlinks**: pnpm workspace symlinks cause module resolution to use the real path (e.g., `/Users/x/projects/...`) instead of the workspace path (e.g., `/Users/x/conductor/workspaces/...`). `NODE_PATH` does NOT work with ESM. Use `createRequire(join(homedir(), ".openclaw", "current-plugin", "node_modules", "_placeholder.js"))` in standalone scripts.
+- **Next.js build boundary**: The web app (`web/`) CANNOT import from `src/`. Inline any shared logic using plain `fs` operations, or use `child_process.execFile` to spawn standalone scripts.
+- **Tool count test**: After adding tools, update the expected count in `tests/unit/tool-registry.test.ts`.
+- **SERVICE_NAMES in web/lib/tools.ts**: The web dashboard filters tools by a `SERVICE_NAMES` map. If you add a new service but don't add its ID to this map, the dashboard will show "Run `pnpm build` first to load tool definitions" even though the tools exist. You MUST add `{service}: "{Service}"` to `SERVICE_NAMES`.
 
 ---
 
@@ -764,7 +900,7 @@ pnpm test:integration
 | 4 | `src/types/plugin-config.ts` | Modify (config key) | | x | |
 | 5 | `openclaw.plugin.json` | Modify (schema + uiHints) | | x | |
 | 6 | `src/auth/{service}-client.ts` | Create (SDK wrapper) | | x | |
-| 7 | `src/auth/{service}-browser-auth.ts` | Create (Playwright login) | | | x |
+| 7 | `src/auth/{service}-browser-auth.ts` | Create (Playwright login, dynamic import) | | | x |
 | 8 | `src/auth/{service}-session-client.ts` | Create (HTTP client) | | | x |
 | 9 | `src/auth/session-store.ts` | Create once (shared) | | | x |
 | 10 | `src/auth/gmail-auth.ts` | Modify (OAuth scope) | x | | |
@@ -772,7 +908,14 @@ pnpm test:integration
 | 12 | `src/tools/{service}-auth.ts` | Create (auth setup tool) | | x | x |
 | 13 | `src/tools/{service}-{feature}.ts` | Create (1+ files) | x | x | x |
 | 14 | `src/mcp/tool-registry.ts` | Modify (register tools) | x | x | x |
-| 15 | `tests/integration/{service}.test.ts` | Create (tests) | x | x | x |
-| 16 | `web/lib/test-plans.ts` | Modify (SERVICE_TESTS) | x | x | x |
-| 17 | `skills/{service}.SKILL.md` | Create | x | x | x |
-| 18 | `CLAUDE.md` | Modify (integrations table) | x | x | x |
+| 15 | `web/lib/tools.ts` | Modify (add to SERVICE_NAMES) | x | x | x |
+| 16 | `scripts/{service}-auth.mjs` | Create (standalone Playwright script) | | | x |
+| 17 | `web/app/api/auth/{service}/route.ts` | Create (API route spawning script) | | | x |
+| 18 | `web/components/connect-dialog.tsx` | Modify (add service branch) | | | x |
+| 19 | `web/lib/auth.ts` | Modify (account listing + revocation) | | | x |
+| 20 | `web/app/api/auth/revoke/route.ts` | Modify (add revoke case) | | | x |
+| 21 | `tests/integration/{service}.test.ts` | Create (tests) | x | x | x |
+| 22 | `tests/unit/tool-registry.test.ts` | Modify (update tool count) | x | x | x |
+| 23 | `web/lib/test-plans.ts` | Modify (SERVICE_TESTS) | x | x | x |
+| 24 | `skills/{service}.SKILL.md` | Create | x | x | x |
+| 25 | `CLAUDE.md` | Modify (integrations table) | x | x | x |

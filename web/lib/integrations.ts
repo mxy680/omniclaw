@@ -40,8 +40,10 @@ export const PROVIDERS: Provider[] = [
     icon: "Linkedin",
     color: "#0A66C2",
     description: "Post updates, manage connections, and access LinkedIn APIs.",
-    available: false,
-    services: [],
+    available: true,
+    services: [
+      { id: "linkedin", name: "LinkedIn", icon: "Linkedin", color: "#0A66C2" },
+    ],
   },
   {
     id: "github",

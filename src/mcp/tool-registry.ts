@@ -255,6 +255,25 @@ import {
 } from "../tools/github-security.js";
 import { WolframClient } from "../auth/wolfram-client.js";
 import { createWolframQueryTool, createWolframQueryFullTool } from "../tools/wolfram-query.js";
+import { SessionStore } from "../auth/session-store.js";
+import { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
+import { createLinkedinAuthSetupTool } from "../tools/linkedin-auth.js";
+import {
+  createLinkedinProfileGetTool,
+  createLinkedinProfileViewTool,
+} from "../tools/linkedin-profile.js";
+import { createLinkedinConnectionsListTool } from "../tools/linkedin-connections.js";
+import { createLinkedinSearchPeopleTool } from "../tools/linkedin-search.js";
+import {
+  createLinkedinPostListTool,
+  createLinkedinPostCreateTool,
+  createLinkedinPostLikeTool,
+  createLinkedinPostCommentTool,
+} from "../tools/linkedin-posts.js";
+import {
+  createLinkedinMessagesListTool,
+  createLinkedinMessagesSendTool,
+} from "../tools/linkedin-messages.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface OmniclawTool {
@@ -544,6 +563,25 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     const wolfram = new WolframClient(config.wolfram_appid);
     add(createWolframQueryTool(wolfram));
     add(createWolframQueryFullTool(wolfram));
+  }
+
+  // LinkedIn tools — session cookie auth
+  {
+    const sessionsPath = path.join(os.homedir(), ".openclaw", "linkedin-sessions.json");
+    const linkedinSessionStore = new SessionStore(sessionsPath);
+    const linkedinClient = new LinkedinSessionClient(linkedinSessionStore);
+
+    add(createLinkedinAuthSetupTool(linkedinClient, linkedinSessionStore));
+    add(createLinkedinProfileGetTool(linkedinClient));
+    add(createLinkedinProfileViewTool(linkedinClient));
+    add(createLinkedinConnectionsListTool(linkedinClient));
+    add(createLinkedinSearchPeopleTool(linkedinClient));
+    add(createLinkedinPostListTool(linkedinClient));
+    add(createLinkedinPostCreateTool(linkedinClient));
+    add(createLinkedinPostLikeTool(linkedinClient));
+    add(createLinkedinPostCommentTool(linkedinClient));
+    add(createLinkedinMessagesListTool(linkedinClient));
+    add(createLinkedinMessagesSendTool(linkedinClient));
   }
 
   return tools;

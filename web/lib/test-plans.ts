@@ -884,6 +884,33 @@ const githubTest: ServiceTestFn = async (execute) => {
   return steps;
 };
 
+const geminiTest: ServiceTestFn = async (execute) => {
+  const steps: TestStepResult[] = [];
+
+  // Auth setup — validates the API key
+  const s1 = await runStep("Auth setup", "gemini_auth_setup", {
+    api_key: "test-placeholder",
+  }, execute);
+  steps.push(s1.result);
+
+  // Generate an image with native Gemini
+  const s2 = await runStep("Generate image (native)", "gemini_generate_image", {
+    prompt: "A simple blue circle on a white background",
+    save_dir: "/tmp/omniclaw-smoke-gemini",
+  }, execute);
+  steps.push(s2.result);
+
+  // Generate an image with Imagen
+  const s3 = await runStep("Generate image (Imagen)", "gemini_imagen", {
+    prompt: "A simple red square on a white background",
+    save_dir: "/tmp/omniclaw-smoke-gemini",
+    number_of_images: 1,
+  }, execute);
+  steps.push(s3.result);
+
+  return steps;
+};
+
 const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   gmail: gmailTest,
   calendar: calendarTest,
@@ -893,6 +920,7 @@ const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   slides: slidesTest,
   youtube: youtubeTest,
   github: githubTest,
+  gemini: geminiTest,
 };
 
 export async function runServiceTest(

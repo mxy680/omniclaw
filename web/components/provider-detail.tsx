@@ -8,6 +8,7 @@ import {
   Linkedin,
   Github,
   Instagram,
+  Sparkles,
   Lock,
   Play,
   Loader2,
@@ -32,6 +33,7 @@ const PROVIDER_ICONS: Record<string, LucideIcon> = {
   Linkedin,
   Github,
   Instagram,
+  Sparkles,
 };
 
 interface ProviderDetailProps {

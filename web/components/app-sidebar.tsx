@@ -5,6 +5,7 @@ import {
   Linkedin,
   Github,
   Instagram,
+  Sparkles,
   Monitor,
   type LucideIcon,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Linkedin,
   Github,
   Instagram,
+  Sparkles,
 };
 
 interface AppSidebarProps {

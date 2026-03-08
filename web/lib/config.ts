@@ -7,6 +7,7 @@ interface McpServerConfig {
   tokens_path?: string;
   oauth_port?: number;
   github_token?: string;
+  gemini_api_key?: string;
 }
 
 let cached: McpServerConfig | null = null;

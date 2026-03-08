@@ -17,6 +17,7 @@ import {
   Youtube,
   Github,
   Sparkles,
+  Sigma,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +31,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   youtube: Youtube,
   github: Github,
   gemini: Sparkles,
+  wolfram: Sigma,
 };
 
 const COLOR_MAP: Record<string, string> = {
@@ -42,6 +44,7 @@ const COLOR_MAP: Record<string, string> = {
   youtube: "#FF0000",
   github: "#24292F",
   gemini: "#4285F4",
+  wolfram: "#DD1100",
 };
 
 interface StepResult {

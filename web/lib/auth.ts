@@ -93,7 +93,7 @@ export function deleteTokens(account: string): boolean {
 export interface AccountInfo {
   name: string;
   email: string | null;
-  provider: "google" | "github" | "gemini";
+  provider: "google" | "github" | "gemini" | "wolfram";
   hasTokens: boolean;
   isExpired: boolean;
 }
@@ -128,6 +128,11 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
     if (geminiAccount) accounts.push(geminiAccount);
   }
 
+  if (!provider || provider === "wolfram-alpha") {
+    const wolframAccount = getWolframAccount();
+    if (wolframAccount) accounts.push(wolframAccount);
+  }
+
   return accounts;
 }
 
@@ -160,6 +165,37 @@ function getGeminiAccount(): AccountInfo | null {
     };
   } catch {
     return null;
+  }
+}
+
+function getWolframAccount(): AccountInfo | null {
+  try {
+    const config = getConfig();
+    if (!config.wolfram_appid) return null;
+    return {
+      name: "default",
+      email: null,
+      provider: "wolfram",
+      hasTokens: true,
+      isExpired: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function setWolframAppId(appId: string): void {
+  updateConfig({ wolfram_appid: appId });
+}
+
+export function revokeWolframAppId(): boolean {
+  try {
+    const config = getConfig();
+    if (!config.wolfram_appid) return false;
+    updateConfig({ wolfram_appid: undefined });
+    return true;
+  } catch {
+    return false;
   }
 }
 

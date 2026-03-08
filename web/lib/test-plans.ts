@@ -887,26 +887,39 @@ const githubTest: ServiceTestFn = async (execute) => {
 const geminiTest: ServiceTestFn = async (execute) => {
   const steps: TestStepResult[] = [];
 
-  // Auth setup — validates the API key
-  const s1 = await runStep("Auth setup", "gemini_auth_setup", {
-    api_key: "test-placeholder",
-  }, execute);
-  steps.push(s1.result);
-
   // Generate an image with native Gemini
-  const s2 = await runStep("Generate image (native)", "gemini_generate_image", {
+  const s1 = await runStep("Generate image (native)", "gemini_generate_image", {
     prompt: "A simple blue circle on a white background",
     save_dir: "/tmp/omniclaw-smoke-gemini",
   }, execute);
-  steps.push(s2.result);
+  steps.push(s1.result);
 
   // Generate an image with Imagen
-  const s3 = await runStep("Generate image (Imagen)", "gemini_imagen", {
+  const s2 = await runStep("Generate image (Imagen)", "gemini_imagen", {
     prompt: "A simple red square on a white background",
     save_dir: "/tmp/omniclaw-smoke-gemini",
     number_of_images: 1,
   }, execute);
-  steps.push(s3.result);
+  steps.push(s2.result);
+
+  return steps;
+};
+
+const wolframTest: ServiceTestFn = async (execute) => {
+  const steps: TestStepResult[] = [];
+
+  // LLM API query
+  const s1 = await runStep("Query (LLM API)", "wolfram_query", {
+    input: "2+2",
+  }, execute);
+  steps.push(s1.result);
+
+  // Full Results API query
+  const s2 = await runStep("Query (Full API)", "wolfram_query_full", {
+    input: "population of France",
+    format: "plaintext",
+  }, execute);
+  steps.push(s2.result);
 
   return steps;
 };
@@ -921,6 +934,7 @@ const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   youtube: youtubeTest,
   github: githubTest,
   gemini: geminiTest,
+  wolfram: wolframTest,
 };
 
 export async function runServiceTest(

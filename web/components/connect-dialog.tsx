@@ -36,6 +36,7 @@ export function ConnectDialog({
 
   const isGitHub = providerId === "github";
   const isGemini = providerId === "gemini";
+  const isWolfram = providerId === "wolfram-alpha";
 
   async function handleGoogleConnect() {
     if (!accountName.trim()) return;
@@ -109,6 +110,33 @@ export function ConnectDialog({
     }
   }
 
+  async function handleWolframConnect() {
+    if (!token.trim()) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/wolfram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ app_id: token.trim() }),
+      });
+
+      if (res.ok) {
+        toast.success("Wolfram Alpha AppID saved");
+        setOpen(false);
+        setToken("");
+        onConnected?.();
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to save AppID");
+      }
+    } catch {
+      toast.error("Failed to save AppID");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -125,7 +153,9 @@ export function ConnectDialog({
               ? "Enter a GitHub Personal Access Token (PAT) with the scopes you need."
               : isGemini
                 ? "Enter a Gemini API key from Google AI Studio."
-                : `Enter a name for this account, then sign in with ${providerName}.`}
+                : isWolfram
+                  ? "Enter a Wolfram Alpha AppID from the Developer Portal."
+                  : `Enter a name for this account, then sign in with ${providerName}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -187,6 +217,35 @@ export function ConnectDialog({
               )}
             </div>
           </div>
+        ) : isWolfram ? (
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="wolfram-appid">AppID</Label>
+              <Input
+                id="wolfram-appid"
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="XXXXXX-XXXXXXXXXX"
+              />
+              <p className="text-xs text-muted-foreground">
+                Get an AppID at{" "}
+                <a
+                  href="https://developer.wolframalpha.com/access"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  developer.wolframalpha.com
+                </a>
+              </p>
+              {existingAccounts.length > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  This will replace the existing AppID.
+                </p>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -208,12 +267,12 @@ export function ConnectDialog({
 
         <DialogFooter>
           <Button
-            onClick={isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
-            disabled={isGitHub || isGemini ? !token.trim() || loading : !accountName.trim() || loading}
+            onClick={isWolfram ? handleWolframConnect : isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
+            disabled={isGitHub || isGemini || isWolfram ? !token.trim() || loading : !accountName.trim() || loading}
           >
             {loading
-              ? isGitHub || isGemini ? "Saving..." : "Redirecting..."
-              : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
+              ? isGitHub || isGemini || isWolfram ? "Saving..." : "Redirecting..."
+              : isWolfram ? "Save AppID" : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
           </Button>
         </DialogFooter>
       </DialogContent>

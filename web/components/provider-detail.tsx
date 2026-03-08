@@ -223,7 +223,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
                   {provider.services.length} services available with this integration
                 </p>
               </div>
-              {provider.services.some((s) => serviceTools[s.id]) && (
+              {provider.services.length > 1 && provider.services.some((s) => serviceTools[s.id]) && (
                 <Button
                   variant="outline"
                   size="sm"

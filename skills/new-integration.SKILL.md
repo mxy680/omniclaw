@@ -8,9 +8,49 @@ metadata: {"openclaw": {"emoji": "🔌"}}
 
 Add a new service integration to the Omniclaw MCP server. This skill covers three auth strategies: Google OAuth (Gmail, Calendar, etc.), API key/token (GitHub, Notion, etc.), and session-cookie auth via Playwright (LinkedIn, Instagram, Slack, Canvas — for platforms without official APIs).
 
+## Planning Phase (Do This First)
+
+When this skill is invoked, you MUST complete this planning phase before writing any code. Use plan mode or AskUserQuestion to interact with the user.
+
+### Step 1: Brainstorm every possible tool
+
+Research the service's API (official docs, web API, or reverse-engineered endpoints) and brainstorm an exhaustive list of every tool that could be built. Organize them by category. For example, for a messaging platform you might propose:
+
+- **Auth**: `{service}_auth_setup`
+- **Messages**: `{service}_send`, `{service}_inbox`, `{service}_get`, `{service}_search`, `{service}_delete`, `{service}_reply`, `{service}_forward`, `{service}_react`
+- **Channels/Groups**: `{service}_channels_list`, `{service}_channel_create`, `{service}_channel_join`, `{service}_channel_leave`, `{service}_channel_info`
+- **Users/Contacts**: `{service}_users_list`, `{service}_user_info`, `{service}_user_status`
+- **Files**: `{service}_upload`, `{service}_download`, `{service}_files_list`
+- **Profile**: `{service}_profile_get`, `{service}_profile_update`
+- **Notifications**: `{service}_notifications_list`, `{service}_notifications_mark_read`
+
+Present the full brainstormed list to the user and ask which tools they want to include. The user may add, remove, or reprioritize. Do not proceed until you have a confirmed tool list.
+
+### Step 2: Collect credentials
+
+Ask the user to provide the credentials needed for their chosen auth strategy so you can build and test tools incrementally:
+
+- **Strategy A (Google OAuth)**: "Have you already set up Google OAuth credentials (`client_secret.json`)? If not, follow the setup in `skills/gmail.SKILL.md`. What API do I need to enable in your GCP project?"
+- **Strategy B (API Key/Token)**: "Please provide your {Service} API token/key so I can test tools as I build them. I'll add it to your plugin config."
+- **Strategy C (Session Cookie)**: "I'll need to run a Playwright browser login to capture your session. Are you ready to authenticate in a browser window? Do you have your login credentials available?"
+
+Once credentials are in hand, verify them by running a simple API call before building out the full tool suite. This ensures you catch auth issues early rather than after writing all the code.
+
+### Step 3: Confirm auth strategy and implementation plan
+
+Present the user with:
+1. The confirmed tool list (from Step 1)
+2. The auth strategy you recommend (A, B, or C) and why
+3. The files you'll create/modify
+4. Confirmation that credentials are working
+
+Get explicit approval before proceeding to implementation.
+
+---
+
 ## Choose an Auth Strategy
 
-Before starting, pick a service name (short, lowercase, e.g. `slack`, `notion`, `jira`) and choose an auth strategy:
+Pick a service name (short, lowercase, e.g. `slack`, `notion`, `jira`) and choose an auth strategy:
 
 | | Strategy A: Google OAuth | Strategy B: API Key / Token | Strategy C: Session Cookie |
 |---|---|---|---|
@@ -727,67 +767,64 @@ Edit `web/lib/integrations.ts` — add to the `PROVIDERS` array (see Common Step
 
 ---
 
-## Common Steps (All Strategies)
+## Implementation Workflow
 
-These steps apply regardless of which auth strategy you chose.
+Build and test incrementally — don't write all tools then test at the end. Follow this order:
 
-### 1. Install dependencies
+### Phase 1: Auth + first tool
 
-```bash
-pnpm add <sdk-package>
-# Strategy C also needs:
-pnpm add playwright tls-client
-```
+1. Install dependencies (`pnpm add <sdk-package>`, plus `playwright tls-client` for Strategy C)
+2. Create the auth client and auth setup tool
+3. Register the auth tool in `tool-registry.ts`
+4. Add to `VALID_SERVICES` in `agent-config.ts`
+5. `pnpm build` — verify it compiles
+6. Test auth manually: run the MCP server (`OMNICLAW_MCP_TOKEN=dev pnpm mcp:dev`) and call `{service}_auth_setup`
+7. Create the first read-only tool (e.g. `{service}_list` or `{service}_inbox`)
+8. Register it, build, and test it against the real API with the credentials from the planning phase
+9. Write the integration test for these first tools
 
-### 2. Add to VALID_SERVICES
+### Phase 2: Remaining tools (iterate)
 
-Edit `src/mcp/agent-config.ts` — add `"{service}"` to the `VALID_SERVICES` array.
+For each subsequent tool:
+1. Create the tool file
+2. Register it in `tool-registry.ts`
+3. `pnpm build` — verify it compiles
+4. Test it against the real API (run a quick smoke test manually or via `pnpm test:integration`)
+5. Add its integration test
+6. Commit after each working tool or logical group of tools
 
-### 3. Add to web dashboard
+### Phase 3: Finalize
 
-Edit `web/lib/integrations.ts` — add a new provider or add a service to an existing provider:
-
-```typescript
-{
-  id: "{service}",
-  name: "{Service}",
-  icon: "IconName",    // Lucide icon name
-  color: "#hex",
-  description: "What this integration does.",
-  available: true,
-  services: [
-    { id: "{service}", name: "{Service}", icon: "IconName", color: "#hex" },
-  ],
-},
-```
-
-### 4. Create skill file
-
-Create `skills/{service}.SKILL.md` with:
-- YAML front matter: `name`, `description`, `metadata` (with emoji)
-- First-Time Setup section
-- Available Tools section (list every tool)
-- Workflow section (numbered steps)
-- Examples section (natural language request → tool name)
-- Error Handling section
-
-See `skills/gmail.SKILL.md` or `skills/youtube.SKILL.md` for reference.
-
-### 5. Create docs (optional)
-
-Create `docs/{service}.md` with a user-facing setup guide and API reference.
-
-### 6. Update CLAUDE.md
-
-Add the new service to the integrations table in the project root `CLAUDE.md`.
-
-### 7. Build and verify
-
-```bash
-pnpm build
-pnpm test
-pnpm test:integration  # with credentials configured
-```
+1. Add to web dashboard (`web/lib/integrations.ts` → `PROVIDERS` array):
+   ```typescript
+   {
+     id: "{service}",
+     name: "{Service}",
+     icon: "IconName",    // Lucide icon name
+     color: "#hex",
+     description: "What this integration does.",
+     available: true,
+     services: [
+       { id: "{service}", name: "{Service}", icon: "IconName", color: "#hex" },
+     ],
+   },
+   ```
+2. Add web app smoke tests (`web/lib/test-plans.ts` → `SERVICE_TESTS` map)
+3. Create skill file (`skills/{service}.SKILL.md`) — see `skills/gmail.SKILL.md` for reference. Include:
+   - YAML front matter: `name`, `description`, `metadata` (with emoji)
+   - First-Time Setup section
+   - Available Tools section (list every tool)
+   - Workflow section (numbered steps)
+   - Examples section (natural language request → tool name)
+   - Error Handling section
+4. Create docs file (`docs/{service}.md`) — optional but recommended
+5. Update integrations table in root `CLAUDE.md`
+6. Final verification:
+   ```bash
+   pnpm build
+   pnpm test
+   pnpm test:integration  # with credentials configured
+   ```
 
 ---
 

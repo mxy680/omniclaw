@@ -259,6 +259,8 @@ export class SessionStore {
 
 **C3. Create browser auth** — `src/auth/{service}-browser-auth.ts`:
 
+The browser auth module MUST launch a real Playwright browser window and navigate to the service's login page. It does NOT automate the login itself — the user authenticates manually using whatever method they choose (password, SSO, MFA, social login, passkey, etc.). The browser stays open until the user completes login and lands on an authenticated page, at which point cookies are captured automatically.
+
 ```typescript
 import { chromium } from "playwright";
 import type { SessionStore, SessionData } from "./session-store.js";
@@ -267,17 +269,30 @@ export async function authenticate{Service}(
   sessionStore: SessionStore,
   account: string = "default",
 ): Promise<SessionData> {
+  // Always launch a VISIBLE browser — never headless.
+  // The user must be able to see and interact with the login page
+  // to complete auth however they want (password, SSO, MFA, passkey, etc.)
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
 
+  // Navigate to the service's login/home page
   await page.goto("https://{service}.com/login");
-  await page.waitForURL("https://{service}.com/{post-login-pattern}/**", { timeout: 120_000 });
 
+  // Wait for the user to finish authenticating — they may use any method.
+  // Use a generous timeout (120s+) to allow for MFA, CAPTCHA, SSO redirects, etc.
+  // The URL pattern should match any authenticated page, NOT a specific login flow.
+  await page.waitForURL(
+    (url) => !url.pathname.includes("/login") && !url.pathname.includes("/signin"),
+    { timeout: 120_000 },
+  );
+
+  // Capture ALL cookies — don't filter, let the session client decide what to use
   const allCookies = await context.cookies();
   const cookies: Record<string, string> = {};
   for (const c of allCookies) cookies[c.name] = c.value;
 
+  // Try to extract CSRF token (from cookie or meta tag — platform-specific)
   const csrfToken = cookies["{csrf_cookie}"] ??
     await page.evaluate(() =>
       document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") ?? ""

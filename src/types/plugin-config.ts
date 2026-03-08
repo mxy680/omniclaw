@@ -5,4 +5,5 @@ export interface PluginConfig {
   schedules_path?: string;
   github_token?: string;
   gemini_api_key?: string;
+  wolfram_appid?: string;
 }

@@ -63,6 +63,10 @@ import { createGitHubSearchReposTool } from "../../src/tools/github-search.js";
 import { createGitHubUserGetTool } from "../../src/tools/github-users.js";
 import { createGitHubGistListTool, createGitHubGistCreateTool, createGitHubGistDeleteTool } from "../../src/tools/github-gists.js";
 
+// Wolfram Alpha tool imports
+import { WolframClient } from "../../src/auth/wolfram-client.js";
+import { createWolframQueryTool, createWolframQueryFullTool } from "../../src/tools/wolfram-query.js";
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -97,6 +101,15 @@ const githubTokenExists = GITHUB_TOKEN.length > 0;
 if (!githubTokenExists) {
   console.warn(
     "\n[smoke] GITHUB_TOKEN not set — GitHub checks will be skipped.\n",
+  );
+}
+
+const WOLFRAM_APPID = process.env.WOLFRAM_APPID ?? "";
+const wolframAppIdExists = WOLFRAM_APPID.length > 0;
+
+if (!wolframAppIdExists) {
+  console.warn(
+    "\n[smoke] WOLFRAM_APPID not set — Wolfram Alpha checks will be skipped.\n",
   );
 }
 
@@ -798,6 +811,40 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
         expect(deleteResult.details).toMatchObject({ success: true });
         return deleteResult;
       });
+    });
+  });
+
+  // =========================================================================
+  // Wolfram Alpha (2 read checks)
+  // =========================================================================
+
+  describe("Wolfram Alpha", () => {
+    let wolframClient: WolframClient;
+
+    beforeAll(() => {
+      if (wolframAppIdExists) {
+        wolframClient = new WolframClient(WOLFRAM_APPID);
+      }
+    });
+
+    it.skipIf(!wolframAppIdExists)("wolfram_query — simple math query", async () => {
+      const result = await smokeCheck("Wolfram", "wolfram_query", async () => {
+        const tool = createWolframQueryTool(wolframClient);
+        return tool.execute("smoke", { input: "2 + 2" });
+      });
+      expect(result.details).not.toHaveProperty("error");
+      expect(typeof result.details.result).toBe("string");
+      expect(result.details.result).toContain("4");
+    });
+
+    it.skipIf(!wolframAppIdExists)("wolfram_query_full — structured math query", async () => {
+      const result = await smokeCheck("Wolfram", "wolfram_query_full", async () => {
+        const tool = createWolframQueryFullTool(wolframClient);
+        return tool.execute("smoke", { input: "5!", format: "plaintext" });
+      });
+      expect(result.details).not.toHaveProperty("error");
+      expect(result.details.queryresult.success).toBe(true);
+      expect(result.details.queryresult.pods.length).toBeGreaterThan(0);
     });
   });
 });

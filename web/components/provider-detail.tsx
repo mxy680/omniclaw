@@ -9,6 +9,7 @@ import {
   Github,
   Instagram,
   Sparkles,
+  Sigma,
   Lock,
   Play,
   Loader2,
@@ -34,6 +35,7 @@ const PROVIDER_ICONS: Record<string, LucideIcon> = {
   Github,
   Instagram,
   Sparkles,
+  Sigma,
 };
 
 interface ProviderDetailProps {

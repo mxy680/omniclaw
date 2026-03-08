@@ -191,13 +191,22 @@ function getWolframAccount(): AccountInfo | null {
 
 import { join } from "path";
 import { homedir } from "os";
-import { SessionStore } from "../../src/auth/session-store";
+
+const LINKEDIN_SESSIONS_PATH = join(homedir(), ".openclaw", "linkedin-sessions.json");
+
+function loadLinkedinSessions(): Record<string, unknown> {
+  if (!existsSync(LINKEDIN_SESSIONS_PATH)) return {};
+  try {
+    return JSON.parse(readFileSync(LINKEDIN_SESSIONS_PATH, "utf-8")) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
 
 function getLinkedinAccounts(): AccountInfo[] {
   try {
-    const sessionsPath = join(homedir(), ".openclaw", "linkedin-sessions.json");
-    const store = new SessionStore(sessionsPath);
-    return store.list().map((name) => ({
+    const sessions = loadLinkedinSessions();
+    return Object.keys(sessions).map((name) => ({
       name,
       email: null,
       provider: "linkedin" as const,
@@ -211,9 +220,11 @@ function getLinkedinAccounts(): AccountInfo[] {
 
 export function revokeLinkedinSession(account: string): boolean {
   try {
-    const sessionsPath = join(homedir(), ".openclaw", "linkedin-sessions.json");
-    const store = new SessionStore(sessionsPath);
-    return store.delete(account);
+    const sessions = loadLinkedinSessions();
+    if (!(account in sessions)) return false;
+    delete sessions[account];
+    writeFileSync(LINKEDIN_SESSIONS_PATH, JSON.stringify(sessions, null, 2), "utf-8");
+    return true;
   } catch {
     return false;
   }

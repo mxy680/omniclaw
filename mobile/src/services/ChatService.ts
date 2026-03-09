@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { ChatSendFrame, ChatAbortFrame } from '../types/protocol';
 import { getDeviceIdentity, signChallenge, type DeviceKeys } from './DeviceIdentity';
 
@@ -42,9 +41,12 @@ export class ChatService {
 
   async connect(config: ServerConfig): Promise<void> {
     // Load device identity (generates Ed25519 keypair on first use)
-    // Skip device signing on simulator — crypto can be unreliable there
-    const isSimulator = !Constants.isDevice;
-    const deviceKeys = isSimulator ? null : await getDeviceIdentity();
+    let deviceKeys: DeviceKeys | null = null;
+    try {
+      deviceKeys = await getDeviceIdentity();
+    } catch {
+      // Device auth unavailable — connect with token only (read scope)
+    }
 
     return new Promise((resolve, reject) => {
       if (this.ws) {

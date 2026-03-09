@@ -1,6 +1,5 @@
 import { Agent } from '../types/agent';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { getDeviceIdentity, signChallenge } from './DeviceIdentity';
 import { agentProfiles } from '../config/agentProfiles';
 
@@ -20,8 +19,12 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
   const { host, port, authToken, useTLS } = config;
   if (!host) return [];
 
-  const isSimulator = !Constants.isDevice;
-  const deviceKeys = isSimulator ? null : await getDeviceIdentity();
+  let deviceKeys: Awaited<ReturnType<typeof getDeviceIdentity>> | null = null;
+  try {
+    deviceKeys = await getDeviceIdentity();
+  } catch {
+    // Device auth unavailable — connect with token only
+  }
   const scopes = ['operator.read', 'operator.write'];
 
   return new Promise((resolve, reject) => {

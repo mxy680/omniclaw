@@ -85,7 +85,7 @@ export function signChallenge(
   scopes: string[],
 ): DeviceConnectParams {
   const signedAtMs = Date.now();
-  const clientId = Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android';
+  const clientId = 'openclaw-control-ui';
 
   // V3 payload: v3|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce|platform|deviceFamily
   const payload = [

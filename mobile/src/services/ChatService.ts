@@ -1,6 +1,5 @@
 import { Platform } from 'react-native';
 import { ChatSendFrame, ChatAbortFrame } from '../types/protocol';
-import { getDeviceIdentity, signChallenge, type DeviceKeys } from './DeviceIdentity';
 
 export interface ServerConfig {
   host: string;
@@ -40,15 +39,6 @@ export class ChatService {
   }
 
   async connect(config: ServerConfig): Promise<void> {
-    // Device auth is required for write scope. The Gateway auto-pairs
-    // local clients, so this works on both device and simulator.
-    let deviceKeys: DeviceKeys | null = null;
-    try {
-      deviceKeys = await getDeviceIdentity();
-    } catch {
-      // Crypto unavailable — will connect with read-only scope
-    }
-
     return new Promise((resolve, reject) => {
       if (this.ws) {
         this.ws.onclose = null;
@@ -83,33 +73,25 @@ export class ChatService {
           return;
         }
 
-        // Wait for connect.challenge event, then sign and send connect frame
+        // Send connect frame (token-only, no device auth)
         if (json.type === 'event' && json.event === 'connect.challenge') {
-          const payload = json.payload as { nonce: string };
-
-          const connectParams: Record<string, unknown> = {
-            minProtocol: 3,
-            maxProtocol: 3,
-            client: {
-              id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android',
-              version: '1.0.0',
-              platform: Platform.OS,
-              mode: 'ui',
-            },
-            role: 'operator',
-            scopes,
-            auth: { token: authToken },
-          };
-
-          if (deviceKeys) {
-            connectParams.device = signChallenge(deviceKeys, payload.nonce, authToken, scopes);
-          }
-
           ws.send(JSON.stringify({
             type: 'req',
             id: this.nextId(),
             method: 'connect',
-            params: connectParams,
+            params: {
+              minProtocol: 3,
+              maxProtocol: 3,
+              client: {
+                id: 'openclaw-control-ui',
+                version: '1.0.0',
+                platform: Platform.OS,
+                mode: 'ui',
+              },
+              role: 'operator',
+              scopes,
+              auth: { token: authToken },
+            },
           }));
           return;
         }

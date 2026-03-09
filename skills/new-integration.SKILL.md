@@ -874,13 +874,19 @@ Go back to Step 3.1 for the next tool. Continue until all tools from the confirm
 
 Add tests to the web dashboard so users can click "Test" to verify the integration.
 
+**IMPORTANT: Every single tool must be tested at least once.** The smoke test must include a `runStep` call for every tool registered for the integration — no exceptions. If a tool requires setup from a prior step (e.g., getting an ID from a list before calling a get), chain the steps. If a tool creates a resource, pair it with a cleanup step. If a tool is destructive (delete, update), test it as part of a round-trip (create → exercise → cleanup). The GitHub test in `test-plans.ts` is the gold standard — study it for how to achieve full tool coverage.
+
+Before writing the test function, enumerate every tool in the integration and verify that each one has a corresponding `runStep`. If any tool is missing, add it.
+
 Edit `web/lib/test-plans.ts`:
 
 ```typescript
 const {service}Test: ServiceTestFn = async (execute) => {
   const steps: TestStepResult[] = [];
 
-  // Read-only smoke steps
+  // ── Phase 1: Read-only tools ─────────────────────────────────────────
+  // Test EVERY read-only tool. Chain results where needed (e.g., list → get).
+
   const s1 = await runStep("List items", "{service}_list", { max_results: 5 }, execute);
   steps.push(s1.result);
 
@@ -889,7 +895,11 @@ const {service}Test: ServiceTestFn = async (execute) => {
     steps.push((await runStep("Get item", "{service}_get", { id: itemId }, execute)).result);
   }
 
-  // Write + cleanup steps
+  // ... add a runStep for EVERY read-only tool ...
+
+  // ── Phase 2: Write tools (round-trip: create → exercise → cleanup) ──
+  // Test EVERY write tool. Always clean up created resources.
+
   const created = await runStep("Create test item", "{service}_create", {
     name: "[omniclaw smoke test] verify",
   }, execute);
@@ -897,8 +907,14 @@ const {service}Test: ServiceTestFn = async (execute) => {
 
   const createdId = (extractResult(created.data) as Record<string, unknown>)?.id as string | undefined;
   if (createdId) {
+    // Exercise update/modify tools on the created resource
+    steps.push((await runStep("Update test item", "{service}_update", { id: createdId, name: "updated" }, execute)).result);
+
+    // Cleanup
     steps.push((await runStep("Delete test item", "{service}_delete", { id: createdId }, execute, true)).result);
   }
+
+  // ... add a runStep for EVERY remaining write tool ...
 
   return steps;
 };
@@ -906,6 +922,14 @@ const {service}Test: ServiceTestFn = async (execute) => {
 // Add to SERVICE_TESTS:
 // {service}: {service}Test,
 ```
+
+### Verification checklist
+
+After writing the smoke test, cross-check:
+
+1. List every tool name registered in `tool-registry.ts` for this service
+2. For each tool, confirm there is a `runStep(...)` call with that tool name in the test function
+3. If any tool is missing, add it — even if it requires creating temporary resources or chaining from prior steps
 
 ---
 

@@ -107,16 +107,50 @@ export function SystemPage() {
 
   if (loading && !status) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
+        {/* Header skeleton */}
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">System</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Checking service status...
-          </p>
+          <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+          <div className="h-4 w-72 animate-pulse rounded bg-muted mt-2" />
         </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm">Loading</span>
+
+        {/* Service cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+
+        {/* Mobile card skeleton */}
+        <SkeletonCard wide />
+
+        {/* Remote access card skeleton */}
+        <SkeletonCard wide />
+
+        <Separator />
+
+        {/* Agents skeleton */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-muted" />
+            <div className="h-5 w-20 animate-pulse rounded bg-muted" />
+            <div className="h-5 w-6 animate-pulse rounded-full bg-muted" />
+          </div>
+          <div className="h-16 w-full animate-pulse rounded-lg bg-muted" />
+        </div>
+
+        <Separator />
+
+        {/* Diagnostics skeleton */}
+        <div className="space-y-3">
+          <div className="h-6 w-28 animate-pulse rounded bg-muted" />
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="h-4 w-4 animate-pulse rounded-full bg-muted" />
+                <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -679,6 +713,33 @@ function RemoteAccessCard({
             Start Tunnel
           </Button>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SkeletonCard({ wide }: { wide?: boolean }) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-muted" />
+            <div className="h-5 w-28 animate-pulse rounded bg-muted" />
+          </div>
+          <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="h-4 w-48 animate-pulse rounded bg-muted mt-1" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-4">
+          <div className="h-4 w-12 animate-pulse rounded bg-muted" />
+          <div className="h-5 w-16 animate-pulse rounded bg-muted" />
+          {wide && <div className="h-4 w-32 animate-pulse rounded bg-muted" />}
+        </div>
+        <div className="flex gap-2">
+          <div className="h-8 w-20 animate-pulse rounded-md bg-muted" />
+        </div>
       </CardContent>
     </Card>
   );

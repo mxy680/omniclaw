@@ -33,9 +33,21 @@ Env vars: `OMNICLAW_GATEWAY_URL` (default `ws://localhost:18789`), `OMNICLAW_SCH
 - `pnpm test:integration` — integration tests (requires real credentials)
 - `OMNICLAW_MCP_TOKEN=dev pnpm mcp:dev` — start MCP server locally
 
-**Important:** Each integration has a dedicated omniclaw test account. Tests must always use the `"default"` account — never a personal account. The `"default"` key in the token/session stores (`~/.openclaw/omniclaw-tokens.json`, `~/.openclaw/linkedin-sessions.json`) and single-token config values (`gemini_api_key`, `wolfram_appid`) all point to omniclaw test accounts. Do not override `GMAIL_ACCOUNT`, `YOUTUBE_ACCOUNT`, or similar env vars to use non-default accounts in tests.
+**Important:** Each integration has a dedicated omniclaw test account. Tests must always use the `"default"` account — never a personal account. The `"default"` key in the token/session stores points to omniclaw test accounts. Do not override `GMAIL_ACCOUNT`, `YOUTUBE_ACCOUNT`, or similar env vars to use non-default accounts in tests. GitHub read tests use `octocat/Hello-World` (public repo); write tests require `RUN_WRITE_TESTS=1`.
 
-**Exception — GitHub:** GitHub prohibits multiple accounts, so `github_token` uses a personal account. GitHub read tests default to `octocat/Hello-World` (public repo) and write tests require `RUN_WRITE_TESTS=1`. Keep GitHub tests safe for a personal account — never create/modify repos, issues, or PRs on real projects without explicit opt-in.
+## Multi-Account Architecture
+
+All services support multiple named accounts. Tools accept an optional `account` parameter (defaults to `"default"`).
+
+| Service | Token Store | Client Manager | Auth |
+|---|---|---|---|
+| Google Workspace | `~/.openclaw/omniclaw-tokens.json` | `OAuthClientManager` | OAuth2 |
+| GitHub | `~/.openclaw/github-keys.json` | `GitHubClientManager` | PAT |
+| Gemini | `~/.openclaw/gemini-keys.json` | `GeminiClientManager` | API key |
+| Wolfram | `~/.openclaw/wolfram-keys.json` | `WolframClientManager` | App ID |
+| LinkedIn | `~/.openclaw/linkedin-sessions.json` | `LinkedinSessionClient` | Session cookie |
+
+Key classes: `ApiKeyStore` (generic string-value store for GitHub/Gemini/Wolfram), `TokenStore` (Google OAuth credentials), `SessionStore` (LinkedIn sessions). Legacy single-token config keys (`github_token`, `gemini_api_key`, `wolfram_appid` in `mcp-server-config.json`) are auto-migrated to the "default" account in the new stores on first startup.
 
 # currentDate
 Today's date is 2026-03-08.

@@ -14,6 +14,11 @@ import { createSlidesAppendSlideTool } from "../../src/tools/slides-append-slide
 import { createSlidesCreateTool } from "../../src/tools/slides-create.js";
 import { createSlidesExportTool } from "../../src/tools/slides-download.js";
 import { createSlidesGetTool } from "../../src/tools/slides-get.js";
+import {
+  createSlidesDeleteSlideTool,
+  createSlidesDuplicateSlideTool,
+} from "../../src/tools/slides-manage.js";
+import { createSlidesWriteNotesTool } from "../../src/tools/slides-notes.js";
 import { createSlidesReplaceTextTool } from "../../src/tools/slides-replace-text.js";
 
 const CLIENT_SECRET_PATH =
@@ -35,6 +40,8 @@ if (!credentialsExist) {
 
 let clientManager: OAuthClientManager;
 let createdPresentationId: string;
+let appendedSlideId: string;
+let duplicatedSlideId: string;
 
 describe.skipIf(!credentialsExist)("Google Slides API integration", { timeout: 30_000 }, () => {
   beforeAll(() => {
@@ -96,6 +103,57 @@ describe.skipIf(!credentialsExist)("Google Slides API integration", { timeout: 3
 
       expect(result.details.success).toBe(true);
       expect(typeof result.details.slide_id).toBe("string");
+
+      appendedSlideId = result.details.slide_id;
+    });
+
+    it("slides_duplicate_slide — duplicates the appended slide", async () => {
+      expect(createdPresentationId).toBeTruthy();
+      expect(appendedSlideId).toBeTruthy();
+
+      const tool = createSlidesDuplicateSlideTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        presentation_id: createdPresentationId,
+        slide_id: appendedSlideId,
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(typeof result.details.new_slide_id).toBe("string");
+      expect(result.details.original_slide_id).toBe(appendedSlideId);
+
+      duplicatedSlideId = result.details.new_slide_id;
+    });
+
+    it("slides_write_notes — writes speaker notes to the duplicated slide", async () => {
+      expect(createdPresentationId).toBeTruthy();
+      expect(duplicatedSlideId).toBeTruthy();
+
+      const tool = createSlidesWriteNotesTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        presentation_id: createdPresentationId,
+        slide_id: duplicatedSlideId,
+        notes: "These are test speaker notes from omniclaw integration test.",
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(result.details.slide_id).toBe(duplicatedSlideId);
+    });
+
+    it("slides_delete_slide — deletes the duplicated slide", async () => {
+      expect(createdPresentationId).toBeTruthy();
+      expect(duplicatedSlideId).toBeTruthy();
+
+      const tool = createSlidesDeleteSlideTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        presentation_id: createdPresentationId,
+        slide_id: duplicatedSlideId,
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(result.details.deleted_slide_id).toBe(duplicatedSlideId);
     });
 
     it("slides_get — confirms the new slide is present", async () => {

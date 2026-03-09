@@ -36,6 +36,22 @@ import {
   createGmailReplyTool,
   createGmailForwardTool,
 } from "../../src/tools/gmail-send.js";
+import {
+  createGmailThreadListTool,
+  createGmailThreadGetTool,
+} from "../../src/tools/gmail-threads.js";
+import {
+  createGmailLabelsListTool,
+  createGmailLabelCreateTool,
+  createGmailLabelDeleteTool,
+} from "../../src/tools/gmail-labels.js";
+import {
+  createGmailDraftListTool,
+  createGmailDraftCreateTool,
+  createGmailDraftUpdateTool,
+  createGmailDraftDeleteTool,
+  createGmailDraftSendTool,
+} from "../../src/tools/gmail-drafts.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -296,6 +312,75 @@ describe.skipIf(!credentialsExist)("Gmail API integration", { timeout: 30_000 },
   });
 
   // -------------------------------------------------------------------------
+  // gmail_thread_list
+  // -------------------------------------------------------------------------
+  describe("gmail_thread_list", () => {
+    it("returns an array of threads", async () => {
+      const tool = createGmailThreadListTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT, max_results: 5 });
+
+      expect(Array.isArray(result.details)).toBe(true);
+      if (result.details.length > 0) {
+        const thread = result.details[0];
+        expect(typeof thread.id).toBe("string");
+        expect(typeof thread.snippet).toBe("string");
+      }
+    });
+
+    it("supports query filtering", async () => {
+      const tool = createGmailThreadListTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        query: "in:inbox",
+        max_results: 3,
+      });
+
+      expect(Array.isArray(result.details)).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // gmail_thread_get
+  // -------------------------------------------------------------------------
+  describe("gmail_thread_get", () => {
+    it("fetches messages in a thread", async () => {
+      // Get a thread ID from the list
+      const listTool = createGmailThreadListTool(clientManager);
+      const listResult = await listTool.execute("t", { account: ACCOUNT, max_results: 1 });
+      expect(listResult.details.length).toBeGreaterThan(0);
+
+      const threadId = listResult.details[0].id;
+      const tool = createGmailThreadGetTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT, thread_id: threadId });
+
+      expect(result.details).not.toHaveProperty("error");
+      expect(Array.isArray(result.details.messages)).toBe(true);
+      expect(result.details.messages.length).toBeGreaterThan(0);
+
+      const msg = result.details.messages[0];
+      expect(typeof msg.id).toBe("string");
+      expect(typeof msg.subject).toBe("string");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // gmail_labels_list
+  // -------------------------------------------------------------------------
+  describe("gmail_labels_list", () => {
+    it("returns system and user labels including INBOX", async () => {
+      const tool = createGmailLabelsListTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT });
+
+      expect(Array.isArray(result.details)).toBe(true);
+      expect(result.details.length).toBeGreaterThan(0);
+
+      const inbox = result.details.find((l: { name: string }) => l.name === "INBOX");
+      expect(inbox).toBeDefined();
+      expect(typeof inbox.id).toBe("string");
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Write tests — opt-in via RUN_WRITE_TESTS=1
   // -------------------------------------------------------------------------
   describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
@@ -364,6 +449,137 @@ describe.skipIf(!credentialsExist)("Gmail API integration", { timeout: 30_000 },
         id: sentMessageId,
         to: recipient,
         body: "Integration test forward. Safe to delete.",
+      });
+
+      expect(result.details.success).toBe(true);
+    });
+
+    // -----------------------------------------------------------------------
+    // Draft lifecycle
+    // -----------------------------------------------------------------------
+    let createdDraftId: string;
+
+    it("gmail_draft_create — creates a draft", async () => {
+      const recipient = process.env.TEST_RECIPIENT ?? (await getSelfEmail());
+      const tool = createGmailDraftCreateTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        to: recipient,
+        subject: `[omniclaw integration test] draft ${new Date().toISOString()}`,
+        body: "This is a test draft. Safe to delete.",
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(typeof result.details.id).toBe("string");
+      createdDraftId = result.details.id;
+    });
+
+    it("gmail_draft_list — lists drafts including the created one", async () => {
+      expect(createdDraftId).toBeTruthy();
+
+      const tool = createGmailDraftListTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT, max_results: 20 });
+
+      expect(Array.isArray(result.details)).toBe(true);
+      const found = result.details.find((d: { id: string }) => d.id === createdDraftId);
+      expect(found).toBeDefined();
+    });
+
+    it("gmail_draft_update — updates the draft subject", async () => {
+      expect(createdDraftId).toBeTruthy();
+
+      const recipient = process.env.TEST_RECIPIENT ?? (await getSelfEmail());
+      const tool = createGmailDraftUpdateTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        draft_id: createdDraftId,
+        to: recipient,
+        subject: `[omniclaw integration test] draft updated ${new Date().toISOString()}`,
+        body: "Updated draft body. Safe to delete.",
+      });
+
+      expect(result.details.success).toBe(true);
+    });
+
+    it("gmail_draft_delete — deletes the draft", async () => {
+      expect(createdDraftId).toBeTruthy();
+
+      const tool = createGmailDraftDeleteTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        draft_id: createdDraftId,
+      });
+
+      expect(result.details.success).toBe(true);
+    });
+
+    it("gmail_draft_send — creates and sends a draft", async () => {
+      const recipient = process.env.TEST_RECIPIENT ?? (await getSelfEmail());
+
+      // Create a draft to send
+      const createTool = createGmailDraftCreateTool(clientManager);
+      const createResult = await createTool.execute("t", {
+        account: ACCOUNT,
+        to: recipient,
+        subject: `[omniclaw integration test] draft send ${new Date().toISOString()}`,
+        body: "This draft will be sent. Safe to delete.",
+      });
+      expect(createResult.details.success).toBe(true);
+      const draftId = createResult.details.id;
+
+      // Send the draft
+      const sendTool = createGmailDraftSendTool(clientManager);
+      const sendResult = await sendTool.execute("t", {
+        account: ACCOUNT,
+        draft_id: draftId,
+      });
+
+      expect(sendResult.details.success).toBe(true);
+      expect(typeof sendResult.details.id).toBe("string");
+
+      // Trash the sent message
+      const modifyTool = createGmailModifyTool(clientManager);
+      await modifyTool.execute("t", {
+        account: ACCOUNT,
+        id: sendResult.details.id,
+        action: "trash",
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Label lifecycle
+    // -----------------------------------------------------------------------
+    let createdLabelId: string;
+
+    it("gmail_label_create — creates a test label", async () => {
+      const tool = createGmailLabelCreateTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        name: `[omniclaw-test] label-${Date.now()}`,
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(typeof result.details.id).toBe("string");
+      createdLabelId = result.details.id;
+    });
+
+    it("gmail_labels_list — confirms the new label appears", async () => {
+      expect(createdLabelId).toBeTruthy();
+
+      const tool = createGmailLabelsListTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT });
+
+      const found = result.details.find((l: { id: string }) => l.id === createdLabelId);
+      expect(found).toBeDefined();
+    });
+
+    it("gmail_label_delete — deletes the test label", async () => {
+      expect(createdLabelId).toBeTruthy();
+
+      const tool = createGmailLabelDeleteTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        label_id: createdLabelId,
       });
 
       expect(result.details.success).toBe(true);

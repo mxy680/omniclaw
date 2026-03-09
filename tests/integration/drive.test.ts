@@ -27,6 +27,12 @@ import { createDriveMoveTool } from "../../src/tools/drive-move.js";
 import { createDriveReadTool } from "../../src/tools/drive-read.js";
 import { createDriveSearchTool } from "../../src/tools/drive-search.js";
 import { createDriveShareTool } from "../../src/tools/drive-share.js";
+import { createDriveCopyTool } from "../../src/tools/drive-copy.js";
+import { createDriveRestoreTool } from "../../src/tools/drive-restore.js";
+import {
+  createDrivePermissionsListTool,
+  createDrivePermissionsDeleteTool,
+} from "../../src/tools/drive-permissions.js";
 import { createDriveUploadTool } from "../../src/tools/drive-upload.js";
 
 // ---------------------------------------------------------------------------
@@ -62,6 +68,8 @@ const DRIVE_SAVE_DIR = join(tmpdir(), `omniclaw-drive-test-${Date.now()}`);
 let clientManager: OAuthClientManager;
 let uploadedFileId: string; // set by drive_upload, reused by get/read/move/delete
 let createdFolderId: string; // set by drive_create_folder, reused by move/delete
+let sharedPermissionId: string; // set by drive_share, reused by permissions_delete
+let copiedFileId: string; // set by drive_copy, cleaned up after
 
 // ---------------------------------------------------------------------------
 describe.skipIf(!credentialsExist)("Google Drive API integration", { timeout: 30_000 }, () => {
@@ -280,6 +288,69 @@ describe.skipIf(!credentialsExist)("Google Drive API integration", { timeout: 30
 
       expect(result.details.success).toBe(true);
       expect(typeof result.details.permission_id).toBe("string");
+
+      sharedPermissionId = result.details.permission_id;
+    });
+
+    it("drive_permissions_list — lists permissions on the uploaded file", async () => {
+      expect(uploadedFileId).toBeTruthy();
+
+      const tool = createDrivePermissionsListTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        file_id: uploadedFileId,
+      });
+
+      expect(Array.isArray(result.details)).toBe(true);
+      expect(result.details.length).toBeGreaterThan(0);
+      // Should have at least the owner permission
+      const owner = result.details.find((p: { role: string }) => p.role === "owner");
+      expect(owner).toBeDefined();
+      expect(typeof owner.id).toBe("string");
+    });
+
+    it("drive_permissions_delete — removes the shared reader permission", async () => {
+      expect(uploadedFileId).toBeTruthy();
+      expect(sharedPermissionId).toBeTruthy();
+
+      const tool = createDrivePermissionsDeleteTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        file_id: uploadedFileId,
+        permission_id: sharedPermissionId,
+      });
+
+      expect(result.details.success).toBe(true);
+    });
+
+    it("drive_copy — copies the uploaded file", async () => {
+      expect(uploadedFileId).toBeTruthy();
+
+      const tool = createDriveCopyTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        file_id: uploadedFileId,
+        name: "[omniclaw integration test] drive_copy",
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(typeof result.details.id).toBe("string");
+      expect(result.details.id.length).toBeGreaterThan(0);
+
+      copiedFileId = result.details.id;
+    });
+
+    it("drive_delete — permanently deletes the copy", async () => {
+      expect(copiedFileId).toBeTruthy();
+
+      const tool = createDriveDeleteTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        file_id: copiedFileId,
+        permanent: true,
+      });
+
+      expect(result.details.success).toBe(true);
     });
 
     it("drive_delete — trashes the uploaded file", async () => {
@@ -295,6 +366,32 @@ describe.skipIf(!credentialsExist)("Google Drive API integration", { timeout: 30
       expect(result.details.success).toBe(true);
       expect(result.details.file_id).toBe(uploadedFileId);
       expect(result.details.permanent).toBe(false);
+    });
+
+    it("drive_restore — restores the trashed file", async () => {
+      expect(uploadedFileId).toBeTruthy();
+
+      const tool = createDriveRestoreTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        file_id: uploadedFileId,
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(result.details.file_id).toBe(uploadedFileId);
+    });
+
+    it("drive_delete — permanently deletes the restored file", async () => {
+      expect(uploadedFileId).toBeTruthy();
+
+      const tool = createDriveDeleteTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        file_id: uploadedFileId,
+        permanent: true,
+      });
+
+      expect(result.details.success).toBe(true);
     });
 
     it("drive_delete — permanently deletes the test folder", async () => {

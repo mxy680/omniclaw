@@ -22,6 +22,8 @@ import { createDocsAppendTool } from "../../src/tools/docs-append.js";
 import { createDocsCreateTool } from "../../src/tools/docs-create.js";
 import { createDocsExportTool } from "../../src/tools/docs-download.js";
 import { createDocsGetTool } from "../../src/tools/docs-get.js";
+import { createDocsInsertTool } from "../../src/tools/docs-insert.js";
+import { createDocsDeleteTextTool } from "../../src/tools/docs-delete-text.js";
 import { createDocsReplaceTextTool } from "../../src/tools/docs-replace-text.js";
 import { createDriveDeleteTool } from "../../src/tools/drive-delete.js";
 
@@ -128,6 +130,58 @@ describe.skipIf(!credentialsExist)("Google Docs API integration", { timeout: 30_
       const result = await tool.execute("t", { account: ACCOUNT, document_id: createdDocId });
 
       expect(result.details.content).toContain("Appended by omniclaw integration test.");
+    });
+
+    it("docs_insert — inserts text at the beginning of the document", async () => {
+      expect(createdDocId).toBeTruthy();
+
+      const insertText = "INSERTED_TEXT: ";
+      const tool = createDocsInsertTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        document_id: createdDocId,
+        text: insertText,
+        index: 1,
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(result.details.document_id).toBe(createdDocId);
+      expect(result.details.characters_added).toBe(insertText.length);
+    });
+
+    it("docs_get — confirms inserted text is present", async () => {
+      expect(createdDocId).toBeTruthy();
+
+      const tool = createDocsGetTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT, document_id: createdDocId });
+
+      expect(result.details.content).toContain("INSERTED_TEXT: ");
+    });
+
+    it("docs_delete_text — deletes the inserted text", async () => {
+      expect(createdDocId).toBeTruthy();
+
+      const insertText = "INSERTED_TEXT: ";
+      const tool = createDocsDeleteTextTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        document_id: createdDocId,
+        start_index: 1,
+        end_index: 1 + insertText.length,
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(result.details.deleted_range.start).toBe(1);
+      expect(result.details.deleted_range.end).toBe(1 + insertText.length);
+    });
+
+    it("docs_get — confirms deleted text is gone", async () => {
+      expect(createdDocId).toBeTruthy();
+
+      const tool = createDocsGetTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT, document_id: createdDocId });
+
+      expect(result.details.content).not.toContain("INSERTED_TEXT: ");
     });
 
     it("docs_replace_text — replaces a string in the document", async () => {

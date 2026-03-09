@@ -196,7 +196,13 @@ app.get("/health", (_req: Request, res: Response) => {
     status: "ok",
     tools: toolMap.size,
     sessions: sessions.size,
-    agents: agentsFile.agents.length,
+    agents: agentsFile.agents.map((a) => ({
+      agentId: a.id,
+      name: a.name,
+      role: a.role,
+      colorName: a.colorName,
+      services: a.permissions.services,
+    })),
     scheduler: scheduler
       ? { enabled: true, jobs: scheduler.getStore().listJobs().length, activeRuns: scheduler.getActiveRuns().length }
       : { enabled: false },

@@ -948,6 +948,24 @@ const linkedinTest: ServiceTestFn = async (execute) => {
   return steps;
 };
 
+const instagramTest: ServiceTestFn = async (execute) => {
+  const steps: TestStepResult[] = [];
+
+  const s1 = await runStep("Get profile", "instagram_profile_get", {}, execute);
+  steps.push(s1.result);
+
+  const s2 = await runStep("Search users", "instagram_search", { query: "nature" }, execute);
+  steps.push(s2.result);
+
+  const s3 = await runStep("Get timeline feed", "instagram_feed_get", {}, execute);
+  steps.push(s3.result);
+
+  const s4 = await runStep("Get inbox", "instagram_inbox_get", {}, execute);
+  steps.push(s4.result);
+
+  return steps;
+};
+
 const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   gmail: gmailTest,
   calendar: calendarTest,
@@ -960,6 +978,7 @@ const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   gemini: geminiTest,
   wolfram: wolframTest,
   linkedin: linkedinTest,
+  instagram: instagramTest,
 };
 
 export async function runServiceTest(

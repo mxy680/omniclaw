@@ -91,21 +91,10 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
     fetchTools();
   }, [fetchAccounts, fetchTools]);
 
+  // Refresh accounts when returning from OAuth redirect (params handled by Dashboard)
   useEffect(() => {
-    const success = searchParams.get("success");
-    const account = searchParams.get("account");
-    const email = searchParams.get("email");
-    const error = searchParams.get("error");
-
-    if (success && account) {
-      toast.success(
-        `Connected "${account}"${email ? ` (${email})` : ""}`,
-      );
-      window.history.replaceState({}, "", "/");
+    if (searchParams.get("success")) {
       fetchAccounts();
-    } else if (error) {
-      toast.error(`Authentication failed: ${error}`);
-      window.history.replaceState({}, "", "/");
     }
   }, [searchParams, fetchAccounts]);
 

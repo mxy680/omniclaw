@@ -8,14 +8,15 @@ import { ProviderDetail } from "@/components/provider-detail";
 import { SystemPage } from "@/components/system-page";
 import { PROVIDERS } from "@/lib/integrations";
 
-function getInitialSelectedId(): string {
-  if (typeof window === "undefined") return "system";
-  return localStorage.getItem("omniclaw_selected_provider") ?? "system";
-}
-
 export function Dashboard() {
-  const [selectedId, setSelectedId] = useState(getInitialSelectedId);
+  const [selectedId, setSelectedId] = useState("system");
   const searchParams = useSearchParams();
+
+  // Restore selected provider from localStorage after mount to avoid hydration mismatch
+  useEffect(() => {
+    const stored = localStorage.getItem("omniclaw_selected_provider");
+    if (stored) setSelectedId(stored);
+  }, []);
 
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id);

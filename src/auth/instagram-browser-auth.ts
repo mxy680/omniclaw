@@ -6,7 +6,8 @@ export async function authenticateInstagram(
 ): Promise<SessionData> {
   // Dynamic import so playwright is only loaded when auth is actually called,
   // not at MCP server startup. This avoids crashes if playwright isn't installed.
-  const { chromium } = await import("playwright");
+  const pw: string = "playwright";
+  const { chromium } = await import(pw);
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -15,7 +16,7 @@ export async function authenticateInstagram(
 
   // Wait for the user to complete login — generous timeout for MFA/CAPTCHA
   await page.waitForURL(
-    (url) =>
+    (url: URL) =>
       !url.pathname.includes("/accounts/login") &&
       !url.pathname.includes("/challenge/"),
     { timeout: 120_000 },

@@ -38,6 +38,7 @@ const SERVICE_NAMES: Record<string, string> = {
   gemini: "Gemini",
   wolfram: "Wolfram Alpha",
   linkedin: "LinkedIn",
+  instagram: "Instagram",
 };
 
 let cached: ToolRegistry | null = null;

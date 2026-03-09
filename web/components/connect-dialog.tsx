@@ -38,6 +38,7 @@ export function ConnectDialog({
   const isGemini = providerId === "gemini";
   const isWolfram = providerId === "wolfram-alpha";
   const isLinkedin = providerId === "linkedin";
+  const isInstagram = providerId === "instagram";
 
   async function handleGoogleConnect() {
     if (!accountName.trim()) return;
@@ -164,6 +165,32 @@ export function ConnectDialog({
     }
   }
 
+  async function handleInstagramConnect() {
+    setLoading(true);
+
+    try {
+      toast.info("A browser window will open — log in to Instagram there.");
+      const res = await fetch("/api/auth/instagram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account: accountName.trim() || "default" }),
+      });
+
+      if (res.ok) {
+        toast.success("Instagram account connected");
+        setOpen(false);
+        onConnected?.();
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to connect Instagram");
+      }
+    } catch {
+      toast.error("Failed to connect Instagram");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -184,7 +211,9 @@ export function ConnectDialog({
                   ? "Enter a Wolfram Alpha AppID from the Developer Portal."
                   : isLinkedin
                     ? "A browser window will open for you to log in to LinkedIn. Your session cookies will be captured automatically."
-                    : `Enter a name for this account, then sign in with ${providerName}.`}
+                    : isInstagram
+                      ? "A browser window will open for you to log in to Instagram. Your session cookies will be captured automatically."
+                      : `Enter a name for this account, then sign in with ${providerName}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -322,6 +351,26 @@ export function ConnectDialog({
               )}
             </div>
           </div>
+        ) : isInstagram ? (
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="instagram-account">Account Name</Label>
+              <Input
+                id="instagram-account"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="e.g. default, work, personal"
+              />
+              <p className="text-xs text-muted-foreground">
+                A browser window will open. Log in with any method (password, SSO, passkey). Session cookies are captured automatically once you land on Instagram.
+              </p>
+              {existingAccounts.includes(accountName.trim()) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  This will replace the existing &ldquo;{accountName.trim()}&rdquo; session.
+                </p>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -343,12 +392,12 @@ export function ConnectDialog({
 
         <DialogFooter>
           <Button
-            onClick={isLinkedin ? handleLinkedinConnect : isWolfram ? handleWolframConnect : isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
+            onClick={isInstagram ? handleInstagramConnect : isLinkedin ? handleLinkedinConnect : isWolfram ? handleWolframConnect : isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
             disabled={isGitHub || isGemini || isWolfram ? !token.trim() || !accountName.trim() || loading : !accountName.trim() || loading}
           >
             {loading
-              ? isLinkedin ? "Waiting for login..." : isGitHub || isGemini || isWolfram ? "Saving..." : "Redirecting..."
-              : isLinkedin ? "Open LinkedIn Login" : isWolfram ? "Save AppID" : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
+              ? isInstagram ? "Waiting for login..." : isLinkedin ? "Waiting for login..." : isGitHub || isGemini || isWolfram ? "Saving..." : "Redirecting..."
+              : isInstagram ? "Open Instagram Login" : isLinkedin ? "Open LinkedIn Login" : isWolfram ? "Save AppID" : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
           </Button>
         </DialogFooter>
       </DialogContent>

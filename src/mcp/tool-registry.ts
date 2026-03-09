@@ -275,6 +275,29 @@ import {
   createLinkedinMessagesListTool,
   createLinkedinMessagesSendTool,
 } from "../tools/linkedin-messages.js";
+import { InstagramClientManager } from "../auth/instagram-client-manager.js";
+import { createInstagramAuthSetupTool } from "../tools/instagram-auth.js";
+import {
+  createInstagramProfileGetTool,
+  createInstagramProfileViewTool,
+} from "../tools/instagram-profile.js";
+import {
+  createInstagramFeedGetTool,
+  createInstagramPostListTool,
+  createInstagramPostGetTool,
+} from "../tools/instagram-feed.js";
+import { createInstagramSearchTool } from "../tools/instagram-search.js";
+import { createInstagramStoriesGetTool } from "../tools/instagram-stories.js";
+import {
+  createInstagramPostLikeTool,
+  createInstagramPostUnlikeTool,
+  createInstagramPostCommentTool,
+} from "../tools/instagram-social.js";
+import {
+  createInstagramInboxGetTool,
+  createInstagramMessagesGetTool,
+  createInstagramMessageSendTool,
+} from "../tools/instagram-messages.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface OmniclawTool {
@@ -596,6 +619,28 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createLinkedinPostCommentTool(linkedinManager));
     add(createLinkedinMessagesListTool(linkedinManager));
     add(createLinkedinMessagesSendTool(linkedinManager));
+  }
+
+  // Instagram tools — session cookie auth
+  {
+    const sessionsPath = path.join(os.homedir(), ".openclaw", "instagram-sessions.json");
+    const instagramSessionStore = new SessionStore(sessionsPath);
+    const instagramManager = new InstagramClientManager(instagramSessionStore);
+
+    add(createInstagramAuthSetupTool(instagramManager));
+    add(createInstagramProfileGetTool(instagramManager));
+    add(createInstagramProfileViewTool(instagramManager));
+    add(createInstagramFeedGetTool(instagramManager));
+    add(createInstagramPostListTool(instagramManager));
+    add(createInstagramPostGetTool(instagramManager));
+    add(createInstagramSearchTool(instagramManager));
+    add(createInstagramStoriesGetTool(instagramManager));
+    add(createInstagramPostLikeTool(instagramManager));
+    add(createInstagramPostUnlikeTool(instagramManager));
+    add(createInstagramPostCommentTool(instagramManager));
+    add(createInstagramInboxGetTool(instagramManager));
+    add(createInstagramMessagesGetTool(instagramManager));
+    add(createInstagramMessageSendTool(instagramManager));
   }
 
   return tools;

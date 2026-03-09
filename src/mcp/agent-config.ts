@@ -43,6 +43,7 @@ export const VALID_SERVICES = [
   "gemini",
   "wolfram",
   "linkedin",
+  "instagram",
 ] as const;
 
 const DEFAULT_AGENTS_FILE: AgentsFile = {

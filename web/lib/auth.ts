@@ -217,13 +217,55 @@ export function revokeLinkedinSession(account: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Instagram
+// ---------------------------------------------------------------------------
+
+const INSTAGRAM_SESSIONS_PATH = join(homedir(), ".openclaw", "instagram-sessions.json");
+
+function loadInstagramSessions(): Record<string, unknown> {
+  if (!existsSync(INSTAGRAM_SESSIONS_PATH)) return {};
+  try {
+    return JSON.parse(readFileSync(INSTAGRAM_SESSIONS_PATH, "utf-8")) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function getInstagramAccounts(): AccountInfo[] {
+  try {
+    const sessions = loadInstagramSessions();
+    return Object.keys(sessions).map((name) => ({
+      name,
+      email: null,
+      provider: "instagram" as const,
+      hasTokens: true,
+      isExpired: false,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function revokeInstagramSession(account: string): boolean {
+  try {
+    const sessions = loadInstagramSessions();
+    if (!(account in sessions)) return false;
+    delete sessions[account];
+    writeFileSync(INSTAGRAM_SESSIONS_PATH, JSON.stringify(sessions, null, 2), "utf-8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Account listing
 // ---------------------------------------------------------------------------
 
 export interface AccountInfo {
   name: string;
   email: string | null;
-  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin";
+  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin" | "instagram";
   hasTokens: boolean;
   isExpired: boolean;
 }
@@ -300,6 +342,11 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   if (!provider || provider === "linkedin") {
     const linkedinAccounts = getLinkedinAccounts();
     accounts.push(...linkedinAccounts);
+  }
+
+  if (!provider || provider === "instagram") {
+    const instagramAccounts = getInstagramAccounts();
+    accounts.push(...instagramAccounts);
   }
 
   return accounts;

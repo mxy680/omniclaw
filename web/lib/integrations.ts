@@ -85,8 +85,10 @@ export const PROVIDERS: Provider[] = [
     icon: "Instagram",
     color: "#E4405F",
     description: "Publish content, manage comments, and access insights.",
-    available: false,
-    services: [],
+    available: true,
+    services: [
+      { id: "instagram", name: "Instagram", icon: "Instagram", color: "#E4405F" },
+    ],
   },
 ];
 

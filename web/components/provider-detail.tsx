@@ -49,7 +49,7 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [serviceTools, setServiceTools] = useState<Record<string, ServiceToolsData>>({});
-  const [toolsLoading, setToolsLoading] = useState(false);
+  const [toolsLoading, setToolsLoading] = useState(true);
   const [toolsError, setToolsError] = useState<string | null>(null);
   const [testingAllServices, setTestingAllServices] = useState(false);
   const panelRefs = useRef<Map<string, ServiceTestPanelHandle>>(new Map());
@@ -72,7 +72,10 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
   }, [provider.available, provider.id]);
 
   const fetchTools = useCallback(async () => {
-    if (!provider.available) return;
+    if (!provider.available) {
+      setToolsLoading(false);
+      return;
+    }
     setToolsLoading(true);
     setToolsError(null);
     try {

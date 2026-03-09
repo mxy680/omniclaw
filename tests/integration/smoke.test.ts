@@ -56,7 +56,8 @@ import { createSlidesAppendSlideTool } from "../../src/tools/slides-append-slide
 import { createSlidesExportTool } from "../../src/tools/slides-download.js";
 
 // GitHub tool imports
-import { GitHubClient } from "../../src/auth/github-client.js";
+import { ApiKeyStore } from "../../src/auth/api-key-store.js";
+import { GitHubClientManager } from "../../src/auth/github-client-manager.js";
 import { createGitHubAuthSetupTool } from "../../src/tools/github-auth.js";
 import { createGitHubRepoGetTool, createGitHubRepoListTool } from "../../src/tools/github-repos.js";
 import { createGitHubSearchReposTool } from "../../src/tools/github-search.js";
@@ -64,7 +65,7 @@ import { createGitHubUserGetTool } from "../../src/tools/github-users.js";
 import { createGitHubGistListTool, createGitHubGistCreateTool, createGitHubGistDeleteTool } from "../../src/tools/github-gists.js";
 
 // Wolfram Alpha tool imports
-import { WolframClient } from "../../src/auth/wolfram-client.js";
+import { WolframClientManager } from "../../src/auth/wolfram-client-manager.js";
 import { createWolframQueryTool, createWolframQueryFullTool } from "../../src/tools/wolfram-query.js";
 
 // ---------------------------------------------------------------------------
@@ -734,17 +735,19 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
   // =========================================================================
 
   describe("GitHub", () => {
-    let ghClient: GitHubClient;
+    let ghManager: GitHubClientManager;
 
     beforeAll(() => {
       if (githubTokenExists) {
-        ghClient = new GitHubClient(GITHUB_TOKEN);
+        const store = new ApiKeyStore(join(tmpdir(), `gh-smoke-${Date.now()}.json`));
+        store.set("default", GITHUB_TOKEN);
+        ghManager = new GitHubClientManager(store);
       }
     });
 
     it.skipIf(!githubTokenExists)("github_auth_setup — validate token", async () => {
       const result = await smokeCheck("GitHub", "github_auth_setup", async () => {
-        const tool = createGitHubAuthSetupTool(ghClient);
+        const tool = createGitHubAuthSetupTool(ghManager);
         return tool.execute("smoke", { token: GITHUB_TOKEN });
       });
       expect(result.details).not.toHaveProperty("error");
@@ -753,7 +756,7 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
 
     it.skipIf(!githubTokenExists)("github_repo_list — list repos", async () => {
       const result = await smokeCheck("GitHub", "github_repo_list", async () => {
-        const tool = createGitHubRepoListTool(ghClient);
+        const tool = createGitHubRepoListTool(ghManager);
         return tool.execute("smoke", { per_page: 3 });
       });
       expect(Array.isArray(result.details)).toBe(true);
@@ -761,7 +764,7 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
 
     it.skipIf(!githubTokenExists)("github_repo_get — fetch octocat/Hello-World", async () => {
       const result = await smokeCheck("GitHub", "github_repo_get", async () => {
-        const tool = createGitHubRepoGetTool(ghClient);
+        const tool = createGitHubRepoGetTool(ghManager);
         return tool.execute("smoke", { owner: "octocat", repo: "Hello-World" });
       });
       expect(result.details).not.toHaveProperty("error");
@@ -770,7 +773,7 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
 
     it.skipIf(!githubTokenExists)("github_search_repos — search TypeScript", async () => {
       const result = await smokeCheck("GitHub", "github_search_repos", async () => {
-        const tool = createGitHubSearchReposTool(ghClient);
+        const tool = createGitHubSearchReposTool(ghManager);
         return tool.execute("smoke", { q: "typescript", per_page: 1 });
       });
       expect(result.details.total_count).toBeGreaterThan(0);
@@ -778,7 +781,7 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
 
     it.skipIf(!githubTokenExists)("github_user_get — fetch octocat profile", async () => {
       const result = await smokeCheck("GitHub", "github_user_get", async () => {
-        const tool = createGitHubUserGetTool(ghClient);
+        const tool = createGitHubUserGetTool(ghManager);
         return tool.execute("smoke", { username: "octocat" });
       });
       expect(result.details.login).toBe("octocat");
@@ -786,18 +789,20 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
   });
 
   describe("GitHub (write)", () => {
-    let ghClient: GitHubClient;
+    let ghManager: GitHubClientManager;
 
     beforeAll(() => {
       if (githubTokenExists) {
-        ghClient = new GitHubClient(GITHUB_TOKEN);
+        const store = new ApiKeyStore(join(tmpdir(), `gh-smoke-write-${Date.now()}.json`));
+        store.set("default", GITHUB_TOKEN);
+        ghManager = new GitHubClientManager(store);
       }
     });
 
     it.skipIf(!githubTokenExists)("github_gist_create + github_gist_delete — create and delete", async () => {
       await smokeCheck("GitHub", "gist_create+delete", async () => {
-        const createTool = createGitHubGistCreateTool(ghClient);
-        const deleteTool = createGitHubGistDeleteTool(ghClient);
+        const createTool = createGitHubGistCreateTool(ghManager);
+        const deleteTool = createGitHubGistDeleteTool(ghManager);
 
         const createResult = await createTool.execute("smoke", {
           description: "[omniclaw-smoke] auto-cleanup",
@@ -819,17 +824,19 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
   // =========================================================================
 
   describe("Wolfram Alpha", () => {
-    let wolframClient: WolframClient;
+    let wolframManager: WolframClientManager;
 
     beforeAll(() => {
       if (wolframAppIdExists) {
-        wolframClient = new WolframClient(WOLFRAM_APPID);
+        const store = new ApiKeyStore(join(tmpdir(), `wolfram-smoke-${Date.now()}.json`));
+        store.set("default", WOLFRAM_APPID);
+        wolframManager = new WolframClientManager(store);
       }
     });
 
     it.skipIf(!wolframAppIdExists)("wolfram_query — simple math query", async () => {
       const result = await smokeCheck("Wolfram", "wolfram_query", async () => {
-        const tool = createWolframQueryTool(wolframClient);
+        const tool = createWolframQueryTool(wolframManager);
         return tool.execute("smoke", { input: "2 + 2" });
       });
       expect(result.details).not.toHaveProperty("error");
@@ -839,7 +846,7 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
 
     it.skipIf(!wolframAppIdExists)("wolfram_query_full — structured math query", async () => {
       const result = await smokeCheck("Wolfram", "wolfram_query_full", async () => {
-        const tool = createWolframQueryFullTool(wolframClient);
+        const tool = createWolframQueryFullTool(wolframManager);
         return tool.execute("smoke", { input: "5!", format: "plaintext" });
       });
       expect(result.details).not.toHaveProperty("error");

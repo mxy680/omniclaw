@@ -1,7 +1,7 @@
 import * as path from "path";
 import { writeFileSync } from "fs";
 import { Type } from "@sinclair/typebox";
-import type { GeminiClient } from "../auth/gemini-client.js";
+import type { GeminiClientManager } from "../auth/gemini-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 import { ensureDir, mimeToExt } from "./media-utils.js";
 
@@ -12,7 +12,7 @@ const AUTH_REQUIRED = authRequired("gemini");
 // ---------------------------------------------------------------------------
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGeminiGenerateImageTool(client: GeminiClient): any {
+export function createGeminiGenerateImageTool(manager: GeminiClientManager): any {
   return {
     name: "gemini_generate_image",
     label: "Gemini Generate Image",
@@ -38,6 +38,9 @@ export function createGeminiGenerateImageTool(client: GeminiClient): any {
           description: 'Image resolution. Options: "1K" (default), "2K", "4K".',
         }),
       ),
+      account: Type.Optional(
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
+      ),
     }),
     async execute(
       _toolCallId: string,
@@ -47,8 +50,11 @@ export function createGeminiGenerateImageTool(client: GeminiClient): any {
         model?: string;
         aspect_ratio?: string;
         image_size?: string;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
 
       const ai = client.getClient();
@@ -124,7 +130,7 @@ export function createGeminiGenerateImageTool(client: GeminiClient): any {
 // ---------------------------------------------------------------------------
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGeminiImagenTool(client: GeminiClient): any {
+export function createGeminiImagenTool(manager: GeminiClientManager): any {
   return {
     name: "gemini_imagen",
     label: "Gemini Imagen",
@@ -157,6 +163,9 @@ export function createGeminiImagenTool(client: GeminiClient): any {
             'Person generation policy. Options: "dont_allow", "allow_adult" (default).',
         }),
       ),
+      account: Type.Optional(
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
+      ),
     }),
     async execute(
       _toolCallId: string,
@@ -167,8 +176,11 @@ export function createGeminiImagenTool(client: GeminiClient): any {
         number_of_images?: number;
         aspect_ratio?: string;
         person_generation?: string;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
 
       const ai = client.getClient();

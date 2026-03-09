@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubDependabotAlertsTool(gh: GitHubClient): any {
+export function createGitHubDependabotAlertsTool(manager: GitHubClientManager): any {
   return {
     name: "github_dependabot_alerts",
     label: "GitHub Dependabot Alerts",
@@ -26,11 +26,14 @@ export function createGitHubDependabotAlertsTool(gh: GitHubClient): any {
         ),
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; state?: string; severity?: string; per_page?: number },
+      params: { owner: string; repo: string; state?: string; severity?: string; per_page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -59,7 +62,7 @@ export function createGitHubDependabotAlertsTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubCodeScanningAlertsTool(gh: GitHubClient): any {
+export function createGitHubCodeScanningAlertsTool(manager: GitHubClientManager): any {
   return {
     name: "github_code_scanning_alerts",
     label: "GitHub Code Scanning Alerts",
@@ -82,11 +85,14 @@ export function createGitHubCodeScanningAlertsTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; state?: string; severity?: string; per_page?: number; page?: number },
+      params: { owner: string; repo: string; state?: string; severity?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -112,7 +118,7 @@ export function createGitHubCodeScanningAlertsTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubSecretScanningAlertsTool(gh: GitHubClient): any {
+export function createGitHubSecretScanningAlertsTool(manager: GitHubClientManager): any {
   return {
     name: "github_secret_scanning_alerts",
     label: "GitHub Secret Scanning Alerts",
@@ -128,11 +134,14 @@ export function createGitHubSecretScanningAlertsTool(gh: GitHubClient): any {
       ),
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; state?: string; per_page?: number; page?: number },
+      params: { owner: string; repo: string; state?: string; per_page?: number; page?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -156,7 +165,7 @@ export function createGitHubSecretScanningAlertsTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubSecurityAdvisoriesTool(gh: GitHubClient): any {
+export function createGitHubSecurityAdvisoriesTool(manager: GitHubClientManager): any {
   return {
     name: "github_security_advisories",
     label: "GitHub Security Advisories",
@@ -170,11 +179,14 @@ export function createGitHubSecurityAdvisoriesTool(gh: GitHubClient): any {
           { description: "Filter by state." },
         ),
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { owner: string; repo: string; state?: string },
+      params: { owner: string; repo: string; state?: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

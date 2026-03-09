@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
+import type { LinkedinClientManager } from "../auth/linkedin-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("linkedin");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinPostListTool(client: LinkedinSessionClient): any {
+export function createLinkedinPostListTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_post_list",
     label: "LinkedIn Post List",
@@ -25,6 +25,8 @@ export function createLinkedinPostListTool(client: LinkedinSessionClient): any {
       _toolCallId: string,
       params: { count?: number; start?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const count = params.count ?? 10;
@@ -53,7 +55,7 @@ export function createLinkedinPostListTool(client: LinkedinSessionClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinPostCreateTool(client: LinkedinSessionClient): any {
+export function createLinkedinPostCreateTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_post_create",
     label: "LinkedIn Post Create",
@@ -74,6 +76,8 @@ export function createLinkedinPostCreateTool(client: LinkedinSessionClient): any
       _toolCallId: string,
       params: { text: string; visibility?: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const visibility = params.visibility ?? "PUBLIC";
@@ -105,7 +109,7 @@ export function createLinkedinPostCreateTool(client: LinkedinSessionClient): any
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinPostLikeTool(client: LinkedinSessionClient): any {
+export function createLinkedinPostLikeTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_post_like",
     label: "LinkedIn Post Like",
@@ -122,6 +126,8 @@ export function createLinkedinPostLikeTool(client: LinkedinSessionClient): any {
       _toolCallId: string,
       params: { urn: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const encodedUrn = encodeURIComponent(params.urn);
@@ -150,7 +156,7 @@ export function createLinkedinPostLikeTool(client: LinkedinSessionClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinPostCommentTool(client: LinkedinSessionClient): any {
+export function createLinkedinPostCommentTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_post_comment",
     label: "LinkedIn Post Comment",
@@ -168,6 +174,8 @@ export function createLinkedinPostCommentTool(client: LinkedinSessionClient): an
       _toolCallId: string,
       params: { urn: string; text: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const encodedUrn = encodeURIComponent(params.urn);

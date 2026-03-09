@@ -1,7 +1,7 @@
 import * as path from "path";
 import { writeFileSync } from "fs";
 import { Type } from "@sinclair/typebox";
-import type { GeminiClient } from "../auth/gemini-client.js";
+import type { GeminiClientManager } from "../auth/gemini-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 import { ensureDir } from "./media-utils.js";
 
@@ -11,7 +11,7 @@ const POLL_INTERVAL_MS = 10_000;
 const DEFAULT_TIMEOUT_SECONDS = 300;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGeminiGenerateVideoTool(client: GeminiClient): any {
+export function createGeminiGenerateVideoTool(manager: GeminiClientManager): any {
   return {
     name: "gemini_generate_video",
     label: "Gemini Generate Video",
@@ -47,6 +47,9 @@ export function createGeminiGenerateVideoTool(client: GeminiClient): any {
             "Maximum time to wait for video generation in seconds. Default: 300 (5 minutes).",
         }),
       ),
+      account: Type.Optional(
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
+      ),
     }),
     async execute(
       _toolCallId: string,
@@ -58,8 +61,11 @@ export function createGeminiGenerateVideoTool(client: GeminiClient): any {
         duration_seconds?: number;
         person_generation?: string;
         timeout_seconds?: number;
+        account?: string;
       },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
 
       const ai = client.getClient();

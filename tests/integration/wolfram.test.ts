@@ -7,8 +7,12 @@
  * These tests are read-only (Wolfram Alpha has no write operations).
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
-import { WolframClient } from "../../src/auth/wolfram-client.js";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { join } from "path";
+import { tmpdir } from "os";
+import { rmSync } from "fs";
+import { ApiKeyStore } from "../../src/auth/api-key-store.js";
+import { WolframClientManager } from "../../src/auth/wolfram-client-manager.js";
 import { createWolframQueryTool, createWolframQueryFullTool } from "../../src/tools/wolfram-query.js";
 
 // ---------------------------------------------------------------------------
@@ -24,11 +28,18 @@ if (!hasAppId) {
 }
 
 // ---------------------------------------------------------------------------
-let wolfram: WolframClient;
+const storePath = join(tmpdir(), `wolfram-test-keys-${Date.now()}.json`);
+let manager: WolframClientManager;
 
 describe.skipIf(!hasAppId)("Wolfram Alpha API integration", { timeout: 30_000 }, () => {
   beforeAll(() => {
-    wolfram = new WolframClient(WOLFRAM_APPID);
+    const store = new ApiKeyStore(storePath);
+    store.set("default", WOLFRAM_APPID);
+    manager = new WolframClientManager(store);
+  });
+
+  afterAll(() => {
+    try { rmSync(storePath); } catch { /* ignore */ }
   });
 
   // -------------------------------------------------------------------------
@@ -36,7 +47,7 @@ describe.skipIf(!hasAppId)("Wolfram Alpha API integration", { timeout: 30_000 },
   // -------------------------------------------------------------------------
   describe("wolfram_query (LLM API)", () => {
     it("answers a simple math query", async () => {
-      const tool = createWolframQueryTool(wolfram);
+      const tool = createWolframQueryTool(manager);
       const result = await tool.execute("t", { input: "2 + 2" });
       expect(result.details).not.toHaveProperty("error");
       expect(typeof result.details.result).toBe("string");
@@ -44,7 +55,7 @@ describe.skipIf(!hasAppId)("Wolfram Alpha API integration", { timeout: 30_000 },
     });
 
     it("answers a unit conversion query", async () => {
-      const tool = createWolframQueryTool(wolfram);
+      const tool = createWolframQueryTool(manager);
       const result = await tool.execute("t", {
         input: "convert 100 fahrenheit to celsius",
       });
@@ -54,7 +65,7 @@ describe.skipIf(!hasAppId)("Wolfram Alpha API integration", { timeout: 30_000 },
     });
 
     it("respects maxchars parameter", async () => {
-      const tool = createWolframQueryTool(wolfram);
+      const tool = createWolframQueryTool(manager);
       const result = await tool.execute("t", {
         input: "population of the United States",
         maxchars: 500,
@@ -64,8 +75,9 @@ describe.skipIf(!hasAppId)("Wolfram Alpha API integration", { timeout: 30_000 },
     });
 
     it("returns error for unauthenticated client", async () => {
-      const unauthClient = new WolframClient();
-      const tool = createWolframQueryTool(unauthClient);
+      const emptyStore = new ApiKeyStore(join(tmpdir(), `wolfram-empty-${Date.now()}.json`));
+      const emptyManager = new WolframClientManager(emptyStore);
+      const tool = createWolframQueryTool(emptyManager);
       const result = await tool.execute("t", { input: "2+2" });
       expect(result.details).toHaveProperty("error", "auth_required");
     });
@@ -76,7 +88,7 @@ describe.skipIf(!hasAppId)("Wolfram Alpha API integration", { timeout: 30_000 },
   // -------------------------------------------------------------------------
   describe("wolfram_query_full (Full Results API)", () => {
     it("returns structured JSON with pods", async () => {
-      const tool = createWolframQueryFullTool(wolfram);
+      const tool = createWolframQueryFullTool(manager);
       const result = await tool.execute("t", { input: "integrate x^2 dx" });
       expect(result.details).not.toHaveProperty("error");
       expect(result.details).toHaveProperty("queryresult");
@@ -86,7 +98,7 @@ describe.skipIf(!hasAppId)("Wolfram Alpha API integration", { timeout: 30_000 },
     });
 
     it("filters by format parameter", async () => {
-      const tool = createWolframQueryFullTool(wolfram);
+      const tool = createWolframQueryFullTool(manager);
       const result = await tool.execute("t", {
         input: "5! (factorial)",
         format: "plaintext",
@@ -96,8 +108,9 @@ describe.skipIf(!hasAppId)("Wolfram Alpha API integration", { timeout: 30_000 },
     });
 
     it("returns error for unauthenticated client", async () => {
-      const unauthClient = new WolframClient();
-      const tool = createWolframQueryFullTool(unauthClient);
+      const emptyStore = new ApiKeyStore(join(tmpdir(), `wolfram-empty2-${Date.now()}.json`));
+      const emptyManager = new WolframClientManager(emptyStore);
+      const tool = createWolframQueryFullTool(emptyManager);
       const result = await tool.execute("t", { input: "2+2" });
       expect(result.details).toHaveProperty("error", "auth_required");
     });

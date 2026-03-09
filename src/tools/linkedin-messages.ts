@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
+import type { LinkedinClientManager } from "../auth/linkedin-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("linkedin");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinMessagesListTool(client: LinkedinSessionClient): any {
+export function createLinkedinMessagesListTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_messages_list",
     label: "LinkedIn Messages List",
@@ -22,6 +22,8 @@ export function createLinkedinMessagesListTool(client: LinkedinSessionClient): a
       _toolCallId: string,
       params: { count?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const count = params.count ?? 20;
@@ -49,7 +51,7 @@ export function createLinkedinMessagesListTool(client: LinkedinSessionClient): a
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinMessagesSendTool(client: LinkedinSessionClient): any {
+export function createLinkedinMessagesSendTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_messages_send",
     label: "LinkedIn Messages Send",
@@ -68,6 +70,8 @@ export function createLinkedinMessagesSendTool(client: LinkedinSessionClient): a
       _toolCallId: string,
       params: { conversation_urn: string; text: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const result = await client.request<Record<string, unknown>>({

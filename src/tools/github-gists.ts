@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { GitHubClient } from "../auth/github-client.js";
+import type { GitHubClientManager } from "../auth/github-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubGistListTool(gh: GitHubClient): any {
+export function createGitHubGistListTool(manager: GitHubClientManager): any {
   return {
     name: "github_gist_list",
     label: "GitHub List Gists",
@@ -13,8 +13,11 @@ export function createGitHubGistListTool(gh: GitHubClient): any {
     parameters: Type.Object({
       per_page: Type.Optional(Type.Number({ description: "Results per page.", default: 30 })),
       page: Type.Optional(Type.Number({ description: "Page number.", default: 1 })),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { per_page?: number; page?: number }) {
+    async execute(_toolCallId: string, params: { per_page?: number; page?: number; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -36,15 +39,18 @@ export function createGitHubGistListTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubGistGetTool(gh: GitHubClient): any {
+export function createGitHubGistGetTool(manager: GitHubClientManager): any {
   return {
     name: "github_gist_get",
     label: "GitHub Get Gist",
     description: "Get a gist by ID, including file contents.",
     parameters: Type.Object({
       gist_id: Type.String({ description: "Gist ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { gist_id: string }) {
+    async execute(_toolCallId: string, params: { gist_id: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -66,7 +72,7 @@ export function createGitHubGistGetTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubGistCreateTool(gh: GitHubClient): any {
+export function createGitHubGistCreateTool(manager: GitHubClientManager): any {
   return {
     name: "github_gist_create",
     label: "GitHub Create Gist",
@@ -79,11 +85,14 @@ export function createGitHubGistCreateTool(gh: GitHubClient): any {
         Type.Object({ content: Type.String({ description: "File content." }) }),
         { description: "Files to include: { filename: { content: '...' } }" },
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { description?: string; public?: boolean; files: Record<string, { content: string }> },
+      params: { description?: string; public?: boolean; files: Record<string, { content: string }>; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -99,7 +108,7 @@ export function createGitHubGistCreateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubGistUpdateTool(gh: GitHubClient): any {
+export function createGitHubGistUpdateTool(manager: GitHubClientManager): any {
   return {
     name: "github_gist_update",
     label: "GitHub Update Gist",
@@ -114,11 +123,14 @@ export function createGitHubGistUpdateTool(gh: GitHubClient): any {
           { description: "Files to update: { filename: { content: '...' } }" },
         ),
       ),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
     async execute(
       _toolCallId: string,
-      params: { gist_id: string; description?: string; files?: Record<string, { content: string }> },
+      params: { gist_id: string; description?: string; files?: Record<string, { content: string }>; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {
@@ -134,15 +146,18 @@ export function createGitHubGistUpdateTool(gh: GitHubClient): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGitHubGistDeleteTool(gh: GitHubClient): any {
+export function createGitHubGistDeleteTool(manager: GitHubClientManager): any {
   return {
     name: "github_gist_delete",
     label: "GitHub Delete Gist",
     description: "Delete a gist.",
     parameters: Type.Object({
       gist_id: Type.String({ description: "Gist ID." }),
+      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { gist_id: string }) {
+    async execute(_toolCallId: string, params: { gist_id: string; account?: string }) {
+      const account = params.account ?? "default";
+      const gh = manager.getClient(account);
       if (!gh.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const octokit = gh.getClient();
       try {

@@ -65,7 +65,7 @@ export function ConnectDialog({
       const res = await fetch("/api/auth/github", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token.trim() }),
+        body: JSON.stringify({ token: token.trim(), account: accountName.trim() || "default" }),
       });
 
       if (res.ok) {
@@ -92,7 +92,7 @@ export function ConnectDialog({
       const res = await fetch("/api/auth/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: token.trim() }),
+        body: JSON.stringify({ api_key: token.trim(), account: accountName.trim() || "default" }),
       });
 
       if (res.ok) {
@@ -119,7 +119,7 @@ export function ConnectDialog({
       const res = await fetch("/api/auth/wolfram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ app_id: token.trim() }),
+        body: JSON.stringify({ app_id: token.trim(), account: accountName.trim() || "default" }),
       });
 
       if (res.ok) {
@@ -191,6 +191,15 @@ export function ConnectDialog({
         {isGitHub ? (
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
+              <Label htmlFor="github-account">Account Name</Label>
+              <Input
+                id="github-account"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="e.g. default, work, personal"
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="github-token">Personal Access Token</Label>
               <Input
                 id="github-token"
@@ -210,15 +219,24 @@ export function ConnectDialog({
                   github.com/settings/tokens
                 </a>
               </p>
-              {existingAccounts.length > 0 && (
+              {existingAccounts.includes(accountName.trim()) && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                  This will replace the existing token.
+                  This will replace the existing &ldquo;{accountName.trim()}&rdquo; token.
                 </p>
               )}
             </div>
           </div>
         ) : isGemini ? (
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="gemini-account">Account Name</Label>
+              <Input
+                id="gemini-account"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="e.g. default, work, personal"
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="gemini-key">API Key</Label>
               <Input
@@ -239,15 +257,24 @@ export function ConnectDialog({
                   aistudio.google.com/apikey
                 </a>
               </p>
-              {existingAccounts.length > 0 && (
+              {existingAccounts.includes(accountName.trim()) && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                  This will replace the existing API key.
+                  This will replace the existing &ldquo;{accountName.trim()}&rdquo; API key.
                 </p>
               )}
             </div>
           </div>
         ) : isWolfram ? (
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="wolfram-account">Account Name</Label>
+              <Input
+                id="wolfram-account"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="e.g. default, work, personal"
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="wolfram-appid">AppID</Label>
               <Input
@@ -268,9 +295,9 @@ export function ConnectDialog({
                   developer.wolframalpha.com
                 </a>
               </p>
-              {existingAccounts.length > 0 && (
+              {existingAccounts.includes(accountName.trim()) && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                  This will replace the existing AppID.
+                  This will replace the existing &ldquo;{accountName.trim()}&rdquo; AppID.
                 </p>
               )}
             </div>
@@ -317,7 +344,7 @@ export function ConnectDialog({
         <DialogFooter>
           <Button
             onClick={isLinkedin ? handleLinkedinConnect : isWolfram ? handleWolframConnect : isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
-            disabled={isGitHub || isGemini || isWolfram ? !token.trim() || loading : !accountName.trim() || loading}
+            disabled={isGitHub || isGemini || isWolfram ? !token.trim() || !accountName.trim() || loading : !accountName.trim() || loading}
           >
             {loading
               ? isLinkedin ? "Waiting for login..." : isGitHub || isGemini || isWolfram ? "Saving..." : "Redirecting..."

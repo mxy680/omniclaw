@@ -115,8 +115,10 @@ import { createSoulWriteTool } from "../tools/soul-write.js";
 import { createViewAttachmentTool } from "../tools/attachment-view.js";
 import { ScheduleStore } from "../scheduler/schedule-store.js";
 import { loadAgentConfigs } from "./agent-config.js";
-import { GitHubClient } from "../auth/github-client.js";
-import { GeminiClient } from "../auth/gemini-client.js";
+import { GitHubClientManager } from "../auth/github-client-manager.js";
+import { ApiKeyStore } from "../auth/api-key-store.js";
+import { GeminiClientManager } from "../auth/gemini-client-manager.js";
+import { WolframClientManager } from "../auth/wolfram-client-manager.js";
 import { createGeminiAuthSetupTool } from "../tools/gemini-auth.js";
 import {
   createGeminiGenerateImageTool,
@@ -253,10 +255,9 @@ import {
   createGitHubSecretScanningAlertsTool,
   createGitHubSecurityAdvisoriesTool,
 } from "../tools/github-security.js";
-import { WolframClient } from "../auth/wolfram-client.js";
 import { createWolframQueryTool, createWolframQueryFullTool } from "../tools/wolfram-query.js";
 import { SessionStore } from "../auth/session-store.js";
-import { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
+import { LinkedinClientManager } from "../auth/linkedin-client-manager.js";
 import { createLinkedinAuthSetupTool } from "../tools/linkedin-auth.js";
 import {
   createLinkedinProfileGetTool,
@@ -416,7 +417,11 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
 
   // GitHub tools — gated on github_token being configured
   {
-    const gh = new GitHubClient(config.github_token);
+    const githubStore = new ApiKeyStore(
+      config.github_tokens_path ?? path.join(os.homedir(), ".openclaw", "github-keys.json"),
+    );
+    githubStore.migrateFromConfig(config.github_token);
+    const gh = new GitHubClientManager(githubStore);
 
     add(createGitHubAuthSetupTool(gh));
 
@@ -548,40 +553,49 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createGitHubSecurityAdvisoriesTool(gh));
   }
 
-  // Gemini tools — API key auth (like GitHub)
+  // Gemini tools — API key auth
   {
-    const gemini = new GeminiClient(config.gemini_api_key);
+    const geminiStore = new ApiKeyStore(
+      config.gemini_tokens_path ?? path.join(os.homedir(), ".openclaw", "gemini-keys.json"),
+    );
+    geminiStore.migrateFromConfig(config.gemini_api_key);
+    const geminiManager = new GeminiClientManager(geminiStore);
 
-    add(createGeminiAuthSetupTool(gemini));
-    add(createGeminiGenerateImageTool(gemini));
-    add(createGeminiImagenTool(gemini));
-    add(createGeminiGenerateVideoTool(gemini));
+    add(createGeminiAuthSetupTool(geminiManager));
+    add(createGeminiGenerateImageTool(geminiManager));
+    add(createGeminiImagenTool(geminiManager));
+    add(createGeminiGenerateVideoTool(geminiManager));
   }
 
   // Wolfram Alpha tools
   {
-    const wolfram = new WolframClient(config.wolfram_appid);
-    add(createWolframQueryTool(wolfram));
-    add(createWolframQueryFullTool(wolfram));
+    const wolframStore = new ApiKeyStore(
+      config.wolfram_tokens_path ?? path.join(os.homedir(), ".openclaw", "wolfram-keys.json"),
+    );
+    wolframStore.migrateFromConfig(config.wolfram_appid);
+    const wolframManager = new WolframClientManager(wolframStore);
+
+    add(createWolframQueryTool(wolframManager));
+    add(createWolframQueryFullTool(wolframManager));
   }
 
   // LinkedIn tools — session cookie auth
   {
     const sessionsPath = path.join(os.homedir(), ".openclaw", "linkedin-sessions.json");
     const linkedinSessionStore = new SessionStore(sessionsPath);
-    const linkedinClient = new LinkedinSessionClient(linkedinSessionStore);
+    const linkedinManager = new LinkedinClientManager(linkedinSessionStore);
 
-    add(createLinkedinAuthSetupTool(linkedinClient, linkedinSessionStore));
-    add(createLinkedinProfileGetTool(linkedinClient));
-    add(createLinkedinProfileViewTool(linkedinClient));
-    add(createLinkedinConnectionsListTool(linkedinClient));
-    add(createLinkedinSearchPeopleTool(linkedinClient));
-    add(createLinkedinPostListTool(linkedinClient));
-    add(createLinkedinPostCreateTool(linkedinClient));
-    add(createLinkedinPostLikeTool(linkedinClient));
-    add(createLinkedinPostCommentTool(linkedinClient));
-    add(createLinkedinMessagesListTool(linkedinClient));
-    add(createLinkedinMessagesSendTool(linkedinClient));
+    add(createLinkedinAuthSetupTool(linkedinManager));
+    add(createLinkedinProfileGetTool(linkedinManager));
+    add(createLinkedinProfileViewTool(linkedinManager));
+    add(createLinkedinConnectionsListTool(linkedinManager));
+    add(createLinkedinSearchPeopleTool(linkedinManager));
+    add(createLinkedinPostListTool(linkedinManager));
+    add(createLinkedinPostCreateTool(linkedinManager));
+    add(createLinkedinPostLikeTool(linkedinManager));
+    add(createLinkedinPostCommentTool(linkedinManager));
+    add(createLinkedinMessagesListTool(linkedinManager));
+    add(createLinkedinMessagesSendTool(linkedinManager));
   }
 
   return tools;

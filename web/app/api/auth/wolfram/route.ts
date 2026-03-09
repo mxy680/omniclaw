@@ -5,6 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const appId = body.app_id;
+    const account = body.account ?? "default";
 
     if (!appId || typeof appId !== "string") {
       return NextResponse.json(
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    setWolframAppId(appId);
+    setWolframAppId(appId, account);
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

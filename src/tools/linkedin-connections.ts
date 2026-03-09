@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
+import type { LinkedinClientManager } from "../auth/linkedin-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("linkedin");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinConnectionsListTool(client: LinkedinSessionClient): any {
+export function createLinkedinConnectionsListTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_connections_list",
     label: "LinkedIn Connections List",
@@ -25,6 +25,8 @@ export function createLinkedinConnectionsListTool(client: LinkedinSessionClient)
       _toolCallId: string,
       params: { start?: number; count?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const start = params.start ?? 0;

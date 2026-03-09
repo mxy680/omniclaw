@@ -1,9 +1,9 @@
 import { Type } from "@sinclair/typebox";
-import type { GeminiClient } from "../auth/gemini-client.js";
+import type { GeminiClientManager } from "../auth/gemini-client-manager.js";
 import { jsonResult } from "./shared.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createGeminiAuthSetupTool(client: GeminiClient): any {
+export function createGeminiAuthSetupTool(manager: GeminiClientManager): any {
   return {
     name: "gemini_auth_setup",
     label: "Gemini Auth Setup",
@@ -13,9 +13,13 @@ export function createGeminiAuthSetupTool(client: GeminiClient): any {
       api_key: Type.String({
         description: "Gemini API key from Google AI Studio.",
       }),
+      account: Type.Optional(
+        Type.String({ description: "Account name. Defaults to 'default'.", default: "default" }),
+      ),
     }),
-    async execute(_toolCallId: string, params: { api_key: string }) {
-      client.setApiKey(params.api_key);
+    async execute(_toolCallId: string, params: { api_key: string; account?: string }) {
+      const account = params.account ?? "default";
+      const client = manager.setApiKey(account, params.api_key);
       const ai = client.getClient();
       try {
         const response = await ai.models.generateContent({

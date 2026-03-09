@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
+import type { LinkedinClientManager } from "../auth/linkedin-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("linkedin");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinProfileGetTool(client: LinkedinSessionClient): any {
+export function createLinkedinProfileGetTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_profile_get",
     label: "LinkedIn Profile Get",
@@ -16,6 +16,8 @@ export function createLinkedinProfileGetTool(client: LinkedinSessionClient): any
       ),
     }),
     async execute(_toolCallId: string, params: { account?: string }) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const profile = await client.request<Record<string, unknown>>({
@@ -39,7 +41,7 @@ export function createLinkedinProfileGetTool(client: LinkedinSessionClient): any
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinProfileViewTool(client: LinkedinSessionClient): any {
+export function createLinkedinProfileViewTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_profile_view",
     label: "LinkedIn Profile View",
@@ -58,6 +60,8 @@ export function createLinkedinProfileViewTool(client: LinkedinSessionClient): an
       _toolCallId: string,
       params: { public_id: string; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const profile = await client.request<Record<string, unknown>>({

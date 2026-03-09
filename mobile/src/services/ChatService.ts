@@ -230,6 +230,18 @@ export class ChatService {
     }
 
     if (json.type === 'res') {
+      if (json.ok === false) {
+        // chat.send was rejected (e.g. missing scope)
+        const err = json.error as Record<string, unknown> | undefined;
+        const errMsg = (err?.message as string) ?? 'Request rejected by server';
+        this.isStreaming = false;
+        this.currentRunId = null;
+        this.notifyStateChange();
+        const cb = this.callbacks;
+        this.callbacks = null;
+        cb?.onError(new Error(errMsg));
+        return;
+      }
       // Extract runId from the chat.send response
       const payload = json.payload as Record<string, unknown> | undefined;
       if (payload?.runId) {

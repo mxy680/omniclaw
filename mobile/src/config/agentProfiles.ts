@@ -18,4 +18,9 @@ export const agentProfiles: Record<string, AgentProfile> = {
     avatarIcon: 'material:gmail',
     avatarColor: '#EA4335',
   },
+  'gitbot': {
+    description: 'Manages your GitHub profile, repos & activity',
+    avatarIcon: 'material:github',
+    avatarColor: '#238636',
+  },
 };

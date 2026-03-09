@@ -38,6 +38,7 @@ import {
   loadAgentSoul,
   filterToolsForAgent,
   ensureAgentWorkspaces,
+  syncAgentsToGateway,
   type AgentConfig,
 } from "./mcp/agent-config.js";
 import { SchedulerService, type ScheduleJob } from "./scheduler/index.js";
@@ -56,8 +57,9 @@ const toolMap = new Map<string, OmniclawTool>(allTools.map((t) => [t.name, t]));
 const agentsFile = loadAgentConfigs(config.agentsPath);
 const agentMap = new Map<string, AgentConfig>(agentsFile.agents.map((a) => [a.id, a]));
 
-// Ensure workspace directories exist
+// Ensure workspace directories exist and sync agents to Gateway config
 ensureAgentWorkspaces(agentsFile.agents);
+syncAgentsToGateway(agentsFile.agents);
 
 // ---------------------------------------------------------------------------
 // Session store: session ID → { transport, agentId }

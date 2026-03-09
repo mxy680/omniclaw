@@ -184,6 +184,52 @@ const DEFAULT_SOUL_TEMPLATE = `# Soul
 <!-- Any rules, constraints, or preferences {{name}} should follow? -->
 `;
 
+// ---------------------------------------------------------------------------
+// Gateway sync — keep openclaw.json agents.list in sync with agents.json
+// ---------------------------------------------------------------------------
+
+export function syncAgentsToGateway(agents: AgentConfig[]): void {
+  const configPath = path.join(os.homedir(), ".openclaw", "openclaw.json");
+  if (!fs.existsSync(configPath)) return;
+
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  } catch {
+    return;
+  }
+
+  const agentsSection = (config.agents ?? {}) as Record<string, unknown>;
+  const existingList = (agentsSection.list ?? []) as Array<Record<string, unknown>>;
+  const existingById = new Map(existingList.map((a) => [a.id as string, a]));
+
+  const synced = agents.map((a) => {
+    const existing = existingById.get(a.id);
+    // Build deny globs from services NOT in the agent's permissions
+    const denyGlobs = VALID_SERVICES
+      .filter((svc) => svc !== "schedule" && !a.permissions.services.includes(svc))
+      .map((svc) => `${svc}_*`);
+    const denyTools = a.permissions.denyTools ?? [];
+
+    return {
+      // Preserve any existing Gateway-specific fields (model overrides, etc.)
+      ...(existing ?? {}),
+      id: a.id,
+      name: a.name,
+      workspace: a.workspace,
+      agentDir: path.join(a.workspace, "agent"),
+      skills: a.permissions.services,
+      ...(denyGlobs.length > 0 || denyTools.length > 0
+        ? { tools: { deny: [...denyGlobs, ...denyTools] } }
+        : {}),
+    };
+  });
+
+  agentsSection.list = synced;
+  config.agents = agentsSection;
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
+}
+
 export function loadAgentSoul(agent: AgentConfig): string | null {
   const soulPath = path.join(agent.workspace, "soul.md");
   if (!fs.existsSync(soulPath)) return null;

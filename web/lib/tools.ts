@@ -80,13 +80,20 @@ function loadToolMetadata(registryPath: string): ToolInfo[] {
     process.stdout.write(JSON.stringify(out));
   `;
 
-  const result = execFileSync("node", ["--input-type=module", "-e", script], {
-    stdio: ["pipe", "pipe", "pipe"],
-    timeout: 15_000,
-    env: { ...process.env, NODE_NO_WARNINGS: "1" },
-  });
+  try {
+    const result = execFileSync("node", ["--input-type=module", "-e", script], {
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: 15_000,
+      env: { ...process.env, NODE_NO_WARNINGS: "1" },
+    });
 
-  return JSON.parse(result.toString("utf-8"));
+    return JSON.parse(result.toString("utf-8"));
+  } catch (err: unknown) {
+    const execErr = err as { stderr?: Buffer; status?: number };
+    const stderr = execErr.stderr?.toString?.() ?? "";
+    console.error("[tools] Subprocess failed (exit", execErr.status + "):", stderr.slice(0, 500));
+    throw new Error(`Tool registry subprocess failed: ${stderr.split("\n")[0] || "unknown error"}`);
+  }
 }
 
 function buildServiceMap(tools: ToolInfo[]) {

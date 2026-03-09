@@ -49,7 +49,8 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [serviceTools, setServiceTools] = useState<Record<string, ServiceToolsData>>({});
-  const [toolsLoading, setToolsLoading] = useState(false);
+  const [toolsLoading, setToolsLoading] = useState(true);
+  const [toolsError, setToolsError] = useState<string | null>(null);
   const [testingAllServices, setTestingAllServices] = useState(false);
   const panelRefs = useRef<Map<string, ServiceTestPanelHandle>>(new Map());
 
@@ -71,16 +72,24 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
   }, [provider.available, provider.id]);
 
   const fetchTools = useCallback(async () => {
-    if (!provider.available) return;
+    if (!provider.available) {
+      setToolsLoading(false);
+      return;
+    }
     setToolsLoading(true);
+    setToolsError(null);
     try {
       const res = await fetch("/api/tools");
       const data = await res.json();
       if (data.services) {
         setServiceTools(data.services);
+      } else if (data.error) {
+        console.error("[tools] API error:", data.error);
+        setToolsError(data.error);
       }
-    } catch {
-      // Tools are optional — don't toast on failure
+    } catch (err) {
+      console.error("[tools] fetch failed:", err);
+      setToolsError(err instanceof Error ? err.message : "Failed to fetch tools");
     } finally {
       setToolsLoading(false);
     }
@@ -274,10 +283,18 @@ export function ProviderDetail({ provider }: ProviderDetailProps) {
                 })}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-border/50 p-8 text-center">
+              <div className="rounded-xl border border-dashed border-border/50 p-8 text-center space-y-2">
                 <p className="text-[13px] text-muted-foreground">
-                  Run <code className="rounded bg-muted px-1.5 py-0.5 text-[12px]">pnpm build</code> first to load tool definitions.
+                  {toolsError
+                    ? `Failed to load tools: ${toolsError}`
+                    : <>Run <code className="rounded bg-muted px-1.5 py-0.5 text-[12px]">pnpm build</code> first to load tool definitions.</>}
                 </p>
+                <button
+                  onClick={fetchTools}
+                  className="text-[12px] text-primary hover:underline"
+                >
+                  Retry
+                </button>
               </div>
             )}
           </section>

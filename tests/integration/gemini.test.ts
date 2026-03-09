@@ -12,7 +12,8 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { existsSync, statSync, rmSync, mkdirSync } from "fs";
 import * as path from "path";
 import * as os from "os";
-import { GeminiClient } from "../../src/auth/gemini-client.js";
+import { ApiKeyStore } from "../../src/auth/api-key-store.js";
+import { GeminiClientManager } from "../../src/auth/gemini-client-manager.js";
 import { createGeminiAuthSetupTool } from "../../src/tools/gemini-auth.js";
 import {
   createGeminiGenerateImageTool,
@@ -36,21 +37,24 @@ if (!hasKey) {
 
 // Temp directory for generated files
 const SAVE_DIR = path.join(os.tmpdir(), `gemini-integration-test-${Date.now()}`);
+const STORE_PATH = path.join(os.tmpdir(), `gemini-test-keys-${Date.now()}.json`);
 
 // ---------------------------------------------------------------------------
-let client: GeminiClient;
+let manager: GeminiClientManager;
 
 describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
   beforeAll(() => {
-    client = new GeminiClient(GEMINI_API_KEY);
+    const store = new ApiKeyStore(STORE_PATH);
+    store.set("default", GEMINI_API_KEY);
+    manager = new GeminiClientManager(store);
     mkdirSync(SAVE_DIR, { recursive: true });
   });
 
   afterAll(() => {
-    // Clean up generated files
     if (existsSync(SAVE_DIR)) {
       rmSync(SAVE_DIR, { recursive: true, force: true });
     }
+    try { rmSync(STORE_PATH); } catch { /* ignore */ }
   });
 
   // -------------------------------------------------------------------------
@@ -58,7 +62,7 @@ describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
   // -------------------------------------------------------------------------
   describe("gemini_auth_setup", () => {
     it("validates the API key", async () => {
-      const tool = createGeminiAuthSetupTool(client);
+      const tool = createGeminiAuthSetupTool(manager);
       const result = await tool.execute("t", { api_key: GEMINI_API_KEY });
 
       expect(result.details).not.toHaveProperty("error");
@@ -66,8 +70,9 @@ describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
     });
 
     it("rejects an invalid API key", async () => {
-      const badClient = new GeminiClient();
-      const tool = createGeminiAuthSetupTool(badClient);
+      const badStore = new ApiKeyStore(path.join(os.tmpdir(), `gemini-bad-${Date.now()}.json`));
+      const badManager = new GeminiClientManager(badStore);
+      const tool = createGeminiAuthSetupTool(badManager);
       const result = await tool.execute("t", { api_key: "invalid-key-12345" });
 
       expect(result.details).toHaveProperty("error", "auth_failed");
@@ -79,7 +84,7 @@ describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
   // -------------------------------------------------------------------------
   describe("gemini_generate_image", () => {
     it("generates an image and saves to disk", async () => {
-      const tool = createGeminiGenerateImageTool(client);
+      const tool = createGeminiGenerateImageTool(manager);
       const result = await tool.execute("t", {
         prompt: "A simple red circle on a white background",
         save_dir: SAVE_DIR,
@@ -96,8 +101,9 @@ describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
     });
 
     it("returns auth_required when not authenticated", async () => {
-      const noAuthClient = new GeminiClient();
-      const tool = createGeminiGenerateImageTool(noAuthClient);
+      const emptyStore = new ApiKeyStore(path.join(os.tmpdir(), `gemini-empty-${Date.now()}.json`));
+      const emptyManager = new GeminiClientManager(emptyStore);
+      const tool = createGeminiGenerateImageTool(emptyManager);
       const result = await tool.execute("t", {
         prompt: "test",
         save_dir: SAVE_DIR,
@@ -112,7 +118,7 @@ describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
   // -------------------------------------------------------------------------
   describe("gemini_imagen", () => {
     it("generates an image with Imagen and saves to disk", async () => {
-      const tool = createGeminiImagenTool(client);
+      const tool = createGeminiImagenTool(manager);
       const result = await tool.execute("t", {
         prompt: "A simple blue square on a white background",
         save_dir: SAVE_DIR,
@@ -130,7 +136,7 @@ describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
     });
 
     it("generates multiple images", async () => {
-      const tool = createGeminiImagenTool(client);
+      const tool = createGeminiImagenTool(manager);
       const result = await tool.execute("t", {
         prompt: "A green triangle on a white background",
         save_dir: SAVE_DIR,
@@ -156,7 +162,7 @@ describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
     { timeout: 600_000 },
     () => {
       it("generates a video and saves to disk", async () => {
-        const tool = createGeminiGenerateVideoTool(client);
+        const tool = createGeminiGenerateVideoTool(manager);
         const result = await tool.execute("t", {
           prompt: "A slow pan across a calm lake at sunrise",
           save_dir: SAVE_DIR,

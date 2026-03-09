@@ -13,8 +13,12 @@
  *   GITHUB_TEST_REPO     repo name   (default: "Hello-World")
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
-import { GitHubClient } from "../../src/auth/github-client.js";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { join } from "path";
+import { tmpdir } from "os";
+import { rmSync } from "fs";
+import { ApiKeyStore } from "../../src/auth/api-key-store.js";
+import { GitHubClientManager } from "../../src/auth/github-client-manager.js";
 
 // Read-only tool imports
 import { createGitHubAuthSetupTool } from "../../src/tools/github-auth.js";
@@ -67,11 +71,18 @@ if (!hasToken) {
 }
 
 // ---------------------------------------------------------------------------
-let gh: GitHubClient;
+const storePath = join(tmpdir(), `github-test-keys-${Date.now()}.json`);
+let gh: GitHubClientManager;
 
 describe.skipIf(!hasToken)("GitHub API integration", { timeout: 30_000 }, () => {
   beforeAll(() => {
-    gh = new GitHubClient(GITHUB_TOKEN);
+    const store = new ApiKeyStore(storePath);
+    store.set("default", GITHUB_TOKEN);
+    gh = new GitHubClientManager(store);
+  });
+
+  afterAll(() => {
+    try { rmSync(storePath); } catch { /* ignore */ }
   });
 
   // -------------------------------------------------------------------------

@@ -40,13 +40,9 @@ export class ChatService {
   }
 
   async connect(config: ServerConfig): Promise<void> {
-    // Load device identity (generates Ed25519 keypair on first use)
-    let deviceKeys: DeviceKeys | null = null;
-    try {
-      deviceKeys = await getDeviceIdentity();
-    } catch {
-      // Device auth unavailable — connect with token only (read scope)
-    }
+    // Skip device signing — the gateway grants full scopes with token-only
+    // auth in local mode. Device auth is only needed for remote/tunnel access.
+    const deviceKeys: DeviceKeys | null = null;
 
     return new Promise((resolve, reject) => {
       if (this.ws) {

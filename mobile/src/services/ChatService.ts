@@ -40,9 +40,14 @@ export class ChatService {
   }
 
   async connect(config: ServerConfig): Promise<void> {
-    // Skip device signing — the gateway grants full scopes with token-only
-    // auth in local mode. Device auth is only needed for remote/tunnel access.
-    const deviceKeys: DeviceKeys | null = null;
+    // Device auth is required for write scope. The Gateway auto-pairs
+    // local clients, so this works on both device and simulator.
+    let deviceKeys: DeviceKeys | null = null;
+    try {
+      deviceKeys = await getDeviceIdentity();
+    } catch {
+      // Crypto unavailable — will connect with read-only scope
+    }
 
     return new Promise((resolve, reject) => {
       if (this.ws) {

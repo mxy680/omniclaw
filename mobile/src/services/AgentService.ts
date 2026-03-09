@@ -19,7 +19,12 @@ export async function fetchAgents(config: AgentServiceConfig): Promise<Agent[]> 
   const { host, port, authToken, useTLS } = config;
   if (!host) return [];
 
-  const deviceKeys = null; // device auth disabled — token-only for local mode
+  let deviceKeys: Awaited<ReturnType<typeof getDeviceIdentity>> | null = null;
+  try {
+    deviceKeys = await getDeviceIdentity();
+  } catch {
+    // Crypto unavailable
+  }
   const scopes = ['operator.read', 'operator.write'];
 
   return new Promise((resolve, reject) => {

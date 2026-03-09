@@ -1,7 +1,5 @@
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { ChatSendFrame, ChatAbortFrame } from '../types/protocol';
-import { getDeviceIdentity, signChallenge, type DeviceKeys } from './DeviceIdentity';
 
 export interface ServerConfig {
   host: string;
@@ -41,11 +39,6 @@ export class ChatService {
   }
 
   async connect(config: ServerConfig): Promise<void> {
-    // Load device identity (generates Ed25519 keypair on first use)
-    // Skip device signing on simulator — crypto can be unreliable there
-    const isSimulator = !Constants.isDevice;
-    const deviceKeys = isSimulator ? null : await getDeviceIdentity();
-
     return new Promise((resolve, reject) => {
       if (this.ws) {
         this.ws.onclose = null;
@@ -80,33 +73,25 @@ export class ChatService {
           return;
         }
 
-        // Wait for connect.challenge event, then sign and send connect frame
+        // Send connect frame (token-only, no device auth)
         if (json.type === 'event' && json.event === 'connect.challenge') {
-          const payload = json.payload as { nonce: string };
-
-          const connectParams: Record<string, unknown> = {
-            minProtocol: 3,
-            maxProtocol: 3,
-            client: {
-              id: Platform.OS === 'ios' ? 'openclaw-ios' : 'openclaw-android',
-              version: '1.0.0',
-              platform: Platform.OS,
-              mode: 'ui',
-            },
-            role: 'operator',
-            scopes,
-            auth: { token: authToken },
-          };
-
-          if (deviceKeys) {
-            connectParams.device = signChallenge(deviceKeys, payload.nonce, authToken, scopes);
-          }
-
           ws.send(JSON.stringify({
             type: 'req',
             id: this.nextId(),
             method: 'connect',
-            params: connectParams,
+            params: {
+              minProtocol: 3,
+              maxProtocol: 3,
+              client: {
+                id: 'openclaw-control-ui',
+                version: '1.0.0',
+                platform: Platform.OS,
+                mode: 'ui',
+              },
+              role: 'operator',
+              scopes,
+              auth: { token: authToken },
+            },
           }));
           return;
         }
@@ -230,6 +215,18 @@ export class ChatService {
     }
 
     if (json.type === 'res') {
+      if (json.ok === false) {
+        // chat.send was rejected (e.g. missing scope)
+        const err = json.error as Record<string, unknown> | undefined;
+        const errMsg = (err?.message as string) ?? 'Request rejected by server';
+        this.isStreaming = false;
+        this.currentRunId = null;
+        this.notifyStateChange();
+        const cb = this.callbacks;
+        this.callbacks = null;
+        cb?.onError(new Error(errMsg));
+        return;
+      }
       // Extract runId from the chat.send response
       const payload = json.payload as Record<string, unknown> | undefined;
       if (payload?.runId) {

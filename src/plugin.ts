@@ -2,7 +2,7 @@
 type OpenClawPluginApi = any;
 import type { PluginConfig } from "./types/plugin-config.js";
 import { createAllTools } from "./mcp/tool-registry.js";
-import { loadAgentConfigs, isToolAllowed } from "./mcp/agent-config.js";
+import { loadAgentConfigs, isToolAllowed, syncAgentsToGateway } from "./mcp/agent-config.js";
 
 export function register(api: OpenClawPluginApi): void {
   const config = (api.pluginConfig ?? {}) as unknown as PluginConfig;
@@ -12,8 +12,11 @@ export function register(api: OpenClawPluginApi): void {
     api.registerTool(tool);
   }
 
-  // Per-agent tool permissions: block tool calls not allowed by the agent's config
+  // Sync agents.json → openclaw.json so the Gateway always has the latest list
   const agentsFile = loadAgentConfigs();
+  syncAgentsToGateway(agentsFile.agents);
+
+  // Per-agent tool permissions: block tool calls not allowed by the agent's config
   const agentMap = new Map(agentsFile.agents.map((a) => [a.id, a]));
 
   if (agentMap.size > 0) {

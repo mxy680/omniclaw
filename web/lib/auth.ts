@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { dirname } from "path";
+import { dirname, join } from "path";
+import { homedir } from "os";
 import { google } from "googleapis";
 import type { Credentials } from "google-auth-library";
 import { getClientSecretPath, getTokensPath, getConfig, updateConfig } from "./config";
@@ -90,107 +91,92 @@ export function deleteTokens(account: string): boolean {
   return true;
 }
 
-export interface AccountInfo {
-  name: string;
-  email: string | null;
-  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin";
-  hasTokens: boolean;
-  isExpired: boolean;
+// ---------------------------------------------------------------------------
+// API key store helpers (GitHub, Gemini, Wolfram)
+// ---------------------------------------------------------------------------
+
+interface ApiKeyFile {
+  [account: string]: string;
 }
 
-export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
-  const accounts: AccountInfo[] = [];
+const GITHUB_KEYS_PATH = join(homedir(), ".openclaw", "github-keys.json");
+const GEMINI_KEYS_PATH = join(homedir(), ".openclaw", "gemini-keys.json");
+const WOLFRAM_KEYS_PATH = join(homedir(), ".openclaw", "wolfram-keys.json");
 
-  if (!provider || provider === "google-workspace") {
-    const data = loadTokens();
-    for (const [name, tokens] of Object.entries(data)) {
-      const email = await getEmailForTokens(tokens);
-      const isExpired = tokens.expiry_date
-        ? Date.now() > tokens.expiry_date
-        : false;
-      accounts.push({
-        name,
-        email,
-        provider: "google",
-        hasTokens: true,
-        isExpired: !tokens.refresh_token && isExpired,
-      });
-    }
-  }
-
-  if (!provider || provider === "github") {
-    const ghAccount = getGitHubAccount();
-    if (ghAccount) accounts.push(ghAccount);
-  }
-
-  if (!provider || provider === "gemini") {
-    const geminiAccount = getGeminiAccount();
-    if (geminiAccount) accounts.push(geminiAccount);
-  }
-
-  if (!provider || provider === "wolfram-alpha") {
-    const wolframAccount = getWolframAccount();
-    if (wolframAccount) accounts.push(wolframAccount);
-  }
-
-  if (!provider || provider === "linkedin") {
-    const linkedinAccounts = getLinkedinAccounts();
-    accounts.push(...linkedinAccounts);
-  }
-
-  return accounts;
-}
-
-function getGitHubAccount(): AccountInfo | null {
+function loadApiKeys(storePath: string): ApiKeyFile {
+  if (!existsSync(storePath)) return {};
   try {
-    const config = getConfig();
-    if (!config.github_token) return null;
-    return {
-      name: "default",
-      email: null,
-      provider: "github",
-      hasTokens: true,
-      isExpired: false,
-    };
+    return JSON.parse(readFileSync(storePath, "utf-8")) as ApiKeyFile;
   } catch {
-    return null;
+    return {};
   }
 }
 
-function getGeminiAccount(): AccountInfo | null {
-  try {
-    const config = getConfig();
-    if (!config.gemini_api_key) return null;
-    return {
-      name: "default",
-      email: null,
-      provider: "gemini",
-      hasTokens: true,
-      isExpired: false,
-    };
-  } catch {
-    return null;
+function saveApiKeys(storePath: string, data: ApiKeyFile): void {
+  const dir = dirname(storePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
   }
+  writeFileSync(storePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
-function getWolframAccount(): AccountInfo | null {
-  try {
-    const config = getConfig();
-    if (!config.wolfram_appid) return null;
-    return {
-      name: "default",
-      email: null,
-      provider: "wolfram",
-      hasTokens: true,
-      isExpired: false,
-    };
-  } catch {
-    return null;
-  }
+function setApiKey(storePath: string, account: string, key: string): void {
+  const data = loadApiKeys(storePath);
+  data[account] = key;
+  saveApiKeys(storePath, data);
 }
 
-import { join } from "path";
-import { homedir } from "os";
+function deleteApiKey(storePath: string, account: string): boolean {
+  const data = loadApiKeys(storePath);
+  if (!(account in data)) return false;
+  delete data[account];
+  saveApiKeys(storePath, data);
+  return true;
+}
+
+function listApiKeyAccounts(storePath: string): string[] {
+  return Object.keys(loadApiKeys(storePath));
+}
+
+// ---------------------------------------------------------------------------
+// GitHub
+// ---------------------------------------------------------------------------
+
+export function setGitHubToken(token: string, account = "default"): void {
+  setApiKey(GITHUB_KEYS_PATH, account, token);
+}
+
+export function revokeGitHubToken(account: string): boolean {
+  return deleteApiKey(GITHUB_KEYS_PATH, account);
+}
+
+// ---------------------------------------------------------------------------
+// Gemini
+// ---------------------------------------------------------------------------
+
+export function setGeminiApiKey(apiKey: string, account = "default"): void {
+  setApiKey(GEMINI_KEYS_PATH, account, apiKey);
+}
+
+export function revokeGeminiApiKey(account: string): boolean {
+  return deleteApiKey(GEMINI_KEYS_PATH, account);
+}
+
+// ---------------------------------------------------------------------------
+// Wolfram
+// ---------------------------------------------------------------------------
+
+export function setWolframAppId(appId: string, account = "default"): void {
+  setApiKey(WOLFRAM_KEYS_PATH, account, appId);
+}
+
+export function revokeWolframAppId(account: string): boolean {
+  return deleteApiKey(WOLFRAM_KEYS_PATH, account);
+}
+
+// ---------------------------------------------------------------------------
+// LinkedIn
+// ---------------------------------------------------------------------------
 
 const LINKEDIN_SESSIONS_PATH = join(homedir(), ".openclaw", "linkedin-sessions.json");
 
@@ -230,50 +216,98 @@ export function revokeLinkedinSession(account: string): boolean {
   }
 }
 
-export function setWolframAppId(appId: string): void {
-  updateConfig({ wolfram_appid: appId });
+// ---------------------------------------------------------------------------
+// Account listing
+// ---------------------------------------------------------------------------
+
+export interface AccountInfo {
+  name: string;
+  email: string | null;
+  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin";
+  hasTokens: boolean;
+  isExpired: boolean;
 }
 
-export function revokeWolframAppId(): boolean {
-  try {
-    const config = getConfig();
-    if (!config.wolfram_appid) return false;
-    updateConfig({ wolfram_appid: undefined });
-    return true;
-  } catch {
-    return false;
+export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
+  const accounts: AccountInfo[] = [];
+
+  if (!provider || provider === "google-workspace") {
+    const data = loadTokens();
+    for (const [name, tokens] of Object.entries(data)) {
+      const email = await getEmailForTokens(tokens);
+      const isExpired = tokens.expiry_date
+        ? Date.now() > tokens.expiry_date
+        : false;
+      accounts.push({
+        name,
+        email,
+        provider: "google",
+        hasTokens: true,
+        isExpired: !tokens.refresh_token && isExpired,
+      });
+    }
   }
-}
 
-export function setGeminiApiKey(apiKey: string): void {
-  updateConfig({ gemini_api_key: apiKey });
-}
-
-export function revokeGeminiApiKey(): boolean {
-  try {
-    const config = getConfig();
-    if (!config.gemini_api_key) return false;
-    updateConfig({ gemini_api_key: undefined });
-    return true;
-  } catch {
-    return false;
+  if (!provider || provider === "github") {
+    const names = listApiKeyAccounts(GITHUB_KEYS_PATH);
+    if (names.length > 0) {
+      for (const name of names) {
+        accounts.push({ name, email: null, provider: "github", hasTokens: true, isExpired: false });
+      }
+    } else {
+      // Fallback: check legacy config for pre-migration display
+      try {
+        const config = getConfig();
+        if (config.github_token) {
+          accounts.push({ name: "default", email: null, provider: "github", hasTokens: true, isExpired: false });
+        }
+      } catch { /* no config */ }
+    }
   }
-}
 
-export function setGitHubToken(token: string): void {
-  updateConfig({ github_token: token });
-}
-
-export function revokeGitHubToken(): boolean {
-  try {
-    const config = getConfig();
-    if (!config.github_token) return false;
-    updateConfig({ github_token: undefined });
-    return true;
-  } catch {
-    return false;
+  if (!provider || provider === "gemini") {
+    const names = listApiKeyAccounts(GEMINI_KEYS_PATH);
+    if (names.length > 0) {
+      for (const name of names) {
+        accounts.push({ name, email: null, provider: "gemini", hasTokens: true, isExpired: false });
+      }
+    } else {
+      try {
+        const config = getConfig();
+        if (config.gemini_api_key) {
+          accounts.push({ name: "default", email: null, provider: "gemini", hasTokens: true, isExpired: false });
+        }
+      } catch { /* no config */ }
+    }
   }
+
+  if (!provider || provider === "wolfram-alpha") {
+    const names = listApiKeyAccounts(WOLFRAM_KEYS_PATH);
+    if (names.length > 0) {
+      for (const name of names) {
+        accounts.push({ name, email: null, provider: "wolfram", hasTokens: true, isExpired: false });
+      }
+    } else {
+      try {
+        const config = getConfig();
+        if (config.wolfram_appid) {
+          accounts.push({ name: "default", email: null, provider: "wolfram", hasTokens: true, isExpired: false });
+        }
+      } catch { /* no config */ }
+    }
+  }
+
+  if (!provider || provider === "linkedin") {
+    const linkedinAccounts = getLinkedinAccounts();
+    accounts.push(...linkedinAccounts);
+  }
+
+  return accounts;
 }
+
+// ---------------------------------------------------------------------------
+// Google token revocation
+// ---------------------------------------------------------------------------
 
 export async function revokeTokens(account: string): Promise<boolean> {
   const data = loadTokens();

@@ -5,6 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const apiKey = body.api_key;
+    const account = body.account ?? "default";
 
     if (!apiKey || typeof apiKey !== "string") {
       return NextResponse.json(
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    setGeminiApiKey(apiKey);
+    setGeminiApiKey(apiKey, account);
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

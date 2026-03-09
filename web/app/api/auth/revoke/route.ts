@@ -16,11 +16,11 @@ export async function POST(request: NextRequest) {
 
     let deleted: boolean;
     if (provider === "github") {
-      deleted = revokeGitHubToken();
+      deleted = revokeGitHubToken(account);
     } else if (provider === "gemini") {
-      deleted = revokeGeminiApiKey();
+      deleted = revokeGeminiApiKey(account);
     } else if (provider === "wolfram-alpha") {
-      deleted = revokeWolframAppId();
+      deleted = revokeWolframAppId(account);
     } else if (provider === "linkedin") {
       deleted = revokeLinkedinSession(account);
     } else {

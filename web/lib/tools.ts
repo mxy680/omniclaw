@@ -1,4 +1,6 @@
 import { resolve } from "node:path";
+import { existsSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { getConfig } from "./config";
 
 interface ToolInfo {
@@ -42,34 +44,59 @@ const SERVICE_NAMES: Record<string, string> = {
 };
 
 let cached: ToolRegistry | null = null;
+let cachedMtime = 0;
 
-export async function getToolRegistry(): Promise<ToolRegistry> {
-  if (cached) return cached;
+function getRegistryPath() {
+  const projectRoot = resolve(process.cwd(), "..");
+  return resolve(projectRoot, "dist", "mcp", "tool-registry.js");
+}
 
-  // Resolve absolute path to compiled tool registry
-  // process.cwd() = web/, so go up one level to project root
-  const registryPath = resolve(process.cwd(), "..", "dist", "mcp", "tool-registry.js");
+function ensureBuilt(registryPath: string) {
+  if (existsSync(registryPath)) return;
+  const projectRoot = resolve(process.cwd(), "..");
+  try {
+    execFileSync("npx", ["tsc"], { cwd: projectRoot, stdio: "pipe", timeout: 30_000 });
+  } catch {
+    // If build fails, fall through — the import below will throw a clearer error
+  }
+}
 
-  // Dynamic import with webpackIgnore comment to prevent bundling
-  const mod = await import(/* webpackIgnore: true */ registryPath);
-  const { createAllTools } = mod as {
-    createAllTools: (opts: { pluginConfig: { client_secret_path: string; tokens_path?: string; oauth_port?: number } }) => OmniclawTool[];
-  };
-
+/**
+ * Load tool metadata by spawning a fresh Node process.
+ * This avoids Next.js / Node ESM module cache issues that cause stale tool lists
+ * when `dist/` is rebuilt without restarting the dev server.
+ */
+function loadToolMetadata(registryPath: string): ToolInfo[] {
   const config = getConfig();
-  const tools = createAllTools({ pluginConfig: config });
+  const script = `
+    import { createAllTools } from ${JSON.stringify("file://" + registryPath)};
+    const tools = createAllTools({ pluginConfig: ${JSON.stringify(config)} });
+    const out = tools.map(t => ({
+      name: t.name,
+      label: t.label,
+      description: t.description,
+      parameters: t.parameters,
+    }));
+    process.stdout.write(JSON.stringify(out));
+  `;
 
-  // Build service map, filtering out auth_setup tools
+  const result = execFileSync("node", ["--input-type=module", "-e", script], {
+    stdio: ["pipe", "pipe", "pipe"],
+    timeout: 15_000,
+    env: { ...process.env, NODE_NO_WARNINGS: "1" },
+  });
+
+  return JSON.parse(result.toString("utf-8"));
+}
+
+function buildServiceMap(tools: ToolInfo[]) {
   const services: Record<string, ServiceTools> = {};
-  const toolMap = new Map<string, OmniclawTool>();
 
   for (const tool of tools) {
     if (tool.name.endsWith("_auth_setup")) continue;
 
     const serviceId = tool.name.split("_")[0];
     if (!SERVICE_NAMES[serviceId]) continue;
-
-    toolMap.set(tool.name, tool);
 
     if (!services[serviceId]) {
       services[serviceId] = {
@@ -78,22 +105,46 @@ export async function getToolRegistry(): Promise<ToolRegistry> {
       };
     }
 
-    services[serviceId].tools.push({
-      name: tool.name,
-      label: tool.label,
-      description: tool.description,
-      parameters: tool.parameters,
-    });
+    services[serviceId].tools.push(tool);
+  }
+
+  return services;
+}
+
+export async function getToolRegistry(): Promise<ToolRegistry> {
+  const registryPath = getRegistryPath();
+  ensureBuilt(registryPath);
+
+  // Invalidate cache when dist has been rebuilt
+  const mtime = existsSync(registryPath) ? statSync(registryPath).mtimeMs : 0;
+  if (cached && mtime === cachedMtime) return cached;
+  cached = null;
+
+  // Load metadata via subprocess to avoid stale module cache
+  const toolInfos = loadToolMetadata(registryPath);
+  const services = buildServiceMap(toolInfos);
+
+  // Lazy-load the actual module for execute() (only needed for test-service)
+  let toolMap: Map<string, OmniclawTool> | null = null;
+  async function getToolMap() {
+    if (toolMap) return toolMap;
+    const mod = await import(/* webpackIgnore: true */ registryPath);
+    const config = getConfig();
+    const tools: OmniclawTool[] = mod.createAllTools({ pluginConfig: config });
+    toolMap = new Map(tools.map((t) => [t.name, t]));
+    return toolMap;
   }
 
   cached = {
     services,
     execute: async (toolName: string, params: Record<string, unknown>) => {
-      const tool = toolMap.get(toolName);
+      const map = await getToolMap();
+      const tool = map.get(toolName);
       if (!tool) throw new Error(`Unknown tool: ${toolName}`);
       return tool.execute(`web-test-${Date.now()}`, params);
     },
   };
+  cachedMtime = mtime;
 
   return cached;
 }

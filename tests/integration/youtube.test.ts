@@ -24,6 +24,11 @@ import {
   createYouTubeChannelInfoTool,
   createYouTubeVideoCommentsTool,
 } from "../../src/tools/youtube-social.js";
+import {
+  createYouTubePlaylistsListTool,
+  createYouTubePlaylistItemsTool,
+  createYouTubePlaylistCreateTool,
+} from "../../src/tools/youtube-playlists.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -182,6 +187,7 @@ describe("youtube_download_thumbnail", { timeout: 30_000 }, () => {
 // ---------------------------------------------------------------------------
 // Authenticated YouTube tests — require Google OAuth
 // ---------------------------------------------------------------------------
+const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 let clientManager: OAuthClientManager;
 let firstVideoId: string;
 
@@ -276,6 +282,76 @@ describe.skipIf(!credentialsExist)("YouTube API integration (authenticated)", { 
       const comment = result.details.comments[0];
       expect(typeof comment.author).toBe("string");
       expect(typeof comment.text).toBe("string");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // youtube_playlists_list
+  // -------------------------------------------------------------------------
+  describe("youtube_playlists_list", () => {
+    it("lists playlists for the authenticated user", async () => {
+      const tool = createYouTubePlaylistsListTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT, max_results: 5 });
+
+      expect(result.details).not.toHaveProperty("error");
+      expect(Array.isArray(result.details.playlists)).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // youtube_playlist_items
+  // -------------------------------------------------------------------------
+  describe("youtube_playlist_items", () => {
+    it("lists items in a well-known public playlist", async () => {
+      const tool = createYouTubePlaylistItemsTool(clientManager);
+      // YouTube Music "Top tracks" or a well-known coding playlist
+      const result = await tool.execute("t", {
+        playlist_id: "PLRqwX-V7Uu6ZiZxtDDRCi6uhfTH4FilpH",
+        max_results: 5,
+        account: ACCOUNT,
+      });
+
+      expect(result.details).not.toHaveProperty("error");
+      expect(Array.isArray(result.details.items)).toBe(true);
+      if (result.details.items.length > 0) {
+        expect(typeof result.details.items[0].videoId).toBe("string");
+        expect(typeof result.details.items[0].title).toBe("string");
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // youtube_playlist_create — write test
+  // -------------------------------------------------------------------------
+  describe.skipIf(!RUN_WRITE_TESTS)("youtube_playlist_create (RUN_WRITE_TESTS=1)", () => {
+    let createdPlaylistId: string;
+
+    it("creates a private playlist", async () => {
+      const tool = createYouTubePlaylistCreateTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        title: "[omniclaw integration test] playlist",
+        description: "Automated test playlist. Safe to delete.",
+        privacy: "private",
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(typeof result.details.playlistId).toBe("string");
+      expect(result.details.privacyStatus).toBe("private");
+
+      createdPlaylistId = result.details.playlistId;
+    });
+
+    afterAll(async () => {
+      // Clean up by deleting the created playlist via YouTube API
+      if (createdPlaylistId) {
+        try {
+          const { google } = await import("googleapis");
+          const client = clientManager.getClient(ACCOUNT);
+          const yt = google.youtube({ version: "v3", auth: client });
+          await yt.playlists.delete({ id: createdPlaylistId });
+        } catch { /* best-effort cleanup */ }
+      }
     });
   });
 });

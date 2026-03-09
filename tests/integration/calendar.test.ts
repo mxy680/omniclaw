@@ -25,6 +25,9 @@ import { createCalendarGetTool } from "../../src/tools/calendar-get.js";
 import { createCalendarListCalendarsTool } from "../../src/tools/calendar-list-calendars.js";
 import { createCalendarRespondTool } from "../../src/tools/calendar-respond.js";
 import { createCalendarUpdateTool } from "../../src/tools/calendar-update.js";
+import { createCalendarSearchTool } from "../../src/tools/calendar-search.js";
+import { createCalendarFreeBusyTool } from "../../src/tools/calendar-freebusy.js";
+import { createCalendarQuickAddTool } from "../../src/tools/calendar-quick-add.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -132,6 +135,62 @@ describe.skipIf(!credentialsExist)("Google Calendar API integration", { timeout:
   });
 
   // -------------------------------------------------------------------------
+  // calendar_search
+  // -------------------------------------------------------------------------
+  describe("calendar_search", () => {
+    it("returns an array of matching events", async () => {
+      const tool = createCalendarSearchTool(clientManager);
+      const result = await tool.execute("t", { account: ACCOUNT, query: "meeting", max_results: 5 });
+
+      expect(Array.isArray(result.details)).toBe(true);
+      if (result.details.length > 0) {
+        const ev = result.details[0];
+        expect(typeof ev.id).toBe("string");
+        expect(typeof ev.summary).toBe("string");
+      }
+    });
+
+    it("returns empty array for nonsense query", async () => {
+      const tool = createCalendarSearchTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        query: "zzz_omniclaw_no_match_xyzzy",
+        max_results: 5,
+      });
+
+      expect(Array.isArray(result.details)).toBe(true);
+      expect(result.details).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // calendar_freebusy
+  // -------------------------------------------------------------------------
+  describe("calendar_freebusy", () => {
+    it("returns free/busy data for primary calendar", async () => {
+      const tool = createCalendarFreeBusyTool(clientManager);
+      const now = new Date();
+      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        time_min: now.toISOString(),
+        time_max: nextWeek.toISOString(),
+      });
+
+      expect(result.details).not.toHaveProperty("error");
+      expect(result.details.calendars).toBeDefined();
+      expect(typeof result.details.calendars).toBe("object");
+      // Primary calendar should be present
+      const calKeys = Object.keys(result.details.calendars);
+      expect(calKeys.length).toBeGreaterThan(0);
+      // Each calendar entry should have a busy array
+      const firstCal = result.details.calendars[calKeys[0]];
+      expect(Array.isArray(firstCal.busy)).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Write tests — opt-in via RUN_WRITE_TESTS=1
   // -------------------------------------------------------------------------
   describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
@@ -199,6 +258,23 @@ describe.skipIf(!credentialsExist)("Google Calendar API integration", { timeout:
 
       expect(result.details.success).toBe(true);
       expect(result.details.response).toBe("tentative");
+    });
+
+    it("calendar_quick_add — creates an event from natural language, then deletes it", async () => {
+      const tool = createCalendarQuickAddTool(clientManager);
+      const result = await tool.execute("t", {
+        account: ACCOUNT,
+        text: "[omniclaw integration test] quick add tomorrow 3pm for 1 hour",
+      });
+
+      expect(result.details.success).toBe(true);
+      expect(typeof result.details.id).toBe("string");
+      expect(result.details.id.length).toBeGreaterThan(0);
+
+      // Clean up
+      const deleteTool = createCalendarDeleteTool(clientManager);
+      const delResult = await deleteTool.execute("t", { account: ACCOUNT, event_id: result.details.id });
+      expect(delResult.details.success).toBe(true);
     });
 
     it("calendar_delete — deletes the test event", async () => {

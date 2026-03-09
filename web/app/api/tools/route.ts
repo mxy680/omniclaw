@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getToolRegistry } from "@/lib/tools";
 
+// Force dynamic — never cache this route
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const registry = await getToolRegistry();

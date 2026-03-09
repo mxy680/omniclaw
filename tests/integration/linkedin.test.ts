@@ -116,12 +116,64 @@ describe.skipIf(!credentialsExist)("LinkedIn integration", { timeout: 30_000 }, 
 
   // ── Write tools (gated) ─────────────────────────────────────────────
 
-  describe.skipIf(!RUN_WRITE_TESTS)("linkedin_post_create", () => {
-    it("creates a post", async () => {
+  describe.skipIf(!RUN_WRITE_TESTS)("write operations (RUN_WRITE_TESTS=1)", () => {
+    it("linkedin_post_create — creates a post", async () => {
       const tool = createLinkedinPostCreateTool(manager);
       const result = await tool.execute("t", {
         text: "[omniclaw integration test] smoke — will be deleted",
         visibility: "CONNECTIONS",
+      });
+      expect(result.details).toBeDefined();
+    });
+
+    it("linkedin_post_like — likes a feed post", async () => {
+      const feedTool = createLinkedinPostListTool(manager);
+      const feedResult = await feedTool.execute("t", { count: 3 });
+      if (feedResult.details.error || !Array.isArray(feedResult.details) || feedResult.details.length === 0) {
+        return;
+      }
+
+      const postUrn = feedResult.details[0]?.urn || feedResult.details[0]?.activityUrn;
+      if (!postUrn) return;
+
+      const tool = createLinkedinPostLikeTool(manager);
+      const result = await tool.execute("t", { post_urn: postUrn });
+      expect(result.details).toBeDefined();
+    });
+
+    it("linkedin_post_comment — comments on a feed post", async () => {
+      const feedTool = createLinkedinPostListTool(manager);
+      const feedResult = await feedTool.execute("t", { count: 3 });
+      if (feedResult.details.error || !Array.isArray(feedResult.details) || feedResult.details.length === 0) {
+        return;
+      }
+
+      const postUrn = feedResult.details[0]?.urn || feedResult.details[0]?.activityUrn;
+      if (!postUrn) return;
+
+      const tool = createLinkedinPostCommentTool(manager);
+      const result = await tool.execute("t", {
+        post_urn: postUrn,
+        text: "[omniclaw integration test] comment",
+      });
+      expect(result.details).toBeDefined();
+    });
+
+    it("linkedin_messages_send — sends a DM to first conversation", async () => {
+      const listTool = createLinkedinMessagesListTool(manager);
+      const listResult = await listTool.execute("t", { count: 3 });
+      if (listResult.details.error) return;
+
+      const conversations = listResult.details.conversations || listResult.details;
+      if (!Array.isArray(conversations) || conversations.length === 0) return;
+
+      const conversationId = conversations[0]?.conversationId || conversations[0]?.id;
+      if (!conversationId) return;
+
+      const tool = createLinkedinMessagesSendTool(manager);
+      const result = await tool.execute("t", {
+        conversation_id: conversationId,
+        text: "[omniclaw integration test] message",
       });
       expect(result.details).toBeDefined();
     });

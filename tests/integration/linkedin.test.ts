@@ -16,7 +16,7 @@ import { join } from "path";
 import { homedir } from "os";
 
 import { SessionStore } from "../../src/auth/session-store.js";
-import { LinkedinSessionClient } from "../../src/auth/linkedin-session-client.js";
+import { LinkedinClientManager } from "../../src/auth/linkedin-client-manager.js";
 
 import {
   createLinkedinProfileGetTool,
@@ -45,18 +45,18 @@ const credentialsExist = existsSync(SESSIONS_PATH);
 const RUN_WRITE_TESTS = process.env.RUN_WRITE_TESTS === "1";
 
 describe.skipIf(!credentialsExist)("LinkedIn integration", { timeout: 30_000 }, () => {
-  let client: LinkedinSessionClient;
+  let manager: LinkedinClientManager;
 
   beforeAll(() => {
     const sessionStore = new SessionStore(SESSIONS_PATH);
-    client = new LinkedinSessionClient(sessionStore);
+    manager = new LinkedinClientManager(sessionStore);
   });
 
   // ── Read-only tools ─────────────────────────────────────────────────
 
   describe("linkedin_profile_get", () => {
     it("returns the authenticated user profile", async () => {
-      const tool = createLinkedinProfileGetTool(client);
+      const tool = createLinkedinProfileGetTool(manager);
       const result = await tool.execute("t", {});
       expect(result.details).toBeDefined();
       expect(result.details.error).toBeUndefined();
@@ -65,7 +65,7 @@ describe.skipIf(!credentialsExist)("LinkedIn integration", { timeout: 30_000 }, 
 
   describe("linkedin_profile_view", () => {
     it("returns a public profile", async () => {
-      const tool = createLinkedinProfileViewTool(client);
+      const tool = createLinkedinProfileViewTool(manager);
       const result = await tool.execute("t", { public_id: "williamhgates" });
       expect(result.details).toBeDefined();
     });
@@ -73,7 +73,7 @@ describe.skipIf(!credentialsExist)("LinkedIn integration", { timeout: 30_000 }, 
 
   describe("linkedin_connections_list", () => {
     it("returns connections", async () => {
-      const tool = createLinkedinConnectionsListTool(client);
+      const tool = createLinkedinConnectionsListTool(manager);
       const result = await tool.execute("t", { count: 5 });
       expect(result.details).toBeDefined();
       expect(result.details.error).toBeUndefined();
@@ -82,7 +82,7 @@ describe.skipIf(!credentialsExist)("LinkedIn integration", { timeout: 30_000 }, 
 
   describe("linkedin_search_people", () => {
     it("returns search results", async () => {
-      const tool = createLinkedinSearchPeopleTool(client);
+      const tool = createLinkedinSearchPeopleTool(manager);
       const result = await tool.execute("t", {
         keywords: "software engineer",
         count: 3,
@@ -94,7 +94,7 @@ describe.skipIf(!credentialsExist)("LinkedIn integration", { timeout: 30_000 }, 
 
   describe("linkedin_post_list", () => {
     it("returns feed posts", async () => {
-      const tool = createLinkedinPostListTool(client);
+      const tool = createLinkedinPostListTool(manager);
       const result = await tool.execute("t", { count: 3 });
       expect(result.details).toBeDefined();
       expect(result.details.error).toBeUndefined();
@@ -103,7 +103,7 @@ describe.skipIf(!credentialsExist)("LinkedIn integration", { timeout: 30_000 }, 
 
   describe("linkedin_messages_list", () => {
     it("returns conversations or graceful error", async () => {
-      const tool = createLinkedinMessagesListTool(client);
+      const tool = createLinkedinMessagesListTool(manager);
       const result = await tool.execute("t", { count: 5 });
       expect(result.details).toBeDefined();
       // LinkedIn's legacy messaging API returns 500 intermittently.
@@ -118,7 +118,7 @@ describe.skipIf(!credentialsExist)("LinkedIn integration", { timeout: 30_000 }, 
 
   describe.skipIf(!RUN_WRITE_TESTS)("linkedin_post_create", () => {
     it("creates a post", async () => {
-      const tool = createLinkedinPostCreateTool(client);
+      const tool = createLinkedinPostCreateTool(manager);
       const result = await tool.execute("t", {
         text: "[omniclaw integration test] smoke — will be deleted",
         visibility: "CONNECTIONS",

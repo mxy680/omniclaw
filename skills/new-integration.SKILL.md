@@ -173,26 +173,69 @@ export class {Service}Client {
 }
 ```
 
-**B2. Create auth setup tool** — `src/tools/{service}-auth.ts` (follow `src/tools/github-auth.ts`):
+**B2. Create client manager** — `src/auth/{service}-client-manager.ts` (follow `src/auth/github-client-manager.ts` pattern):
+
+Every integration MUST support multiple accounts. The `ClientManager` caches per-account client instances in a `Map<string, Client>` and lazily creates them from the `ApiKeyStore`.
+
+```typescript
+import { ApiKeyStore } from "./api-key-store.js";
+import { {Service}Client } from "./{service}-client.js";
+
+export class {Service}ClientManager {
+  private clients = new Map<string, {Service}Client>();
+
+  constructor(private store: ApiKeyStore) {}
+
+  getClient(account: string): {Service}Client {
+    const existing = this.clients.get(account);
+    if (existing) return existing;
+
+    const token = this.store.get(account);
+    const client = new {Service}Client(token ?? undefined);
+    this.clients.set(account, client);
+    return client;
+  }
+
+  setToken(account: string, token: string): {Service}Client {
+    this.store.set(account, token);
+    const client = new {Service}Client(token);
+    this.clients.set(account, client);
+    return client;
+  }
+
+  deleteToken(account: string): boolean {
+    this.clients.delete(account);
+    return this.store.delete(account);
+  }
+
+  listAccounts(): string[] {
+    return this.store.list();
+  }
+}
+```
+
+**B3. Create auth setup tool** — `src/tools/{service}-auth.ts` (follow `src/tools/github-auth.ts`):
 
 ```typescript
 import { Type } from "@sinclair/typebox";
-import type { {Service}Client } from "../auth/{service}-client.js";
+import type { {Service}ClientManager } from "../auth/{service}-client-manager.js";
 import { jsonResult } from "./shared.js";
 
-export function create{Service}AuthSetupTool(client: {Service}Client): any {
+export function create{Service}AuthSetupTool(manager: {Service}ClientManager): any {
   return {
     name: "{service}_auth_setup",
     label: "{Service} Auth Setup",
     description: "Validate a {Service} API token and return account info.",
     parameters: Type.Object({
       token: Type.String({ description: "{Service} API token." }),
+      account: Type.Optional(Type.String({ description: "Account name.", default: "default" })),
     }),
-    async execute(_toolCallId: string, params: { token: string }) {
-      client.setToken(params.token);
+    async execute(_toolCallId: string, params: { token: string; account?: string }) {
+      const account = params.account ?? "default";
+      const client = manager.setToken(account, params.token);
       try {
         const me = await client.getClient().users.me();
-        return jsonResult({ user: me.name, id: me.id });
+        return jsonResult({ user: me.name, id: me.id, account });
       } catch (err: unknown) {
         return jsonResult({
           error: "auth_failed",
@@ -205,12 +248,20 @@ export function create{Service}AuthSetupTool(client: {Service}Client): any {
 }
 ```
 
-**B3. Register** — edit `src/mcp/tool-registry.ts`:
+**B4. Register** — edit `src/mcp/tool-registry.ts`:
 
 ```typescript
+import { ApiKeyStore } from "../auth/api-key-store.js";
+import { {Service}ClientManager } from "../auth/{service}-client-manager.js";
+
+// Inside createAllTools():
 {
-  const {service}Client = new {Service}Client(config.{service}_token);
-  add(create{Service}AuthSetupTool({service}Client));
+  const {service}Store = new ApiKeyStore(
+    config.{service}_tokens_path ?? path.join(os.homedir(), ".openclaw", "{service}-keys.json"),
+  );
+  {service}Store.migrateFromConfig(config.{service}_token);
+  const {service}Manager = new {Service}ClientManager({service}Store);
+  add(create{Service}AuthSetupTool({service}Manager));
 }
 ```
 
@@ -492,18 +543,54 @@ Add `get{Service}Accounts()` and `revoke{Service}Session()` functions. These mus
 
 Add a case for the new provider that calls `revoke{Service}Session()`.
 
-**C6. Create auth setup tool** — `src/tools/{service}-auth.ts`:
+**C6. Create client manager** — `src/auth/{service}-client-manager.ts` (follow `src/auth/linkedin-client-manager.ts` pattern):
+
+Every integration MUST support multiple accounts. The `ClientManager` caches per-account session clients in a `Map<string, SessionClient>`.
+
+```typescript
+import type { SessionStore } from "./session-store.js";
+import { {Service}SessionClient } from "./{service}-session-client.js";
+
+export class {Service}ClientManager {
+  private clients = new Map<string, {Service}SessionClient>();
+
+  constructor(private sessionStore: SessionStore) {}
+
+  getClient(account: string): {Service}SessionClient {
+    const existing = this.clients.get(account);
+    if (existing) return existing;
+
+    const client = new {Service}SessionClient(this.sessionStore, account);
+    this.clients.set(account, client);
+    return client;
+  }
+
+  reloadClient(account: string): {Service}SessionClient {
+    const client = new {Service}SessionClient(this.sessionStore, account);
+    this.clients.set(account, client);
+    return client;
+  }
+
+  listAccounts(): string[] {
+    return this.sessionStore.list();
+  }
+
+  getSessionStore(): SessionStore {
+    return this.sessionStore;
+  }
+}
+```
+
+**C7. Create auth setup tool** — `src/tools/{service}-auth.ts`:
 
 ```typescript
 import { Type } from "@sinclair/typebox";
-import type { {Service}SessionClient } from "../auth/{service}-session-client.js";
-import type { SessionStore } from "../auth/session-store.js";
+import type { {Service}ClientManager } from "../auth/{service}-client-manager.js";
 import { authenticate{Service} } from "../auth/{service}-browser-auth.js";
 import { jsonResult } from "./shared.js";
 
 export function create{Service}AuthSetupTool(
-  client: {Service}SessionClient,
-  sessionStore: SessionStore,
+  manager: {Service}ClientManager,
 ): any {
   return {
     name: "{service}_auth_setup",
@@ -515,8 +602,9 @@ export function create{Service}AuthSetupTool(
     async execute(_toolCallId: string, params: { account?: string }) {
       const account = params.account ?? "default";
       try {
+        const sessionStore = manager.getSessionStore();
         await authenticate{Service}(sessionStore, account);
-        client.reload(account);
+        const client = manager.reloadClient(account);
         const profile = await client.request({ path: "/me" });
         return jsonResult({ status: "authenticated", account, profile });
       } catch (err: unknown) {
@@ -530,21 +618,21 @@ export function create{Service}AuthSetupTool(
 }
 ```
 
-**C6. Register** — edit `src/mcp/tool-registry.ts`:
+**C8. Register** — edit `src/mcp/tool-registry.ts`:
 
 ```typescript
 import * as path from "path";
 import * as os from "os";
 import { SessionStore } from "../auth/session-store.js";
-import { {Service}SessionClient } from "../auth/{service}-session-client.js";
+import { {Service}ClientManager } from "../auth/{service}-client-manager.js";
 import { create{Service}AuthSetupTool } from "../tools/{service}-auth.js";
 
 // Inside createAllTools():
 {
   const sessionsPath = path.join(os.homedir(), ".openclaw", "{service}-sessions.json");
   const sessionStore = new SessionStore(sessionsPath);
-  const {service}Client = new {Service}SessionClient(sessionStore);
-  add(create{Service}AuthSetupTool({service}Client, sessionStore));
+  const {service}Manager = new {Service}ClientManager(sessionStore);
+  add(create{Service}AuthSetupTool({service}Manager));
 }
 ```
 
@@ -603,18 +691,23 @@ export function create{Service}{Action}Tool(clientManager: OAuthClientManager): 
 **Strategy B (API Key):**
 ```typescript
 import { Type } from "@sinclair/typebox";
-import type { {Service}Client } from "../auth/{service}-client.js";
+import type { {Service}ClientManager } from "../auth/{service}-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("{service}");
 
-export function create{Service}{Action}Tool(client: {Service}Client): any {
+export function create{Service}{Action}Tool(manager: {Service}ClientManager): any {
   return {
     name: "{service}_{action}",
     label: "{Service} {Action}",
     description: "...",
-    parameters: Type.Object({ /* ... */ }),
-    async execute(_toolCallId: string, params: { /* ... */ }) {
+    parameters: Type.Object({
+      account: Type.Optional(Type.String({ description: "Account name.", default: "default" })),
+      // ... service-specific params
+    }),
+    async execute(_toolCallId: string, params: { account?: string; /* ... */ }) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       const sdk = client.getClient();
       // ... call API
@@ -627,18 +720,23 @@ export function create{Service}{Action}Tool(client: {Service}Client): any {
 **Strategy C (Session Cookie):**
 ```typescript
 import { Type } from "@sinclair/typebox";
-import type { {Service}SessionClient } from "../auth/{service}-session-client.js";
+import type { {Service}ClientManager } from "../auth/{service}-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("{service}");
 
-export function create{Service}{Action}Tool(client: {Service}SessionClient): any {
+export function create{Service}{Action}Tool(manager: {Service}ClientManager): any {
   return {
     name: "{service}_{action}",
     label: "{Service} {Action}",
     description: "...",
-    parameters: Type.Object({ /* ... */ }),
-    async execute(_toolCallId: string, params: { /* ... */ }) {
+    parameters: Type.Object({
+      account: Type.Optional(Type.String({ description: "Account name.", default: "default" })),
+      // ... service-specific params
+    }),
+    async execute(_toolCallId: string, params: { account?: string; /* ... */ }) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const result = await client.request({ path: "/api/endpoint" });
@@ -665,7 +763,7 @@ export function create{Service}{Action}Tool(client: {Service}SessionClient): any
 Edit `src/mcp/tool-registry.ts` — add the new tool to the existing service block:
 
 ```typescript
-add(create{Service}{Action}Tool(client));
+add(create{Service}{Action}Tool(manager));  // Always pass the manager, never a raw client
 ```
 
 ### Step 3.3: Build and test
@@ -900,6 +998,7 @@ pnpm test:integration
 | 4 | `src/types/plugin-config.ts` | Modify (config key) | | x | |
 | 5 | `openclaw.plugin.json` | Modify (schema + uiHints) | | x | |
 | 6 | `src/auth/{service}-client.ts` | Create (SDK wrapper) | | x | |
+| 6b | `src/auth/{service}-client-manager.ts` | Create (multi-account manager) | | x | x |
 | 7 | `src/auth/{service}-browser-auth.ts` | Create (Playwright login, dynamic import) | | | x |
 | 8 | `src/auth/{service}-session-client.ts` | Create (HTTP client) | | | x |
 | 9 | `src/auth/session-store.ts` | Create once (shared) | | | x |

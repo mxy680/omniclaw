@@ -257,7 +257,7 @@ import {
 } from "../tools/github-security.js";
 import { createWolframQueryTool, createWolframQueryFullTool } from "../tools/wolfram-query.js";
 import { SessionStore } from "../auth/session-store.js";
-import { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
+import { LinkedinClientManager } from "../auth/linkedin-client-manager.js";
 import { createLinkedinAuthSetupTool } from "../tools/linkedin-auth.js";
 import {
   createLinkedinProfileGetTool,
@@ -583,19 +583,19 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
   {
     const sessionsPath = path.join(os.homedir(), ".openclaw", "linkedin-sessions.json");
     const linkedinSessionStore = new SessionStore(sessionsPath);
-    const linkedinClient = new LinkedinSessionClient(linkedinSessionStore);
+    const linkedinManager = new LinkedinClientManager(linkedinSessionStore);
 
-    add(createLinkedinAuthSetupTool(linkedinClient, linkedinSessionStore));
-    add(createLinkedinProfileGetTool(linkedinClient));
-    add(createLinkedinProfileViewTool(linkedinClient));
-    add(createLinkedinConnectionsListTool(linkedinClient));
-    add(createLinkedinSearchPeopleTool(linkedinClient));
-    add(createLinkedinPostListTool(linkedinClient));
-    add(createLinkedinPostCreateTool(linkedinClient));
-    add(createLinkedinPostLikeTool(linkedinClient));
-    add(createLinkedinPostCommentTool(linkedinClient));
-    add(createLinkedinMessagesListTool(linkedinClient));
-    add(createLinkedinMessagesSendTool(linkedinClient));
+    add(createLinkedinAuthSetupTool(linkedinManager));
+    add(createLinkedinProfileGetTool(linkedinManager));
+    add(createLinkedinProfileViewTool(linkedinManager));
+    add(createLinkedinConnectionsListTool(linkedinManager));
+    add(createLinkedinSearchPeopleTool(linkedinManager));
+    add(createLinkedinPostListTool(linkedinManager));
+    add(createLinkedinPostCreateTool(linkedinManager));
+    add(createLinkedinPostLikeTool(linkedinManager));
+    add(createLinkedinPostCommentTool(linkedinManager));
+    add(createLinkedinMessagesListTool(linkedinManager));
+    add(createLinkedinMessagesSendTool(linkedinManager));
   }
 
   return tools;

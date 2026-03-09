@@ -1,11 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
+import type { LinkedinClientManager } from "../auth/linkedin-client-manager.js";
 import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("linkedin");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createLinkedinSearchPeopleTool(client: LinkedinSessionClient): any {
+export function createLinkedinSearchPeopleTool(manager: LinkedinClientManager): any {
   return {
     name: "linkedin_search_people",
     label: "LinkedIn Search People",
@@ -26,6 +26,8 @@ export function createLinkedinSearchPeopleTool(client: LinkedinSessionClient): a
       _toolCallId: string,
       params: { keywords: string; start?: number; count?: number; account?: string },
     ) {
+      const account = params.account ?? "default";
+      const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const start = params.start ?? 0;

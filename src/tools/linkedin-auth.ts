@@ -1,13 +1,11 @@
 import { Type } from "@sinclair/typebox";
-import type { LinkedinSessionClient } from "../auth/linkedin-session-client.js";
-import type { SessionStore } from "../auth/session-store.js";
+import type { LinkedinClientManager } from "../auth/linkedin-client-manager.js";
 import { authenticateLinkedin } from "../auth/linkedin-browser-auth.js";
 import { jsonResult } from "./shared.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createLinkedinAuthSetupTool(
-  client: LinkedinSessionClient,
-  sessionStore: SessionStore,
+  manager: LinkedinClientManager,
 ): any {
   return {
     name: "linkedin_auth_setup",
@@ -22,8 +20,9 @@ export function createLinkedinAuthSetupTool(
     async execute(_toolCallId: string, params: { account?: string }) {
       const account = params.account ?? "default";
       try {
+        const sessionStore = manager.getSessionStore();
         await authenticateLinkedin(sessionStore, account);
-        client.reload(account);
+        const client = manager.reloadClient(account);
         const profile = await client.request<Record<string, unknown>>({
           path: "/me",
         });

@@ -108,7 +108,7 @@ const gmailTest: ServiceTestFn = async (execute) => {
     ? inboxParsed[0].id : undefined;
 
   if (firstMessageId) {
-    const s5c = await runStep("Get message", "gmail_get", { message_id: firstMessageId }, execute);
+    const s5c = await runStep("Get message", "gmail_get", { id: firstMessageId }, execute);
     steps.push(s5c.result);
   }
 
@@ -162,13 +162,13 @@ const gmailTest: ServiceTestFn = async (execute) => {
 
   if (sentMsgId) {
     const s11 = await runStep("Reply to email", "gmail_reply", {
-      message_id: sentMsgId,
+      id: sentMsgId,
       body: "Smoke test reply.",
     }, execute);
     steps.push(s11.result);
 
     const s12 = await runStep("Forward email", "gmail_forward", {
-      message_id: sentMsgId,
+      id: sentMsgId,
       to: "omniclaw680@gmail.com",
     }, execute);
     steps.push(s12.result);
@@ -394,7 +394,7 @@ const docsTest: ServiceTestFn = async (execute) => {
 
     const s5c = await runStep("Export document", "docs_export", {
       document_id: docId,
-      format: "txt",
+      format: "pdf",
       save_dir: "/tmp/omniclaw-smoke-docs",
     }, execute);
     steps.push(s5c.result);

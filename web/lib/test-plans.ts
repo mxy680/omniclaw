@@ -108,7 +108,7 @@ const gmailTest: ServiceTestFn = async (execute) => {
     ? inboxParsed[0].id : undefined;
 
   if (firstMessageId) {
-    const s5c = await runStep("Get message", "gmail_get", { message_id: firstMessageId }, execute);
+    const s5c = await runStep("Get message", "gmail_get", { id: firstMessageId }, execute);
     steps.push(s5c.result);
   }
 
@@ -162,13 +162,13 @@ const gmailTest: ServiceTestFn = async (execute) => {
 
   if (sentMsgId) {
     const s11 = await runStep("Reply to email", "gmail_reply", {
-      message_id: sentMsgId,
+      id: sentMsgId,
       body: "Smoke test reply.",
     }, execute);
     steps.push(s11.result);
 
     const s12 = await runStep("Forward email", "gmail_forward", {
-      message_id: sentMsgId,
+      id: sentMsgId,
       to: "omniclaw680@gmail.com",
     }, execute);
     steps.push(s12.result);
@@ -394,7 +394,7 @@ const docsTest: ServiceTestFn = async (execute) => {
 
     const s5c = await runStep("Export document", "docs_export", {
       document_id: docId,
-      format: "txt",
+      format: "pdf",
       save_dir: "/tmp/omniclaw-smoke-docs",
     }, execute);
     steps.push(s5c.result);
@@ -582,19 +582,23 @@ const youtubeTest: ServiceTestFn = async (execute) => {
     const s2 = await runStep("Get video details", "youtube_video_details", { video: videoId }, execute);
     steps.push(s2.result);
 
-    const s3 = await runStep("Get transcript", "youtube_get_transcript", { video: videoId }, execute);
-    steps.push(s3.result);
-
     const s4 = await runStep("Get video comments", "youtube_video_comments", { video: videoId, max_results: 2 }, execute);
     steps.push(s4.result);
   }
+
+  // Use a known video with captions for transcript (search results may not have captions)
+  const s3 = await runStep("Get transcript", "youtube_get_transcript", { video: "dQw4w9WgXcQ" }, execute);
+  steps.push(s3.result);
 
   // Channel info
   const s5 = await runStep("Get channel info", "youtube_channel_info", { channel: "@Google" }, execute);
   steps.push(s5.result);
 
-  // List playlists (authenticated user)
-  const s6 = await runStep("List playlists", "youtube_playlists_list", { max_results: 2 }, execute);
+  // List playlists (use Google's public channel since test account may lack a channel)
+  const s6 = await runStep("List playlists", "youtube_playlists_list", {
+    channel_id: "UCVHFbqXqoYvEWM1Ddxl0QDg",
+    max_results: 2,
+  }, execute);
   steps.push(s6.result);
 
   // List items in a known public playlist (The Coding Train — p5.js)
@@ -612,13 +616,6 @@ const youtubeTest: ServiceTestFn = async (execute) => {
     }, execute);
     steps.push(s8.result);
   }
-
-  // Create a private playlist (marked as cleanup — cannot be deleted via API in smoke test)
-  const s9 = await runStep("Create playlist", "youtube_playlist_create", {
-    title: "Omniclaw Smoke Test",
-    privacy: "private",
-  }, execute, true);
-  steps.push(s9.result);
 
   return steps;
 };

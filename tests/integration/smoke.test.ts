@@ -292,7 +292,7 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
         const tool = createDriveListTool(clientManager);
         return tool.execute("smoke", { account: ACCOUNT, max_results: 1 });
       });
-      expect(Array.isArray(result.details)).toBe(true);
+      expect(Array.isArray(result.details.files)).toBe(true);
     });
 
     it.skipIf(!credentialsExist)("drive_search — search for any file", async () => {
@@ -304,7 +304,7 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
           max_results: 1,
         });
       });
-      expect(Array.isArray(result.details)).toBe(true);
+      expect(Array.isArray(result.details.files)).toBe(true);
     });
   });
 
@@ -321,12 +321,12 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
           max_results: 1,
         });
 
-        if (searchResult.details.length === 0) {
+        if (!searchResult.details.files || searchResult.details.files.length === 0) {
           console.warn("[smoke] No Google Docs found in Drive — skipping docs_get read");
           return searchResult;
         }
 
-        const docId = searchResult.details[0].id;
+        const docId = searchResult.details.files[0].id;
         const tool = createDocsGetTool(clientManager);
         const result = await tool.execute("smoke", { account: ACCOUNT, document_id: docId });
         expect(result.details).not.toHaveProperty("error");
@@ -349,12 +349,12 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
           max_results: 1,
         });
 
-        if (searchResult.details.length === 0) {
+        if (!searchResult.details.files || searchResult.details.files.length === 0) {
           console.warn("[smoke] No Sheets found in Drive — skipping sheets_get read");
           return searchResult;
         }
 
-        const spreadsheetId = searchResult.details[0].id;
+        const spreadsheetId = searchResult.details.files[0].id;
         const tool = createSheetsGetTool(clientManager);
         const result = await tool.execute("smoke", {
           account: ACCOUNT,
@@ -380,12 +380,12 @@ describe("Omniclaw Smoke Tests", { timeout: 90_000 }, () => {
           max_results: 1,
         });
 
-        if (searchResult.details.length === 0) {
+        if (!searchResult.details.files || searchResult.details.files.length === 0) {
           console.warn("[smoke] No Slides found in Drive — skipping slides_get read");
           return searchResult;
         }
 
-        const presId = searchResult.details[0].id;
+        const presId = searchResult.details.files[0].id;
         const tool = createSlidesGetTool(clientManager);
         const result = await tool.execute("smoke", {
           account: ACCOUNT,

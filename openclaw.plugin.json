@@ -31,6 +31,10 @@
       "wolfram_appid": {
         "type": "string",
         "description": "Wolfram Alpha AppID from the Wolfram Developer Portal. Required for computational knowledge tools."
+      },
+      "framer_api_key": {
+        "type": "string",
+        "description": "Framer API key from project settings. Required for Framer Server API tools."
       }
     },
     "required": []
@@ -50,6 +54,9 @@
     },
     "wolfram_appid": {
       "label": "Wolfram Alpha AppID"
+    },
+    "framer_api_key": {
+      "label": "Framer API Key"
     }
   }
 }

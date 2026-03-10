@@ -298,6 +298,96 @@ import {
   createInstagramMessagesGetTool,
   createInstagramMessageSendTool,
 } from "../tools/instagram-messages.js";
+import { FramerClientManager } from "../auth/framer-client-manager.js";
+import { createFramerAuthSetupTool } from "../tools/framer-auth.js";
+import {
+  createFramerProjectInfoTool,
+  createFramerPublishInfoTool,
+  createFramerChangedPathsTool,
+} from "../tools/framer-project.js";
+import {
+  createFramerPublishTool,
+  createFramerDeployTool,
+  createFramerDeploymentsListTool,
+} from "../tools/framer-publish.js";
+import {
+  createFramerNodeGetTool,
+  createFramerNodeChildrenTool,
+  createFramerNodeParentTool,
+  createFramerNodesByTypeTool,
+  createFramerNodesByAttributeTool,
+} from "../tools/framer-nodes.js";
+import {
+  createFramerNodeCreateFrameTool,
+  createFramerNodeAddTextTool,
+  createFramerNodeAddImageTool,
+  createFramerNodeAddSvgTool,
+  createFramerNodeAddComponentTool,
+} from "../tools/framer-nodes-create.js";
+import {
+  createFramerNodeSetAttributesTool,
+  createFramerNodeSetParentTool,
+  createFramerNodeCloneTool,
+  createFramerNodeRemoveTool,
+} from "../tools/framer-nodes-edit.js";
+import {
+  createFramerPageCreateWebTool,
+  createFramerPageCreateDesignTool,
+} from "../tools/framer-pages.js";
+import {
+  createFramerCollectionsListTool,
+  createFramerCollectionGetTool,
+  createFramerCollectionCreateTool,
+  createFramerCollectionCreateManagedTool,
+} from "../tools/framer-collections.js";
+import {
+  createFramerFieldsListTool,
+  createFramerFieldAddTool,
+  createFramerFieldRemoveTool,
+} from "../tools/framer-fields.js";
+import {
+  createFramerItemsListTool,
+  createFramerItemCreateTool,
+  createFramerItemUpdateTool,
+  createFramerItemRemoveTool,
+  createFramerItemSetOrderTool,
+} from "../tools/framer-items.js";
+import {
+  createFramerCodeFilesListTool,
+  createFramerCodeFileGetTool,
+  createFramerCodeFileCreateTool,
+  createFramerCodeFileUpdateTool,
+  createFramerCodeFileRemoveTool,
+} from "../tools/framer-code-files.js";
+import {
+  createFramerColorStylesListTool,
+  createFramerColorStyleCreateTool,
+  createFramerColorStyleUpdateTool,
+  createFramerColorStyleRemoveTool,
+  createFramerTextStylesListTool,
+  createFramerTextStyleCreateTool,
+  createFramerTextStyleUpdateTool,
+  createFramerTextStyleRemoveTool,
+} from "../tools/framer-styles.js";
+import {
+  createFramerCustomCodeGetTool,
+  createFramerCustomCodeSetTool,
+} from "../tools/framer-custom-code.js";
+import {
+  createFramerRedirectsListTool,
+  createFramerRedirectAddTool,
+  createFramerRedirectRemoveTool,
+} from "../tools/framer-redirects.js";
+import {
+  createFramerLocalesListTool,
+  createFramerLocalizationGroupsTool,
+  createFramerLocalizationUpdateTool,
+} from "../tools/framer-localization.js";
+import {
+  createFramerUploadImageTool,
+  createFramerUploadFileTool,
+} from "../tools/framer-uploads.js";
+import { createFramerExportHtmlTool } from "../tools/framer-export.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface OmniclawTool {
@@ -641,6 +731,107 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createInstagramInboxGetTool(instagramManager));
     add(createInstagramMessagesGetTool(instagramManager));
     add(createInstagramMessageSendTool(instagramManager));
+  }
+
+  // Framer tools — API key auth (Server API)
+  {
+    const framerStore = new ApiKeyStore(
+      config.framer_tokens_path ?? path.join(os.homedir(), ".openclaw", "framer-keys.json"),
+    );
+    framerStore.migrateFromConfig(config.framer_api_key);
+    const framerManager = new FramerClientManager(framerStore);
+
+    add(createFramerAuthSetupTool(framerManager));
+
+    // Project & Publishing
+    add(createFramerProjectInfoTool(framerManager));
+    add(createFramerPublishInfoTool(framerManager));
+    add(createFramerChangedPathsTool(framerManager));
+    add(createFramerPublishTool(framerManager));
+    add(createFramerDeployTool(framerManager));
+    add(createFramerDeploymentsListTool(framerManager));
+
+    // Canvas Nodes — Read
+    add(createFramerNodeGetTool(framerManager));
+    add(createFramerNodeChildrenTool(framerManager));
+    add(createFramerNodeParentTool(framerManager));
+    add(createFramerNodesByTypeTool(framerManager));
+    add(createFramerNodesByAttributeTool(framerManager));
+
+    // Canvas Nodes — Create
+    add(createFramerNodeCreateFrameTool(framerManager));
+    add(createFramerNodeAddTextTool(framerManager));
+    add(createFramerNodeAddImageTool(framerManager));
+    add(createFramerNodeAddSvgTool(framerManager));
+    add(createFramerNodeAddComponentTool(framerManager));
+
+    // Canvas Nodes — Edit
+    add(createFramerNodeSetAttributesTool(framerManager));
+    add(createFramerNodeSetParentTool(framerManager));
+    add(createFramerNodeCloneTool(framerManager));
+    add(createFramerNodeRemoveTool(framerManager));
+
+    // Pages
+    add(createFramerPageCreateWebTool(framerManager));
+    add(createFramerPageCreateDesignTool(framerManager));
+
+    // CMS Collections
+    add(createFramerCollectionsListTool(framerManager));
+    add(createFramerCollectionGetTool(framerManager));
+    add(createFramerCollectionCreateTool(framerManager));
+    add(createFramerCollectionCreateManagedTool(framerManager));
+
+    // CMS Fields
+    add(createFramerFieldsListTool(framerManager));
+    add(createFramerFieldAddTool(framerManager));
+    add(createFramerFieldRemoveTool(framerManager));
+
+    // CMS Items
+    add(createFramerItemsListTool(framerManager));
+    add(createFramerItemCreateTool(framerManager));
+    add(createFramerItemUpdateTool(framerManager));
+    add(createFramerItemRemoveTool(framerManager));
+    add(createFramerItemSetOrderTool(framerManager));
+
+    // Code Files
+    add(createFramerCodeFilesListTool(framerManager));
+    add(createFramerCodeFileGetTool(framerManager));
+    add(createFramerCodeFileCreateTool(framerManager));
+    add(createFramerCodeFileUpdateTool(framerManager));
+    add(createFramerCodeFileRemoveTool(framerManager));
+
+    // Color Styles
+    add(createFramerColorStylesListTool(framerManager));
+    add(createFramerColorStyleCreateTool(framerManager));
+    add(createFramerColorStyleUpdateTool(framerManager));
+    add(createFramerColorStyleRemoveTool(framerManager));
+
+    // Text Styles
+    add(createFramerTextStylesListTool(framerManager));
+    add(createFramerTextStyleCreateTool(framerManager));
+    add(createFramerTextStyleUpdateTool(framerManager));
+    add(createFramerTextStyleRemoveTool(framerManager));
+
+    // Custom Code
+    add(createFramerCustomCodeGetTool(framerManager));
+    add(createFramerCustomCodeSetTool(framerManager));
+
+    // Redirects
+    add(createFramerRedirectsListTool(framerManager));
+    add(createFramerRedirectAddTool(framerManager));
+    add(createFramerRedirectRemoveTool(framerManager));
+
+    // Localization
+    add(createFramerLocalesListTool(framerManager));
+    add(createFramerLocalizationGroupsTool(framerManager));
+    add(createFramerLocalizationUpdateTool(framerManager));
+
+    // Uploads
+    add(createFramerUploadImageTool(framerManager));
+    add(createFramerUploadFileTool(framerManager));
+
+    // Export (no auth required)
+    add(createFramerExportHtmlTool());
   }
 
   return tools;

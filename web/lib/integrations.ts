@@ -90,6 +90,17 @@ export const PROVIDERS: Provider[] = [
       { id: "instagram", name: "Instagram", icon: "Instagram", color: "#E4405F" },
     ],
   },
+  {
+    id: "framer",
+    name: "Framer",
+    icon: "Frame",
+    color: "#0099FF",
+    description: "Manage Framer projects, edit canvas, CMS collections, publish sites, and export to HTML.",
+    available: true,
+    services: [
+      { id: "framer", name: "Framer", icon: "Frame", color: "#0099FF" },
+    ],
+  },
 ];
 
 // Backward compat for IntegrationCard

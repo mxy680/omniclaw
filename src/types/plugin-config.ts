@@ -12,4 +12,7 @@ export interface PluginConfig {
   github_tokens_path?: string;
   gemini_tokens_path?: string;
   wolfram_tokens_path?: string;
+  /** @deprecated Use framer_tokens_path for multi-account. Kept for migration. */
+  framer_api_key?: string;
+  framer_tokens_path?: string;
 }

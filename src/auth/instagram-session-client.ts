@@ -72,7 +72,14 @@ export class InstagramSessionClient {
       headers["Content-Type"] = "application/json";
     }
 
-    const res = await fetch(`${this.baseUrl}${opts.path}`, {
+    // DM endpoints require www.instagram.com (same-origin); all others use i.instagram.com
+    const useWww = opts.path.startsWith("/direct_v2/");
+    const base = useWww ? "https://www.instagram.com/api/v1" : this.baseUrl;
+    if (useWww) {
+      headers["Sec-Fetch-Site"] = "same-origin";
+    }
+
+    const res = await fetch(`${base}${opts.path}`, {
       method: opts.method ?? "GET",
       headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined,

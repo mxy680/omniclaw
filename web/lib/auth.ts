@@ -99,9 +99,13 @@ interface ApiKeyFile {
   [account: string]: string;
 }
 
-const GITHUB_KEYS_PATH = join(homedir(), ".openclaw", "github-keys.json");
-const GEMINI_KEYS_PATH = join(homedir(), ".openclaw", "gemini-keys.json");
-const WOLFRAM_KEYS_PATH = join(homedir(), ".openclaw", "wolfram-keys.json");
+function getDataDir(): string {
+  return process.env.OMNICLAW_DATA_DIR ?? join(homedir(), ".openclaw");
+}
+
+function getGitHubKeysPath(): string { return join(getDataDir(), "github-keys.json"); }
+function getGeminiKeysPath(): string { return join(getDataDir(), "gemini-keys.json"); }
+function getWolframKeysPath(): string { return join(getDataDir(), "wolfram-keys.json"); }
 
 function loadApiKeys(storePath: string): ApiKeyFile {
   if (!existsSync(storePath)) return {};
@@ -143,11 +147,11 @@ function listApiKeyAccounts(storePath: string): string[] {
 // ---------------------------------------------------------------------------
 
 export function setGitHubToken(token: string, account = "default"): void {
-  setApiKey(GITHUB_KEYS_PATH, account, token);
+  setApiKey(getGitHubKeysPath(), account, token);
 }
 
 export function revokeGitHubToken(account: string): boolean {
-  return deleteApiKey(GITHUB_KEYS_PATH, account);
+  return deleteApiKey(getGitHubKeysPath(), account);
 }
 
 // ---------------------------------------------------------------------------
@@ -155,11 +159,11 @@ export function revokeGitHubToken(account: string): boolean {
 // ---------------------------------------------------------------------------
 
 export function setGeminiApiKey(apiKey: string, account = "default"): void {
-  setApiKey(GEMINI_KEYS_PATH, account, apiKey);
+  setApiKey(getGeminiKeysPath(), account, apiKey);
 }
 
 export function revokeGeminiApiKey(account: string): boolean {
-  return deleteApiKey(GEMINI_KEYS_PATH, account);
+  return deleteApiKey(getGeminiKeysPath(), account);
 }
 
 // ---------------------------------------------------------------------------
@@ -167,23 +171,23 @@ export function revokeGeminiApiKey(account: string): boolean {
 // ---------------------------------------------------------------------------
 
 export function setWolframAppId(appId: string, account = "default"): void {
-  setApiKey(WOLFRAM_KEYS_PATH, account, appId);
+  setApiKey(getWolframKeysPath(), account, appId);
 }
 
 export function revokeWolframAppId(account: string): boolean {
-  return deleteApiKey(WOLFRAM_KEYS_PATH, account);
+  return deleteApiKey(getWolframKeysPath(), account);
 }
 
 // ---------------------------------------------------------------------------
 // LinkedIn
 // ---------------------------------------------------------------------------
 
-const LINKEDIN_SESSIONS_PATH = join(homedir(), ".openclaw", "linkedin-sessions.json");
+function getLinkedinSessionsPath(): string { return join(getDataDir(), "linkedin-sessions.json"); }
 
 function loadLinkedinSessions(): Record<string, unknown> {
-  if (!existsSync(LINKEDIN_SESSIONS_PATH)) return {};
+  if (!existsSync(getLinkedinSessionsPath())) return {};
   try {
-    return JSON.parse(readFileSync(LINKEDIN_SESSIONS_PATH, "utf-8")) as Record<string, unknown>;
+    return JSON.parse(readFileSync(getLinkedinSessionsPath(), "utf-8")) as Record<string, unknown>;
   } catch {
     return {};
   }
@@ -209,7 +213,7 @@ export function revokeLinkedinSession(account: string): boolean {
     const sessions = loadLinkedinSessions();
     if (!(account in sessions)) return false;
     delete sessions[account];
-    writeFileSync(LINKEDIN_SESSIONS_PATH, JSON.stringify(sessions, null, 2), "utf-8");
+    writeFileSync(getLinkedinSessionsPath(), JSON.stringify(sessions, null, 2), "utf-8");
     return true;
   } catch {
     return false;
@@ -220,12 +224,12 @@ export function revokeLinkedinSession(account: string): boolean {
 // Instagram
 // ---------------------------------------------------------------------------
 
-const INSTAGRAM_SESSIONS_PATH = join(homedir(), ".openclaw", "instagram-sessions.json");
+function getInstagramSessionsPath(): string { return join(getDataDir(), "instagram-sessions.json"); }
 
 function loadInstagramSessions(): Record<string, unknown> {
-  if (!existsSync(INSTAGRAM_SESSIONS_PATH)) return {};
+  if (!existsSync(getInstagramSessionsPath())) return {};
   try {
-    return JSON.parse(readFileSync(INSTAGRAM_SESSIONS_PATH, "utf-8")) as Record<string, unknown>;
+    return JSON.parse(readFileSync(getInstagramSessionsPath(), "utf-8")) as Record<string, unknown>;
   } catch {
     return {};
   }
@@ -251,7 +255,7 @@ export function revokeInstagramSession(account: string): boolean {
     const sessions = loadInstagramSessions();
     if (!(account in sessions)) return false;
     delete sessions[account];
-    writeFileSync(INSTAGRAM_SESSIONS_PATH, JSON.stringify(sessions, null, 2), "utf-8");
+    writeFileSync(getInstagramSessionsPath(), JSON.stringify(sessions, null, 2), "utf-8");
     return true;
   } catch {
     return false;
@@ -262,14 +266,14 @@ export function revokeInstagramSession(account: string): boolean {
 // Framer
 // ---------------------------------------------------------------------------
 
-const FRAMER_KEYS_PATH = join(homedir(), ".openclaw", "framer-keys.json");
+function getFramerKeysPath(): string { return join(getDataDir(), "framer-keys.json"); }
 
 export function setFramerCredentials(credentials: string, account = "default"): void {
-  setApiKey(FRAMER_KEYS_PATH, account, credentials);
+  setApiKey(getFramerKeysPath(), account, credentials);
 }
 
 export function revokeFramerCredentials(account: string): boolean {
-  return deleteApiKey(FRAMER_KEYS_PATH, account);
+  return deleteApiKey(getFramerKeysPath(), account);
 }
 
 // ---------------------------------------------------------------------------
@@ -305,7 +309,7 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   }
 
   if (!provider || provider === "github") {
-    const names = listApiKeyAccounts(GITHUB_KEYS_PATH);
+    const names = listApiKeyAccounts(getGitHubKeysPath());
     if (names.length > 0) {
       for (const name of names) {
         accounts.push({ name, email: null, provider: "github", hasTokens: true, isExpired: false });
@@ -322,7 +326,7 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   }
 
   if (!provider || provider === "gemini") {
-    const names = listApiKeyAccounts(GEMINI_KEYS_PATH);
+    const names = listApiKeyAccounts(getGeminiKeysPath());
     if (names.length > 0) {
       for (const name of names) {
         accounts.push({ name, email: null, provider: "gemini", hasTokens: true, isExpired: false });
@@ -338,7 +342,7 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   }
 
   if (!provider || provider === "wolfram-alpha") {
-    const names = listApiKeyAccounts(WOLFRAM_KEYS_PATH);
+    const names = listApiKeyAccounts(getWolframKeysPath());
     if (names.length > 0) {
       for (const name of names) {
         accounts.push({ name, email: null, provider: "wolfram", hasTokens: true, isExpired: false });
@@ -364,7 +368,7 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   }
 
   if (!provider || provider === "framer") {
-    const names = listApiKeyAccounts(FRAMER_KEYS_PATH);
+    const names = listApiKeyAccounts(getFramerKeysPath());
     for (const name of names) {
       accounts.push({ name, email: null, provider: "framer", hasTokens: true, isExpired: false });
     }

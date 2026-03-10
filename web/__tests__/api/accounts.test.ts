@@ -31,15 +31,20 @@ describe("GET /api/auth/accounts", () => {
   let dir: string;
   let configPath: string;
   let tokensPath: string;
+  let githubKeysPath: string;
   let originalEnv: string | undefined;
+  let originalDataDir: string | undefined;
 
   beforeEach(() => {
     dir = tempDir();
     configPath = join(dir, "config.json");
     tokensPath = join(dir, "tokens.json");
+    githubKeysPath = join(dir, "github-keys.json");
 
     originalEnv = process.env.OMNICLAW_MCP_CONFIG;
+    originalDataDir = process.env.OMNICLAW_DATA_DIR;
     process.env.OMNICLAW_MCP_CONFIG = configPath;
+    process.env.OMNICLAW_DATA_DIR = dir;
 
     writeFileSync(
       configPath,
@@ -60,6 +65,11 @@ describe("GET /api/auth/accounts", () => {
     } else {
       delete process.env.OMNICLAW_MCP_CONFIG;
     }
+    if (originalDataDir !== undefined) {
+      process.env.OMNICLAW_DATA_DIR = originalDataDir;
+    } else {
+      delete process.env.OMNICLAW_DATA_DIR;
+    }
     if (existsSync(dir)) rmSync(dir, { recursive: true });
     vi.resetModules();
   });
@@ -69,12 +79,8 @@ describe("GET /api/auth/accounts", () => {
       tokensPath,
       JSON.stringify({ work: { access_token: "at", refresh_token: "rt" } }),
     );
-    // Add a GitHub token to config
-    const cfg = JSON.parse(
-      (await import("fs")).readFileSync(configPath, "utf-8"),
-    );
-    cfg.github_token = "ghp_test";
-    writeFileSync(configPath, JSON.stringify(cfg));
+    // Add a GitHub token to key store
+    writeFileSync(githubKeysPath, JSON.stringify({ default: "ghp_test" }));
 
     const { GET } = await import("@/app/api/auth/accounts/route");
     const req = new NextRequest("http://localhost/api/auth/accounts?provider=google-workspace");
@@ -91,12 +97,8 @@ describe("GET /api/auth/accounts", () => {
       tokensPath,
       JSON.stringify({ work: { access_token: "at" } }),
     );
-    // Add GitHub token
-    const cfg = JSON.parse(
-      (await import("fs")).readFileSync(configPath, "utf-8"),
-    );
-    cfg.github_token = "ghp_test";
-    writeFileSync(configPath, JSON.stringify(cfg));
+    // Add GitHub token to key store
+    writeFileSync(githubKeysPath, JSON.stringify({ default: "ghp_test" }));
 
     const { GET } = await import("@/app/api/auth/accounts/route");
     const req = new NextRequest("http://localhost/api/auth/accounts?provider=github");
@@ -122,11 +124,7 @@ describe("GET /api/auth/accounts", () => {
       tokensPath,
       JSON.stringify({ default: { access_token: "at", refresh_token: "rt" } }),
     );
-    const cfg = JSON.parse(
-      (await import("fs")).readFileSync(configPath, "utf-8"),
-    );
-    cfg.github_token = "ghp_test";
-    writeFileSync(configPath, JSON.stringify(cfg));
+    writeFileSync(githubKeysPath, JSON.stringify({ default: "ghp_test" }));
 
     const { GET } = await import("@/app/api/auth/accounts/route");
     const req = new NextRequest("http://localhost/api/auth/accounts");

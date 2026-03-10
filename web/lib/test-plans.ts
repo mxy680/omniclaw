@@ -1246,12 +1246,12 @@ const linkedinTest: ServiceTestFn = async (execute) => {
 
   if (postUrn) {
     const s8 = await runStep("Like post", "linkedin_post_like", {
-      post_urn: postUrn,
+      urn: postUrn,
     }, execute);
     steps.push(s8.result);
 
     const s9 = await runStep("Comment on post", "linkedin_post_comment", {
-      post_urn: postUrn,
+      urn: postUrn,
       text: "[omniclaw-smoke] test comment",
     }, execute);
     steps.push(s9.result);

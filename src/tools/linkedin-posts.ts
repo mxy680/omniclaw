@@ -54,6 +54,8 @@ export function createLinkedinPostListTool(manager: LinkedinClientManager): any 
   };
 }
 
+const SHARES_QUERY_ID = "voyagerContentcreationDashShares.279996efa5064c01775d5aff003d9377";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createLinkedinPostCreateTool(manager: LinkedinClientManager): any {
   return {
@@ -64,8 +66,8 @@ export function createLinkedinPostCreateTool(manager: LinkedinClientManager): an
       text: Type.String({ description: "The post text content." }),
       visibility: Type.Optional(
         Type.String({
-          description: "Post visibility: PUBLIC or CONNECTIONS.",
-          default: "PUBLIC",
+          description: "Post visibility: ANYONE (public) or CONNECTIONS.",
+          default: "ANYONE",
         }),
       ),
       account: Type.Optional(
@@ -80,15 +82,21 @@ export function createLinkedinPostCreateTool(manager: LinkedinClientManager): an
       const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
-        const visibility = params.visibility ?? "PUBLIC";
+        const visibilityType = params.visibility === "CONNECTIONS" ? "CONNECTIONS" : "ANYONE";
+        const postData = {
+          allowedCommentersScope: "ALL",
+          intendedShareLifeCycleState: "PUBLISHED",
+          origin: "FEED",
+          visibilityDataUnion: { visibilityType },
+          commentary: { text: params.text, attributesV2: [] },
+        };
         const result = await client.request<Record<string, unknown>>({
           method: "POST",
-          path: "/contentcreation/normalizedShares",
+          path: `/graphql?action=execute&queryId=${SHARES_QUERY_ID}`,
           body: {
-            commentary: params.text,
-            visibility: visibility,
-            origin: "FEED",
-            allowedCommentersScope: "ALL",
+            variables: { post: postData },
+            queryId: SHARES_QUERY_ID,
+            includeWebMetadata: true,
           },
         });
         return jsonResult(result);

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -47,7 +47,7 @@ export function createGitHubSearchReposTool(manager: GitHubClientManager): any {
           })),
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -93,7 +93,7 @@ export function createGitHubSearchCodeTool(manager: GitHubClientManager): any {
           })),
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -143,7 +143,7 @@ export function createGitHubSearchIssuesTool(manager: GitHubClientManager): any 
           })),
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -193,7 +193,7 @@ export function createGitHubSearchCommitsTool(manager: GitHubClientManager): any
           })),
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -241,7 +241,7 @@ export function createGitHubSearchUsersTool(manager: GitHubClientManager): any {
           })),
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

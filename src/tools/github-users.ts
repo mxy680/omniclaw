@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -28,7 +28,7 @@ export function createGitHubUserGetTool(manager: GitHubClientManager): any {
           created_at: data.created_at, type: data.type,
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -72,7 +72,7 @@ export function createGitHubUserReposTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -102,7 +102,7 @@ export function createGitHubOrgGetTool(manager: GitHubClientManager): any {
           created_at: data.created_at, type: data.type,
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -140,7 +140,7 @@ export function createGitHubOrgMembersTool(manager: GitHubClientManager): any {
         });
         return jsonResult(data.map((m) => ({ login: m.login, html_url: m.html_url, avatar_url: m.avatar_url })));
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -192,7 +192,7 @@ export function createGitHubOrgReposTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -229,7 +229,7 @@ export function createGitHubTeamListTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

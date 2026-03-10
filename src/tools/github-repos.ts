@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -65,10 +65,7 @@ export function createGitHubRepoListTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -94,10 +91,7 @@ export function createGitHubRepoGetTool(manager: GitHubClientManager): any {
         const { data } = await octokit.rest.repos.get({ owner: params.owner, repo: params.repo });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -142,10 +136,7 @@ export function createGitHubRepoCreateTool(manager: GitHubClientManager): any {
           description: data.description,
         });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -201,10 +192,7 @@ export function createGitHubRepoUpdateTool(manager: GitHubClientManager): any {
           description: data.description,
         });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -230,10 +218,7 @@ export function createGitHubRepoDeleteTool(manager: GitHubClientManager): any {
         await octokit.rest.repos.delete({ owner: params.owner, repo: params.repo });
         return jsonResult({ success: true, deleted: `${params.owner}/${params.repo}` });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -269,10 +254,7 @@ export function createGitHubRepoForkTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ full_name: data.full_name, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -301,10 +283,7 @@ export function createGitHubRepoStarTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ success: true, starred: `${params.owner}/${params.repo}` });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -333,10 +312,7 @@ export function createGitHubRepoUnstarTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ success: true, unstarred: `${params.owner}/${params.repo}` });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -372,10 +348,7 @@ export function createGitHubRepoContentGetTool(manager: GitHubClientManager): an
         });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -434,10 +407,7 @@ export function createGitHubRepoContentCreateTool(manager: GitHubClientManager):
           html_url: data.content?.html_url,
         });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -485,10 +455,7 @@ export function createGitHubRepoContentDeleteTool(manager: GitHubClientManager):
         });
         return jsonResult({ success: true, commit_sha: data.commit.sha });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -517,10 +484,7 @@ export function createGitHubRepoTopicsTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ topics: data.names });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -563,10 +527,7 @@ export function createGitHubRepoContributorsTool(manager: GitHubClientManager): 
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -595,10 +556,7 @@ export function createGitHubRepoLanguagesTool(manager: GitHubClientManager): any
         });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };

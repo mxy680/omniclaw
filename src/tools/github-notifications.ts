@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -38,7 +38,7 @@ export function createGitHubNotificationListTool(manager: GitHubClientManager): 
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -67,7 +67,7 @@ export function createGitHubNotificationMarkReadTool(manager: GitHubClientManage
         });
         return jsonResult({ success: true });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -92,7 +92,7 @@ export function createGitHubNotificationThreadReadTool(manager: GitHubClientMana
         await octokit.rest.activity.markThreadAsRead({ thread_id: params.thread_id });
         return jsonResult({ success: true });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -120,7 +120,7 @@ export function createGitHubNotificationThreadSubscribeTool(manager: GitHubClien
         });
         return jsonResult({ subscribed: data.subscribed, ignored: data.ignored });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -33,7 +33,7 @@ export function createGitHubBranchListTool(manager: GitHubClientManager): any {
         });
         return jsonResult(data.map((b) => ({ name: b.name, protected: b.protected, commit_sha: b.commit.sha })));
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -62,7 +62,7 @@ export function createGitHubBranchGetTool(manager: GitHubClientManager): any {
         });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -93,7 +93,7 @@ export function createGitHubBranchCreateTool(manager: GitHubClientManager): any 
         });
         return jsonResult({ ref: data.ref, sha: data.object.sha });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -122,7 +122,7 @@ export function createGitHubBranchDeleteTool(manager: GitHubClientManager): any 
         });
         return jsonResult({ success: true, deleted: params.branch });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -151,7 +151,7 @@ export function createGitHubBranchProtectionGetTool(manager: GitHubClientManager
         });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -190,7 +190,7 @@ export function createGitHubTagListTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -231,7 +231,7 @@ export function createGitHubReleaseListTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -260,7 +260,7 @@ export function createGitHubReleaseGetTool(manager: GitHubClientManager): any {
         });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -302,7 +302,7 @@ export function createGitHubReleaseCreateTool(manager: GitHubClientManager): any
         });
         return jsonResult({ id: data.id, tag_name: data.tag_name, name: data.name, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -331,7 +331,7 @@ export function createGitHubReleaseDeleteTool(manager: GitHubClientManager): any
         });
         return jsonResult({ success: true });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

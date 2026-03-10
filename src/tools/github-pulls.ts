@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -72,7 +72,7 @@ export function createGitHubPullListTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -101,7 +101,7 @@ export function createGitHubPullGetTool(manager: GitHubClientManager): any {
         });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -138,7 +138,7 @@ export function createGitHubPullCreateTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ number: data.number, title: data.title, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -178,7 +178,7 @@ export function createGitHubPullUpdateTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ number: data.number, title: data.title, state: data.state, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -220,7 +220,7 @@ export function createGitHubPullMergeTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ merged: data.merged, sha: data.sha, message: data.message });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -261,7 +261,7 @@ export function createGitHubPullFilesTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -291,7 +291,7 @@ export function createGitHubPullDiffTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ diff: data as unknown as string });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -325,7 +325,7 @@ export function createGitHubPullReviewListTool(manager: GitHubClientManager): an
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -363,7 +363,7 @@ export function createGitHubPullReviewCreateTool(manager: GitHubClientManager): 
         });
         return jsonResult({ id: data.id, state: data.state, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -403,7 +403,7 @@ export function createGitHubPullReviewCommentsTool(manager: GitHubClientManager)
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -441,7 +441,7 @@ export function createGitHubPullRequestReviewersTool(manager: GitHubClientManage
           requested_teams: (data.requested_teams ?? []).map((t) => t.slug),
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -478,7 +478,7 @@ export function createGitHubPullChecksTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

@@ -18,3 +18,18 @@ export function authRequired(service: string) {
     action: `Call ${service}_auth_setup to authenticate.`,
   };
 }
+
+/**
+ * Handles errors from API calls, returning auth_required for 401 errors
+ * and operation_failed for everything else.
+ */
+export function handleApiError(err: unknown, service: string): AgentToolResult {
+  const status = (err as { status?: number }).status;
+  if (status === 401) {
+    return jsonResult(authRequired(service));
+  }
+  return jsonResult({
+    error: "operation_failed",
+    message: err instanceof Error ? err.message : String(err),
+  });
+}

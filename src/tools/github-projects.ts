@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -49,7 +49,7 @@ export function createGitHubProjectListTool(manager: GitHubClientManager): any {
           html_url: p.html_url, created_at: p.created_at, updated_at: p.updated_at,
         })));
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -77,7 +77,7 @@ export function createGitHubProjectGetTool(manager: GitHubClientManager): any {
         });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -115,7 +115,7 @@ export function createGitHubProjectColumnsTool(manager: GitHubClientManager): an
           id: c.id, name: c.name, created_at: c.created_at, updated_at: c.updated_at,
         })));
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -154,7 +154,7 @@ export function createGitHubProjectCardsTool(manager: GitHubClientManager): any 
           created_at: c.created_at, updated_at: c.updated_at,
         })));
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

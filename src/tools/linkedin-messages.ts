@@ -146,6 +146,9 @@ export function createLinkedinMessagesSendTool(manager: LinkedinClientManager): 
           return jsonResult({ error: "profile_not_found", message: `Could not resolve profile for ${publicId}.` });
         }
 
+        // Extract just the ID portion from the fsd_profile URN for the messaging API
+        const recipientId = profileUrn.split(":").pop() ?? profileUrn;
+
         // Create new conversation with recipient
         const result = await client.request<Record<string, unknown>>({
           method: "POST",
@@ -154,7 +157,7 @@ export function createLinkedinMessagesSendTool(manager: LinkedinClientManager): 
             keyVersion: "LEGACY_INBOX",
             conversationCreate: {
               eventCreate: { value: messageCreate },
-              recipients: [profileUrn],
+              recipients: [recipientId],
               subtype: "MEMBER_TO_MEMBER",
             },
           },

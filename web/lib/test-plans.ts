@@ -1257,11 +1257,27 @@ const linkedinTest: ServiceTestFn = async (execute) => {
     steps.push(s9.result);
   }
 
-  const s10 = await runStep("Send message", "linkedin_messages_send", {
-    profile_url: "https://www.linkedin.com/in/markshteyn/",
-    text: "[omniclaw-smoke] auto test",
-  }, execute);
-  steps.push(s10.result);
+  // Extract a conversation URN from messages list to reply in an existing thread
+  const msgParsed = extractResult(s5.data) as { elements?: Array<{ entityUrn?: string }> } | undefined;
+  const convElements = msgParsed?.elements;
+  const convUrn = Array.isArray(convElements) && convElements.length > 0
+    ? convElements[0].entityUrn : undefined;
+
+  if (convUrn) {
+    const s10 = await runStep("Send message", "linkedin_messages_send", {
+      conversation_urn: convUrn,
+      text: "[omniclaw-smoke] auto test",
+    }, execute);
+    steps.push(s10.result);
+  } else {
+    steps.push({
+      name: "Send message",
+      tool: "linkedin_messages_send",
+      status: "skipped",
+      duration: 0,
+      error: "No existing conversations to reply to",
+    });
+  }
 
   return steps;
 };

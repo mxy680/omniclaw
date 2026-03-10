@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -39,7 +39,7 @@ export function createGitHubUserUpdateTool(manager: GitHubClientManager): any {
           hireable: data.hireable, html_url: data.html_url,
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -67,7 +67,7 @@ export function createGitHubUserFollowersListTool(manager: GitHubClientManager):
         });
         return jsonResult(data.map((u) => ({ login: u.login, html_url: u.html_url, avatar_url: u.avatar_url })));
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -95,7 +95,7 @@ export function createGitHubUserFollowingListTool(manager: GitHubClientManager):
         });
         return jsonResult(data.map((u: { login: string; html_url: string; avatar_url: string }) => ({ login: u.login, html_url: u.html_url, avatar_url: u.avatar_url })));
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -120,7 +120,7 @@ export function createGitHubUserFollowTool(manager: GitHubClientManager): any {
         await octokit.rest.users.follow({ username: params.username });
         return jsonResult({ followed: params.username });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -145,7 +145,7 @@ export function createGitHubUserUnfollowTool(manager: GitHubClientManager): any 
         await octokit.rest.users.unfollow({ username: params.username });
         return jsonResult({ unfollowed: params.username });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -180,7 +180,7 @@ export function createGitHubUserEventsListTool(manager: GitHubClientManager): an
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -209,7 +209,7 @@ export function createGitHubRepoTopicsReplaceTool(manager: GitHubClientManager):
         });
         return jsonResult({ topics: data.names });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -38,7 +38,7 @@ export function createGitHubWebhookListTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -88,7 +88,7 @@ export function createGitHubWebhookCreateTool(manager: GitHubClientManager): any
         });
         return jsonResult({ id: data.id, active: data.active, events: data.events, config: { url: data.config.url } });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -137,7 +137,7 @@ export function createGitHubWebhookUpdateTool(manager: GitHubClientManager): any
         });
         return jsonResult({ id: data.id, active: data.active, events: data.events });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -166,7 +166,7 @@ export function createGitHubWebhookDeleteTool(manager: GitHubClientManager): any
         });
         return jsonResult({ success: true });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -32,7 +32,7 @@ export function createGitHubGistListTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -65,7 +65,7 @@ export function createGitHubGistGetTool(manager: GitHubClientManager): any {
           html_url: data.html_url, created_at: data.created_at, updated_at: data.updated_at,
         });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -101,7 +101,7 @@ export function createGitHubGistCreateTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ id: data.id, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -139,7 +139,7 @@ export function createGitHubGistUpdateTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ id: data.id, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -164,7 +164,7 @@ export function createGitHubGistDeleteTool(manager: GitHubClientManager): any {
         await octokit.rest.gists.delete({ gist_id: params.gist_id });
         return jsonResult({ success: true });
       } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
+        return handleApiError(err, "github");
       }
     },
   };

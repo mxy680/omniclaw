@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { GitHubClientManager } from "../auth/github-client-manager.js";
-import { jsonResult, authRequired } from "./shared.js";
+import { jsonResult, authRequired, handleApiError } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("github");
 
@@ -85,10 +85,7 @@ export function createGitHubIssueListTool(manager: GitHubClientManager): any {
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -122,10 +119,7 @@ export function createGitHubIssueGetTool(manager: GitHubClientManager): any {
         });
         return jsonResult(data);
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -176,10 +170,7 @@ export function createGitHubIssueCreateTool(manager: GitHubClientManager): any {
         });
         return jsonResult({ number: data.number, title: data.title, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -242,10 +233,7 @@ export function createGitHubIssueUpdateTool(manager: GitHubClientManager): any {
           html_url: data.html_url,
         });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -298,10 +286,7 @@ export function createGitHubIssueCommentListTool(manager: GitHubClientManager): 
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -337,10 +322,7 @@ export function createGitHubIssueCommentCreateTool(manager: GitHubClientManager)
         });
         return jsonResult({ id: data.id, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -376,10 +358,7 @@ export function createGitHubIssueCommentUpdateTool(manager: GitHubClientManager)
         });
         return jsonResult({ id: data.id, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -413,10 +392,7 @@ export function createGitHubIssueCommentDeleteTool(manager: GitHubClientManager)
         });
         return jsonResult({ success: true });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -454,10 +430,7 @@ export function createGitHubIssueLabelListTool(manager: GitHubClientManager): an
           data.map((l) => ({ name: l.name, color: l.color, description: l.description })),
         );
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -502,10 +475,7 @@ export function createGitHubIssueLabelCreateTool(manager: GitHubClientManager): 
         });
         return jsonResult({ name: data.name, color: data.color, description: data.description });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -554,10 +524,7 @@ export function createGitHubIssueMilestoneListTool(manager: GitHubClientManager)
           })),
         );
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };
@@ -610,10 +577,7 @@ export function createGitHubIssueMilestoneCreateTool(manager: GitHubClientManage
         });
         return jsonResult({ number: data.number, title: data.title, html_url: data.html_url });
       } catch (err: unknown) {
-        return jsonResult({
-          error: "operation_failed",
-          message: err instanceof Error ? err.message : String(err),
-        });
+        return handleApiError(err, "github");
       }
     },
   };

@@ -18,6 +18,7 @@ This project is an MCP server providing tools for Gmail, Calendar, Drive, Docs, 
 | Wolfram Alpha | 2 | `wolfram` | `docs/wolfram.md` |
 | LinkedIn | 11 | `linkedin` | `skills/linkedin.SKILL.md` |
 | Instagram | 14 | `instagram` | `skills/instagram.SKILL.md` |
+| Framer | 59 | `framer` | `skills/framer.SKILL.md` |
 
 ## Scheduler
 
@@ -48,8 +49,9 @@ All services support multiple named accounts. Tools accept an optional `account`
 | Wolfram | `~/.openclaw/wolfram-keys.json` | `WolframClientManager` | App ID |
 | LinkedIn | `~/.openclaw/linkedin-sessions.json` | `LinkedinSessionClient` | Session cookie |
 | Instagram | `~/.openclaw/instagram-sessions.json` | `InstagramSessionClient` | Session cookie |
+| Framer | `~/.openclaw/framer-keys.json` | `FramerClientManager` | API key (JSON: `{url, apiKey}`) |
 
-Key classes: `ApiKeyStore` (generic string-value store for GitHub/Gemini/Wolfram), `TokenStore` (Google OAuth credentials), `SessionStore` (LinkedIn/Instagram sessions). Legacy single-token config keys (`github_token`, `gemini_api_key`, `wolfram_appid` in `mcp-server-config.json`) are auto-migrated to the "default" account in the new stores on first startup.
+Key classes: `ApiKeyStore` (generic string-value store for GitHub/Gemini/Wolfram/Framer), `TokenStore` (Google OAuth credentials), `SessionStore` (LinkedIn/Instagram sessions). Legacy single-token config keys (`github_token`, `gemini_api_key`, `wolfram_appid` in `mcp-server-config.json`) are auto-migrated to the "default" account in the new stores on first startup.
 
 # currentDate
 Today's date is 2026-03-08.

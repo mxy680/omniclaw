@@ -18,6 +18,7 @@ import {
   Github,
   Sparkles,
   Sigma,
+  SkipForward,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -50,7 +51,7 @@ const COLOR_MAP: Record<string, string> = {
 interface StepResult {
   name: string;
   tool: string;
-  status: "success" | "error";
+  status: "success" | "error" | "skipped";
   duration: number;
   error?: string;
   cleanup?: boolean;
@@ -113,6 +114,8 @@ export const ServiceTestPanel = forwardRef<ServiceTestPanelHandle, ServiceTestPa
 
     const passed = steps.filter((s) => s.status === "success").length;
     const failed = steps.filter((s) => s.status === "error").length;
+    const skipped = steps.filter((s) => s.status === "skipped").length;
+    const ran = passed + failed;
 
     return (
       <div className="overflow-hidden rounded-lg border border-border/50">
@@ -151,13 +154,21 @@ export const ServiceTestPanel = forwardRef<ServiceTestPanelHandle, ServiceTestPa
           {steps.length > 0 && !running && (
             <span className="text-[11px] text-muted-foreground">
               <span className="text-emerald-600 dark:text-emerald-400">
-                {passed}/{steps.length} passed
+                {passed}/{ran} passed
               </span>
               {failed > 0 && (
                 <>
                   {" "}
                   <span className="text-red-600 dark:text-red-400">
                     ({failed} failed)
+                  </span>
+                </>
+              )}
+              {skipped > 0 && (
+                <>
+                  {" · "}
+                  <span className="text-amber-600 dark:text-amber-400">
+                    {skipped} skipped
                   </span>
                 </>
               )}
@@ -213,6 +224,8 @@ export const ServiceTestPanel = forwardRef<ServiceTestPanelHandle, ServiceTestPa
                 <div className="flex h-5 w-5 shrink-0 items-center justify-center">
                   {step.status === "success" ? (
                     <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : step.status === "skipped" ? (
+                    <SkipForward className="h-3.5 w-3.5 text-amber-500" />
                   ) : (
                     <X className="h-3.5 w-3.5 text-red-500" />
                   )}
@@ -232,6 +245,11 @@ export const ServiceTestPanel = forwardRef<ServiceTestPanelHandle, ServiceTestPa
                   </div>
                   {step.status === "error" && step.error && (
                     <p className="mt-0.5 truncate text-[11px] text-red-600 dark:text-red-400">
+                      {step.error}
+                    </p>
+                  )}
+                  {step.status === "skipped" && step.error && (
+                    <p className="mt-0.5 truncate text-[11px] text-amber-600 dark:text-amber-400">
                       {step.error}
                     </p>
                   )}

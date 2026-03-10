@@ -44,6 +44,7 @@ export const VALID_SERVICES = [
   "wolfram",
   "linkedin",
   "instagram",
+  "framer",
 ] as const;
 
 const DEFAULT_AGENTS_FILE: AgentsFile = {

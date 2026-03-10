@@ -39,6 +39,38 @@ export function ConnectDialog({
   const isWolfram = providerId === "wolfram-alpha";
   const isLinkedin = providerId === "linkedin";
   const isInstagram = providerId === "instagram";
+  const isFramer = providerId === "framer";
+  const [projectUrl, setProjectUrl] = useState("");
+
+  async function handleFramerConnect() {
+    if (!token.trim() || !projectUrl.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/framer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_url: projectUrl.trim(),
+          api_key: token.trim(),
+          account: accountName.trim() || "default",
+        }),
+      });
+      if (res.ok) {
+        toast.success("Framer credentials saved");
+        setOpen(false);
+        setToken("");
+        setProjectUrl("");
+        onConnected?.();
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to save credentials");
+      }
+    } catch {
+      toast.error("Failed to save credentials");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleGoogleConnect() {
     if (!accountName.trim()) return;
@@ -213,7 +245,9 @@ export function ConnectDialog({
                     ? "A browser window will open for you to log in to LinkedIn. Your session cookies will be captured automatically."
                     : isInstagram
                       ? "A browser window will open for you to log in to Instagram. Your session cookies will be captured automatically."
-                      : `Enter a name for this account, then sign in with ${providerName}.`}
+                      : isFramer
+                        ? "Enter your Framer project URL and API key from the project's site settings."
+                        : `Enter a name for this account, then sign in with ${providerName}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -371,6 +405,45 @@ export function ConnectDialog({
               )}
             </div>
           </div>
+        ) : isFramer ? (
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="framer-account">Account Name</Label>
+              <Input
+                id="framer-account"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="e.g. default, my-site"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="framer-url">Project URL</Label>
+              <Input
+                id="framer-url"
+                value={projectUrl}
+                onChange={(e) => setProjectUrl(e.target.value)}
+                placeholder="https://framer.com/projects/Website--aabbccdd1122"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="framer-key">API Key</Label>
+              <Input
+                id="framer-key"
+                type="password"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Your Framer API key"
+              />
+              <p className="text-xs text-muted-foreground">
+                Find your API key in the project&apos;s Site Settings &rarr; General &rarr; API.
+              </p>
+              {existingAccounts.includes(accountName.trim()) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  This will replace the existing &ldquo;{accountName.trim()}&rdquo; credentials.
+                </p>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -392,12 +465,12 @@ export function ConnectDialog({
 
         <DialogFooter>
           <Button
-            onClick={isInstagram ? handleInstagramConnect : isLinkedin ? handleLinkedinConnect : isWolfram ? handleWolframConnect : isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
-            disabled={isGitHub || isGemini || isWolfram ? !token.trim() || !accountName.trim() || loading : !accountName.trim() || loading}
+            onClick={isFramer ? handleFramerConnect : isInstagram ? handleInstagramConnect : isLinkedin ? handleLinkedinConnect : isWolfram ? handleWolframConnect : isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
+            disabled={isFramer ? !token.trim() || !projectUrl.trim() || !accountName.trim() || loading : isGitHub || isGemini || isWolfram ? !token.trim() || !accountName.trim() || loading : !accountName.trim() || loading}
           >
             {loading
-              ? isInstagram ? "Waiting for login..." : isLinkedin ? "Waiting for login..." : isGitHub || isGemini || isWolfram ? "Saving..." : "Redirecting..."
-              : isInstagram ? "Open Instagram Login" : isLinkedin ? "Open LinkedIn Login" : isWolfram ? "Save AppID" : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
+              ? isFramer ? "Saving..." : isInstagram ? "Waiting for login..." : isLinkedin ? "Waiting for login..." : isGitHub || isGemini || isWolfram ? "Saving..." : "Redirecting..."
+              : isFramer ? "Save Credentials" : isInstagram ? "Open Instagram Login" : isLinkedin ? "Open LinkedIn Login" : isWolfram ? "Save AppID" : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
           </Button>
         </DialogFooter>
       </DialogContent>

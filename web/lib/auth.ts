@@ -259,13 +259,27 @@ export function revokeInstagramSession(account: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Framer
+// ---------------------------------------------------------------------------
+
+const FRAMER_KEYS_PATH = join(homedir(), ".openclaw", "framer-keys.json");
+
+export function setFramerCredentials(credentials: string, account = "default"): void {
+  setApiKey(FRAMER_KEYS_PATH, account, credentials);
+}
+
+export function revokeFramerCredentials(account: string): boolean {
+  return deleteApiKey(FRAMER_KEYS_PATH, account);
+}
+
+// ---------------------------------------------------------------------------
 // Account listing
 // ---------------------------------------------------------------------------
 
 export interface AccountInfo {
   name: string;
   email: string | null;
-  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin" | "instagram";
+  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin" | "instagram" | "framer";
   hasTokens: boolean;
   isExpired: boolean;
 }
@@ -347,6 +361,13 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   if (!provider || provider === "instagram") {
     const instagramAccounts = getInstagramAccounts();
     accounts.push(...instagramAccounts);
+  }
+
+  if (!provider || provider === "framer") {
+    const names = listApiKeyAccounts(FRAMER_KEYS_PATH);
+    for (const name of names) {
+      accounts.push({ name, email: null, provider: "framer", hasTokens: true, isExpired: false });
+    }
   }
 
   return accounts;

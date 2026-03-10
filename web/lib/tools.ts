@@ -41,6 +41,7 @@ const SERVICE_NAMES: Record<string, string> = {
   wolfram: "Wolfram Alpha",
   linkedin: "LinkedIn",
   instagram: "Instagram",
+  framer: "Framer",
 };
 
 let cached: ToolRegistry | null = null;

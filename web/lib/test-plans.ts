@@ -1,7 +1,7 @@
 export interface TestStepResult {
   name: string;
   tool: string;
-  status: "success" | "error";
+  status: "success" | "error" | "skipped";
   duration: number;
   error?: string;
   cleanup?: boolean;
@@ -25,6 +25,17 @@ async function runStep(
   const start = Date.now();
   try {
     const data = await execute(tool, params);
+    const parsed = extractResult(data);
+    const errorField = parsed && typeof parsed === "object" && "error" in parsed
+      ? (parsed as Record<string, unknown>).error : undefined;
+    if (typeof errorField === "string") {
+      const status = errorField === "auth_required" ? "skipped" as const : "error" as const;
+      const message = (parsed as Record<string, unknown>).action ?? (parsed as Record<string, unknown>).message ?? errorField;
+      return {
+        result: { name, tool, status, duration: Date.now() - start, error: String(message), cleanup },
+        data,
+      };
+    }
     return {
       result: { name, tool, status: "success", duration: Date.now() - start, cleanup },
       data,

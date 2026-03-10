@@ -1102,13 +1102,6 @@ const githubTest: ServiceTestFn = async (execute) => {
 const geminiTest: ServiceTestFn = async (execute) => {
   const steps: TestStepResult[] = [];
 
-  // Generate an image with native Gemini
-  const s1 = await runStep("Generate image (native)", "gemini_generate_image", {
-    prompt: "A simple blue circle on a white background",
-    save_dir: "/tmp/omniclaw-smoke-gemini",
-  }, execute);
-  steps.push(s1.result);
-
   // Generate an image with Imagen
   const s2 = await runStep("Generate image (Imagen)", "gemini_imagen", {
     prompt: "A simple red square on a white background",
@@ -1240,7 +1233,7 @@ const instagramTest: ServiceTestFn = async (execute) => {
   }, execute);
   steps.push(s5.result);
 
-  const s6 = await runStep("List own posts", "instagram_post_list", { max_count: 3 }, execute);
+  const s6 = await runStep("List own posts", "instagram_post_list", { count: 3 }, execute);
   steps.push(s6.result);
 
   // Extract media_id from post list for subsequent steps

@@ -6,7 +6,7 @@ metadata: {"openclaw": {"emoji": "🎨"}}
 
 # Gemini Media Generation
 
-Generate images with Gemini's native image generation or Imagen, and generate videos with Veo.
+Generate images with Imagen and videos with Veo.
 
 ## First-Time Setup
 
@@ -20,7 +20,6 @@ Generate images with Gemini's native image generation or Imagen, and generate vi
 - `gemini_auth_setup` — Validate a Gemini API key (run once)
 
 ### Image Generation
-- `gemini_generate_image` — Generate an image using Gemini native models (text-to-image, configurable aspect ratio and resolution)
 - `gemini_imagen` — Generate images using Imagen models (supports multiple images, aspect ratio, person generation)
 
 ### Video Generation
@@ -28,21 +27,17 @@ Generate images with Gemini's native image generation or Imagen, and generate vi
 
 ## Workflow
 
-1. Use `gemini_generate_image` for quick text-to-image with Gemini models (free tier available with gemini-2.5-flash-image).
-2. Use `gemini_imagen` when you need multiple image variants or dedicated Imagen quality.
-3. Use `gemini_generate_video` for video generation (takes 1-5 minutes, polls automatically).
+1. Use `gemini_imagen` for image generation (supports multiple images, aspect ratio, person generation).
+2. Use `gemini_generate_video` for video generation (takes 1-5 minutes, polls automatically).
 
 ## Models
 
 ### Image Models
-| Model | Type | Notes |
-|---|---|---|
-| `gemini-2.5-flash-image` | Native Gemini | Default. Free tier available. |
-| `gemini-3.1-flash-image-preview` | Native Gemini | Preview. Higher quality. |
-| `gemini-3-pro-image-preview` | Native Gemini | Preview. Highest quality, supports 4K. |
-| `imagen-4.0-generate-001` | Imagen | Default for `gemini_imagen`. Standard quality. |
-| `imagen-4.0-ultra-generate-001` | Imagen | Ultra quality. |
-| `imagen-4.0-fast-generate-001` | Imagen | Fast generation. |
+| Model | Notes |
+|---|---|
+| `imagen-4.0-generate-001` | Default. Standard quality. |
+| `imagen-4.0-ultra-generate-001` | Ultra quality. |
+| `imagen-4.0-fast-generate-001` | Fast generation. |
 
 ### Video Models
 | Model | Notes |
@@ -51,7 +46,7 @@ Generate images with Gemini's native image generation or Imagen, and generate vi
 
 ## Examples
 
-- "Generate an image of a sunset over mountains" → `gemini_generate_image`
+- "Generate an image of a sunset over mountains" → `gemini_imagen`
 - "Create 4 logo variations for a coffee shop" → `gemini_imagen` with `number_of_images=4`
 - "Generate a cinematic video of ocean waves" → `gemini_generate_video`
 

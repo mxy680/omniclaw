@@ -16,7 +16,6 @@ import { ApiKeyStore } from "../../src/auth/api-key-store.js";
 import { GeminiClientManager } from "../../src/auth/gemini-client-manager.js";
 import { createGeminiAuthSetupTool } from "../../src/tools/gemini-auth.js";
 import {
-  createGeminiGenerateImageTool,
   createGeminiImagenTool,
 } from "../../src/tools/gemini-generate-image.js";
 import { createGeminiGenerateVideoTool } from "../../src/tools/gemini-generate-video.js";
@@ -76,40 +75,6 @@ describe.skipIf(!hasKey)("Gemini API integration", { timeout: 120_000 }, () => {
       const result = await tool.execute("t", { api_key: "invalid-key-12345" });
 
       expect(result.details).toHaveProperty("error", "auth_failed");
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Native Gemini image generation
-  // -------------------------------------------------------------------------
-  describe("gemini_generate_image", () => {
-    it("generates an image and saves to disk", async () => {
-      const tool = createGeminiGenerateImageTool(manager);
-      const result = await tool.execute("t", {
-        prompt: "A simple red circle on a white background",
-        save_dir: SAVE_DIR,
-      });
-
-      expect(result.details).not.toHaveProperty("error");
-      expect(result.details.images).toBeDefined();
-      expect(result.details.images.length).toBeGreaterThan(0);
-
-      const image = result.details.images[0];
-      expect(existsSync(image.path)).toBe(true);
-      expect(statSync(image.path).size).toBeGreaterThan(0);
-      expect(image.mime_type).toMatch(/^image\//);
-    });
-
-    it("returns auth_required when not authenticated", async () => {
-      const emptyStore = new ApiKeyStore(path.join(os.tmpdir(), `gemini-empty-${Date.now()}.json`));
-      const emptyManager = new GeminiClientManager(emptyStore);
-      const tool = createGeminiGenerateImageTool(emptyManager);
-      const result = await tool.execute("t", {
-        prompt: "test",
-        save_dir: SAVE_DIR,
-      });
-
-      expect(result.details).toHaveProperty("error", "auth_required");
     });
   });
 

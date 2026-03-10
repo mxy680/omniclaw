@@ -121,7 +121,6 @@ import { GeminiClientManager } from "../auth/gemini-client-manager.js";
 import { WolframClientManager } from "../auth/wolfram-client-manager.js";
 import { createGeminiAuthSetupTool } from "../tools/gemini-auth.js";
 import {
-  createGeminiGenerateImageTool,
   createGeminiImagenTool,
 } from "../tools/gemini-generate-image.js";
 import { createGeminiGenerateVideoTool } from "../tools/gemini-generate-video.js";
@@ -675,7 +674,6 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     const geminiManager = new GeminiClientManager(geminiStore);
 
     add(createGeminiAuthSetupTool(geminiManager));
-    add(createGeminiGenerateImageTool(geminiManager));
     add(createGeminiImagenTool(geminiManager));
     add(createGeminiGenerateVideoTool(geminiManager));
   }

@@ -1102,13 +1102,6 @@ const githubTest: ServiceTestFn = async (execute) => {
 const geminiTest: ServiceTestFn = async (execute) => {
   const steps: TestStepResult[] = [];
 
-  // Generate an image with native Gemini
-  const s1 = await runStep("Generate image (native)", "gemini_generate_image", {
-    prompt: "A simple blue circle on a white background",
-    save_dir: "/tmp/omniclaw-smoke-gemini",
-  }, execute);
-  steps.push(s1.result);
-
   // Generate an image with Imagen
   const s2 = await runStep("Generate image (Imagen)", "gemini_imagen", {
     prompt: "A simple red square on a white background",

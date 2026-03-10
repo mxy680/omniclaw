@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { jsonResult } from "./shared.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,8 +26,8 @@ export function createFramerExportHtmlTool(): any {
     ) {
       const outputDir = params.output_dir ?? "./framer-export";
       try {
-        const result = execSync(
-          `npx unframed "${params.url}" -o "${outputDir}"`,
+        const result = execFileSync(
+          "npx", ["unframed", params.url, "-o", outputDir],
           { encoding: "utf-8", timeout: 120_000 },
         );
         return jsonResult({

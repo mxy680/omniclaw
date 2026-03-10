@@ -12,7 +12,12 @@ export class InstagramSessionClient {
   }
 
   isAuthenticated(): boolean {
-    return this.session !== null;
+    return this.session !== null && !!this.session.cookies["sessionid"];
+  }
+
+  /** Get the authenticated user's numeric ID from the ds_user_id cookie. */
+  getUserId(): string | null {
+    return this.session?.cookies["ds_user_id"] ?? null;
   }
 
   reload(account?: string): void {
@@ -53,6 +58,12 @@ export class InstagramSessionClient {
       Cookie: cookieHeader,
       "User-Agent": this.session.userAgent,
       "X-IG-App-ID": "936619743392459",
+      "X-Requested-With": "XMLHttpRequest",
+      Origin: "https://www.instagram.com",
+      Referer: "https://www.instagram.com/",
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-site",
       ...(this.session.csrfToken ? { "X-CSRFToken": this.session.csrfToken } : {}),
       ...opts.headers,
     };

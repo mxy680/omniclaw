@@ -27,7 +27,7 @@ export function createInstagramSearchTool(manager: InstagramClientManager): any 
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
         const result = await client.request<Record<string, unknown>>({
-          path: `/web_search/topsearch/?query=${encodeURIComponent(params.query)}`,
+          path: `/web/search/topsearch/?query=${encodeURIComponent(params.query)}`,
         });
         return jsonResult(result);
       } catch (err: unknown) {

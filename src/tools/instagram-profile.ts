@@ -20,8 +20,10 @@ export function createInstagramProfileGetTool(manager: InstagramClientManager): 
       const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
+        const userId = client.getUserId();
+        if (!userId) return jsonResult({ error: "session_invalid", message: "ds_user_id cookie missing. Re-authenticate." });
         const result = await client.request<Record<string, unknown>>({
-          path: "/accounts/current_user/info/",
+          path: `/users/${userId}/info/`,
         });
         return jsonResult(result);
       } catch (err: unknown) {

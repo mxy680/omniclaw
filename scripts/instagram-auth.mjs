@@ -45,16 +45,29 @@ try {
 
   await page.goto("https://www.instagram.com/accounts/login/");
 
-  await page.waitForURL(
-    (url) =>
-      !url.pathname.includes("/accounts/login") &&
-      !url.pathname.includes("/challenge/"),
-    { timeout: 120_000 },
-  );
+  // Wait for sessionid cookie — the true indicator of successful login.
+  // The URL may change before the cookie is set (onetap, consent screens),
+  // so we poll cookies directly instead of relying on URL patterns.
+  const cookieDeadline = Date.now() + 120_000;
+  let allCookies;
+  while (Date.now() < cookieDeadline) {
+    allCookies = await context.cookies();
+    if (allCookies.some((c) => c.name === "sessionid")) break;
+    await page.waitForTimeout(1000);
+  }
+  if (!allCookies) allCookies = await context.cookies();
 
-  const allCookies = await context.cookies();
   const cookies = {};
   for (const c of allCookies) cookies[c.name] = c.value;
+
+  if (!cookies["sessionid"]) {
+    await browser.close();
+    console.error(JSON.stringify({
+      error: "Login did not complete — sessionid cookie not found. Captured cookies: " + Object.keys(cookies).join(", "),
+      finalUrl: page.url(),
+    }));
+    process.exit(1);
+  }
 
   const csrfToken = cookies["csrftoken"] ?? "";
 
@@ -66,7 +79,7 @@ try {
   sessions[account] = session;
   saveSessions(sessions);
 
-  console.log(JSON.stringify({ success: true, account }));
+  console.log(JSON.stringify({ success: true, account, cookieCount: Object.keys(cookies).length }));
 } catch (err) {
   console.error(JSON.stringify({ error: err.message }));
   process.exit(1);

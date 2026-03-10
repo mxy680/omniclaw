@@ -1233,7 +1233,7 @@ const instagramTest: ServiceTestFn = async (execute) => {
   }, execute);
   steps.push(s5.result);
 
-  const s6 = await runStep("List own posts", "instagram_post_list", { max_count: 3 }, execute);
+  const s6 = await runStep("List own posts", "instagram_post_list", { count: 3 }, execute);
   steps.push(s6.result);
 
   // Extract media_id from post list for subsequent steps

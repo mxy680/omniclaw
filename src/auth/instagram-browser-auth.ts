@@ -14,17 +14,25 @@ export async function authenticateInstagram(
 
   await page.goto("https://www.instagram.com/accounts/login/");
 
-  // Wait for the user to complete login — generous timeout for MFA/CAPTCHA
-  await page.waitForURL(
-    (url: URL) =>
-      !url.pathname.includes("/accounts/login") &&
-      !url.pathname.includes("/challenge/"),
-    { timeout: 120_000 },
-  );
+  // Wait for sessionid cookie — the true indicator of successful login.
+  // The URL may change before the cookie is set (onetap, consent screens),
+  // so we poll cookies directly instead of relying on URL patterns.
+  const cookieDeadline = Date.now() + 120_000;
+  let allCookies;
+  while (Date.now() < cookieDeadline) {
+    allCookies = await context.cookies();
+    if (allCookies.some((c: { name: string }) => c.name === "sessionid")) break;
+    await page.waitForTimeout(1000);
+  }
+  if (!allCookies) allCookies = await context.cookies();
 
-  const allCookies = await context.cookies();
   const cookies: Record<string, string> = {};
   for (const c of allCookies) cookies[c.name] = c.value;
+
+  if (!cookies["sessionid"]) {
+    await browser.close();
+    throw new Error("Login did not complete — sessionid cookie not found.");
+  }
 
   // Instagram CSRF: use csrftoken cookie directly (no quote stripping needed)
   const csrfToken = cookies["csrftoken"] ?? "";

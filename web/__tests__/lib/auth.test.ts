@@ -33,15 +33,20 @@ describe("auth", () => {
   let dir: string;
   let configPath: string;
   let tokensPath: string;
+  let githubKeysPath: string;
   let originalEnv: string | undefined;
+  let originalDataDir: string | undefined;
 
   beforeEach(() => {
     dir = tempDir();
     configPath = join(dir, "config.json");
     tokensPath = join(dir, "tokens.json");
+    githubKeysPath = join(dir, "github-keys.json");
 
     originalEnv = process.env.OMNICLAW_MCP_CONFIG;
+    originalDataDir = process.env.OMNICLAW_DATA_DIR;
     process.env.OMNICLAW_MCP_CONFIG = configPath;
+    process.env.OMNICLAW_DATA_DIR = dir;
 
     // Write base config — client_secret_path points to a dummy
     writeFileSync(
@@ -63,6 +68,11 @@ describe("auth", () => {
       process.env.OMNICLAW_MCP_CONFIG = originalEnv;
     } else {
       delete process.env.OMNICLAW_MCP_CONFIG;
+    }
+    if (originalDataDir !== undefined) {
+      process.env.OMNICLAW_DATA_DIR = originalDataDir;
+    } else {
+      delete process.env.OMNICLAW_DATA_DIR;
     }
     if (existsSync(dir)) rmSync(dir, { recursive: true });
     vi.resetModules();
@@ -126,15 +136,13 @@ describe("auth", () => {
       const { listAccounts } = await import("@/lib/auth");
       const accounts = await listAccounts("github");
 
-      // No github_token in config → no GitHub account either
+      // No github key in store → no GitHub account
       expect(accounts.length).toBe(0);
     });
 
     it("returns GitHub account when provider is github and token is set", async () => {
-      // Update config to include github_token
-      const config = JSON.parse(readFileSync(configPath, "utf-8"));
-      config.github_token = "ghp_test";
-      writeFileSync(configPath, JSON.stringify(config));
+      // Write a GitHub key to the key store
+      writeFileSync(githubKeysPath, JSON.stringify({ default: "ghp_test" }));
 
       const { listAccounts } = await import("@/lib/auth");
       const accounts = await listAccounts("github");
@@ -150,9 +158,7 @@ describe("auth", () => {
         tokensPath,
         JSON.stringify({ work: { access_token: "at", refresh_token: "rt" } }),
       );
-      const config = JSON.parse(readFileSync(configPath, "utf-8"));
-      config.github_token = "ghp_test";
-      writeFileSync(configPath, JSON.stringify(config));
+      writeFileSync(githubKeysPath, JSON.stringify({ default: "ghp_test" }));
 
       const { listAccounts } = await import("@/lib/auth");
       const accounts = await listAccounts();
@@ -174,32 +180,30 @@ describe("auth", () => {
   // GitHub token management
   // -------------------------------------------------------------------------
   describe("setGitHubToken", () => {
-    it("writes github_token to config file", async () => {
+    it("writes token to github-keys.json", async () => {
       const { setGitHubToken } = await import("@/lib/auth");
       setGitHubToken("ghp_newtoken");
 
-      const raw = JSON.parse(readFileSync(configPath, "utf-8"));
-      expect(raw.github_token).toBe("ghp_newtoken");
+      const raw = JSON.parse(readFileSync(githubKeysPath, "utf-8"));
+      expect(raw.default).toBe("ghp_newtoken");
     });
   });
 
   describe("revokeGitHubToken", () => {
-    it("removes github_token from config and returns true", async () => {
-      const config = JSON.parse(readFileSync(configPath, "utf-8"));
-      config.github_token = "ghp_torevoke";
-      writeFileSync(configPath, JSON.stringify(config));
+    it("removes account from github-keys.json and returns true", async () => {
+      writeFileSync(githubKeysPath, JSON.stringify({ default: "ghp_torevoke" }));
 
       const { revokeGitHubToken } = await import("@/lib/auth");
-      const result = revokeGitHubToken();
+      const result = revokeGitHubToken("default");
 
       expect(result).toBe(true);
-      const raw = JSON.parse(readFileSync(configPath, "utf-8"));
-      expect(raw).not.toHaveProperty("github_token");
+      const raw = JSON.parse(readFileSync(githubKeysPath, "utf-8"));
+      expect(raw).not.toHaveProperty("default");
     });
 
     it("returns false when no github_token exists", async () => {
       const { revokeGitHubToken } = await import("@/lib/auth");
-      expect(revokeGitHubToken()).toBe(false);
+      expect(revokeGitHubToken("default")).toBe(false);
     });
   });
 
@@ -220,9 +224,7 @@ describe("auth", () => {
     });
 
     it("GitHub account has provider: github", async () => {
-      const config = JSON.parse(readFileSync(configPath, "utf-8"));
-      config.github_token = "ghp_xxx";
-      writeFileSync(configPath, JSON.stringify(config));
+      writeFileSync(githubKeysPath, JSON.stringify({ default: "ghp_xxx" }));
 
       const { listAccounts } = await import("@/lib/auth");
       const accounts = await listAccounts("github");

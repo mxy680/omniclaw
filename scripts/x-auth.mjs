@@ -39,7 +39,8 @@ function saveSessions(data) {
 }
 
 try {
-  const browser = await chromium.launch({ headless: false });
+  // Use system Chrome to avoid X's automation detection of bundled Chromium
+  const browser = await chromium.launch({ headless: false, channel: "chrome" });
   const context = await browser.newContext();
   const page = await context.newPage();
 

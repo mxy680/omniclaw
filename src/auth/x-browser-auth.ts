@@ -8,7 +8,13 @@ export async function authenticateX(
   // not at MCP server startup. This avoids crashes if playwright isn't installed.
   const pw: string = "playwright";
   const { chromium } = await import(pw);
-  const browser = await chromium.launch({ headless: false });
+
+  // Use the system Chrome instead of bundled Chromium to avoid X's
+  // automation detection. X blocks Playwright's Chromium fingerprint.
+  const browser = await chromium.launch({
+    headless: false,
+    channel: "chrome",
+  });
   const context = await browser.newContext();
   const page = await context.newPage();
 

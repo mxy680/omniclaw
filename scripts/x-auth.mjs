@@ -39,11 +39,28 @@ function saveSessions(data) {
 }
 
 try {
-  // Use system Chrome to avoid X's automation detection of bundled Chromium
-  const browser = await chromium.launch({ headless: false, channel: "chrome" });
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  // Use persistent profile + system Chrome + stealth args to bypass X's
+  // automation detection (X blocks bundled Chromium and webdriver flag).
+  const profileDir = join(homedir(), ".openclaw", "x-browser-profile");
+  if (!existsSync(profileDir)) mkdirSync(profileDir, { recursive: true });
 
+  const context = await chromium.launchPersistentContext(profileDir, {
+    headless: false,
+    channel: "chrome",
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--no-first-run",
+      "--no-default-browser-check",
+    ],
+  });
+
+  // Remove Playwright's automation indicators
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+    window.chrome = { runtime: {}, loadTimes: () => ({}), csi: () => ({}) };
+  });
+
+  const page = context.pages()[0] ?? await context.newPage();
   await page.goto("https://x.com/i/flow/login");
 
   // Wait for auth_token cookie — the true indicator of successful login.
@@ -60,7 +77,7 @@ try {
   for (const c of allCookies) cookies[c.name] = c.value;
 
   if (!cookies["auth_token"]) {
-    await browser.close();
+    await context.close();
     console.error(JSON.stringify({
       error: "Login did not complete — auth_token cookie not found. Captured cookies: " + Object.keys(cookies).join(", "),
       finalUrl: page.url(),
@@ -70,7 +87,7 @@ try {
 
   const csrfToken = cookies["ct0"] ?? "";
   const userAgent = await page.evaluate(() => navigator.userAgent);
-  await browser.close();
+  await context.close();
 
   const session = { cookies, csrfToken, userAgent, capturedAt: Date.now() };
   const sessions = loadSessions();

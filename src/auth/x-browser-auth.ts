@@ -1,3 +1,6 @@
+import { existsSync, mkdirSync } from "fs";
+import { join } from "path";
+import { homedir } from "os";
 import type { SessionStore, SessionData } from "./session-store.js";
 
 export async function authenticateX(
@@ -9,15 +12,31 @@ export async function authenticateX(
   const pw: string = "playwright";
   const { chromium } = await import(pw);
 
-  // Use the system Chrome instead of bundled Chromium to avoid X's
-  // automation detection. X blocks Playwright's Chromium fingerprint.
-  const browser = await chromium.launch({
+  // Use a persistent profile directory so the browser looks like a real user session.
+  // Also use system Chrome + stealth args to bypass X's automation detection.
+  const profileDir = join(homedir(), ".openclaw", "x-browser-profile");
+  if (!existsSync(profileDir)) mkdirSync(profileDir, { recursive: true });
+
+  const context = await chromium.launchPersistentContext(profileDir, {
     headless: false,
     channel: "chrome",
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--no-first-run",
+      "--no-default-browser-check",
+    ],
   });
-  const context = await browser.newContext();
-  const page = await context.newPage();
 
+  // Remove Playwright's automation indicators
+  await context.addInitScript(() => {
+    // Hide webdriver flag
+    Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+    // Hide automation-related Chrome properties
+    // @ts-expect-error - chrome runtime mock
+    window.chrome = { runtime: {}, loadTimes: () => ({}), csi: () => ({}) };
+  });
+
+  const page = context.pages()[0] ?? await context.newPage();
   await page.goto("https://x.com/i/flow/login");
 
   // Wait for auth_token cookie — the true indicator of successful login.
@@ -36,7 +55,7 @@ export async function authenticateX(
   for (const c of allCookies) cookies[c.name] = c.value;
 
   if (!cookies["auth_token"]) {
-    await browser.close();
+    await context.close();
     throw new Error("Login did not complete — auth_token cookie not found.");
   }
 
@@ -44,7 +63,7 @@ export async function authenticateX(
   const csrfToken = cookies["ct0"] ?? "";
 
   const userAgent = await page.evaluate(() => navigator.userAgent);
-  await browser.close();
+  await context.close();
 
   const session: SessionData = { cookies, csrfToken, userAgent, capturedAt: Date.now() };
   sessionStore.set(account, session);

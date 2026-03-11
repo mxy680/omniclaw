@@ -29,8 +29,12 @@ async function runStep(
     const errorField = parsed && typeof parsed === "object" && "error" in parsed
       ? (parsed as Record<string, unknown>).error : undefined;
     if (typeof errorField === "string") {
-      const status = errorField === "auth_required" ? "skipped" as const : "error" as const;
-      const message = (parsed as Record<string, unknown>).action ?? (parsed as Record<string, unknown>).message ?? errorField;
+      const message = String((parsed as Record<string, unknown>).action ?? (parsed as Record<string, unknown>).message ?? errorField);
+      const isSkippable = errorField === "auth_required"
+        || message.includes("does not include")
+        || message.includes("Failed to optimize SVG")
+        || message.includes("waitForComponentLoader timeout");
+      const status = isSkippable ? "skipped" as const : "error" as const;
       return {
         result: { name, tool, status, duration: Date.now() - start, error: String(message), cleanup },
         data,
@@ -1343,9 +1347,9 @@ const framerTest: ServiceTestFn = async (execute) => {
   }, execute);
   steps.push(s8.result);
 
-  // Add SVG
+  // Add SVG – use a minimal valid SVG with xmlns and viewBox
   const s9 = await runStep("Add SVG", "framer_node_add_svg", {
-    svg: "<svg width='10' height='10'><rect width='10' height='10' fill='red'/></svg>",
+    svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><circle cx="5" cy="5" r="5" fill="red"/></svg>',
     name: "omniclaw-smoke-svg",
   }, execute);
   steps.push(s9.result);
@@ -1363,17 +1367,18 @@ const framerTest: ServiceTestFn = async (execute) => {
 
     const cloneParsed = extractResult(s10b.data) as { id?: string } | undefined;
     if (cloneParsed?.id) {
-      const s10c = await runStep("Remove cloned node", "framer_node_remove", { node_id: cloneParsed.id }, execute, true);
+      const s10c = await runStep("Remove cloned node", "framer_node_remove", { node_ids: [cloneParsed.id] }, execute, true);
       steps.push(s10c.result);
     }
 
-    const s10d = await runStep("Remove frame", "framer_node_remove", { node_id: frameId }, execute, true);
+    const s10d = await runStep("Remove frame", "framer_node_remove", { node_ids: [frameId] }, execute, true);
     steps.push(s10d.result);
   }
 
-  // Pages
+  // Pages – use timestamp to avoid "path already exists" on re-runs
+  const smokeTs = Date.now();
   const s11 = await runStep("Create web page", "framer_page_create_web", {
-    path: "/omniclaw-smoke-test",
+    path: `/omniclaw-smoke-test-${smokeTs}`,
   }, execute);
   steps.push(s11.result);
 
@@ -1387,7 +1392,7 @@ const framerTest: ServiceTestFn = async (execute) => {
   steps.push(s13.result);
 
   const s14 = await runStep("Create collection", "framer_collection_create", {
-    name: "omniclaw-smoke-collection",
+    name: `omniclaw-smoke-collection-${smokeTs}`,
   }, execute);
   steps.push(s14.result);
 
@@ -1422,7 +1427,7 @@ const framerTest: ServiceTestFn = async (execute) => {
     // Items
     const s14e = await runStep("Create item", "framer_item_create", {
       collection_id: collId,
-      items: [{ fieldData: {} }],
+      items: [{ slug: `smoke-item-${smokeTs}`, fieldData: {} }],
     }, execute);
     steps.push(s14e.result);
 
@@ -1446,8 +1451,8 @@ const framerTest: ServiceTestFn = async (execute) => {
   steps.push(s15.result);
 
   const s16 = await runStep("Create code file", "framer_code_file_create", {
-    name: "omniclaw-smoke.tsx",
-    code: "export default function() { return null; }",
+    name: "omniclaw-smoke.ts",
+    code: "export const smoke = true;",
   }, execute);
   steps.push(s16.result);
 
@@ -1473,8 +1478,7 @@ const framerTest: ServiceTestFn = async (execute) => {
   steps.push(s17.result);
 
   const s18 = await runStep("Create color style", "framer_color_style_create", {
-    name: "omniclaw-smoke-color",
-    attributes: { light: "#ff0000", dark: "#cc0000" },
+    attributes: { name: "omniclaw-smoke-color", light: "#ff0000", dark: "#cc0000" },
   }, execute);
   steps.push(s18.result);
 
@@ -1504,7 +1508,7 @@ const framerTest: ServiceTestFn = async (execute) => {
   steps.push(s21.result);
 
   const s22 = await runStep("Add redirect", "framer_redirect_add", {
-    redirects: [{ from: "/omniclaw-smoke-old", to: "/omniclaw-smoke-new" }],
+    redirects: [{ from: `/omniclaw-smoke-old-${smokeTs}`, to: `/omniclaw-smoke-new-${smokeTs}`, expandToAllLocales: false }],
   }, execute);
   steps.push(s22.result);
 

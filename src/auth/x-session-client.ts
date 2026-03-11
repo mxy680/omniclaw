@@ -1,4 +1,5 @@
 import type { SessionStore, SessionData } from "./session-store.js";
+import { generateTransactionId } from "./x-transaction-id.js";
 
 /**
  * X (Twitter) uses a constant bearer token for all authenticated web requests,
@@ -93,8 +94,17 @@ export class XSessionClient {
       url += (url.includes("?") ? "&" : "?") + qs;
     }
 
+    // Add x-client-transaction-id for POST mutations (required by X's anti-automation)
+    const method = opts.method ?? "GET";
+    if (method === "POST") {
+      const txId = await generateTransactionId(method, opts.path);
+      if (txId) {
+        headers["X-Client-Transaction-Id"] = txId;
+      }
+    }
+
     const res = await fetch(url, {
-      method: opts.method ?? "GET",
+      method,
       headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     });

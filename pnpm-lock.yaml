@@ -35,6 +35,9 @@ importers:
       googleapis:
         specifier: ^144.0.0
         version: 144.0.0
+      js-sha256:
+        specifier: ^0.11.1
+        version: 0.11.1
       mime-types:
         specifier: ^3.0.2
         version: 3.0.2
@@ -47,6 +50,9 @@ importers:
       ws:
         specifier: ^8.19.0
         version: 8.19.0
+      xclienttransaction:
+        specifier: ^0.0.2
+        version: 0.0.2
       youtube-transcript:
         specifier: ^1.2.1
         version: 1.2.1
@@ -4886,6 +4892,9 @@ packages:
   jose@6.1.3:
     resolution: {integrity: sha512-0TpaTfihd4QMNwrz/ob2Bp7X04yuxJkjRGi4aKmOqwhov54i6u79oCv7T+C7lo70MKH6BesI3vscD1yb/yzKXQ==}
 
+  js-sha256@0.11.1:
+    resolution: {integrity: sha512-o6WSo/LUvY2uC4j7mO50a2ms7E/EAdbP0swigLV+nzHKTTaYnaLIWJ02VdXrsJX0vGedDESQnLsOekr94ryfjg==}
+
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -7178,6 +7187,9 @@ packages:
   wsl-utils@0.1.0:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
+
+  xclienttransaction@0.0.2:
+    resolution: {integrity: sha512-BHqViRfWW0hBT3q5+ldmJCk2HMZnomOrh3ul/AJPBUzcRVhlZioeMoXRa6FbRiexv1bYxV+eH7gKaPWZGGDp8Q==}
 
   xcode@3.0.1:
     resolution: {integrity: sha512-kCz5k7J7XbJtjABOvkc5lJmkiDh8VhjVCGNiqdKCscmVpdVUpEAyXv1xmCLkQJ5dsHqx3IPO4XW+NTDhU/fatA==}
@@ -12924,6 +12936,8 @@ snapshots:
 
   jose@6.1.3: {}
 
+  js-sha256@0.11.1: {}
+
   js-tokens@4.0.0: {}
 
   js-yaml@3.14.2:
@@ -15581,6 +15595,10 @@ snapshots:
   wsl-utils@0.1.0:
     dependencies:
       is-wsl: 3.1.1
+
+  xclienttransaction@0.0.2:
+    dependencies:
+      js-sha256: 0.11.1
 
   xcode@3.0.1:
     dependencies:

@@ -4,13 +4,13 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("x");
 
-const TWEET_DETAIL_QUERY_ID = "nBS-WpgA6ZG0CyNHD517JQ";
+const TWEET_DETAIL_QUERY_ID = "1eAGnXrtvTBUePpQfTXZzA";
 const TWEET_DETAIL_OP = "TweetDetail";
-const CREATE_TWEET_QUERY_ID = "a1p9RWpkYKBjWv_I3WzS-A";
+const CREATE_TWEET_QUERY_ID = "RXKQMYyEqEjGgWpcSP6LBw";
 const CREATE_TWEET_OP = "CreateTweet";
-const DELETE_TWEET_QUERY_ID = "VaenaVgh5q5ih7kvyVjgtg";
+const DELETE_TWEET_QUERY_ID = "nxpZCY2K-I6QoFHAHeojFQ";
 const DELETE_TWEET_OP = "DeleteTweet";
-const CREATE_TWEET_REPLY_QUERY_ID = "a1p9RWpkYKBjWv_I3WzS-A";
+const CREATE_TWEET_REPLY_QUERY_ID = "RXKQMYyEqEjGgWpcSP6LBw";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractTweetDetail(result: any): unknown {
@@ -143,6 +143,10 @@ export function createXTweetCreateTool(manager: XClientManager): any {
           },
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const gqlErrors = (result as any)?.errors;
+        if (Array.isArray(gqlErrors) && gqlErrors.length > 0) {
+          return jsonResult({ error: "tweet_create_failed", message: gqlErrors[0].message });
+        }
         const tweet = (result as any)?.data?.create_tweet?.tweet_results?.result;
         const legacy = tweet?.legacy ?? {};
         return jsonResult({
@@ -219,6 +223,10 @@ export function createXTweetReplyTool(manager: XClientManager): any {
           },
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const gqlErrors = (result as any)?.errors;
+        if (Array.isArray(gqlErrors) && gqlErrors.length > 0) {
+          return jsonResult({ error: "tweet_reply_failed", message: gqlErrors[0].message });
+        }
         const tweet = (result as any)?.data?.create_tweet?.tweet_results?.result;
         const legacy = tweet?.legacy ?? {};
         return jsonResult({

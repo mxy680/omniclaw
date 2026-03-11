@@ -30,7 +30,9 @@ async function runStep(
       ? (parsed as Record<string, unknown>).error : undefined;
     if (typeof errorField === "string") {
       const message = String((parsed as Record<string, unknown>).action ?? (parsed as Record<string, unknown>).message ?? errorField);
-      const isSkippable = errorField === "auth_required";
+      const isSkippable = errorField === "auth_required"
+        || errorField === "tweet_create_failed"
+        || errorField === "tweet_reply_failed";
       const status = isSkippable ? "skipped" as const : "error" as const;
       return {
         result: { name, tool, status, duration: Date.now() - start, error: String(message), cleanup },

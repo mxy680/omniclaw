@@ -4,9 +4,9 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("x");
 
-const FOLLOWERS_QUERY_ID = "rRXFSG5vR6drKr5BM3GzVw";
+const FOLLOWERS_QUERY_ID = "8sIMO3RbSCdvk2QzxcPpIg";
 const FOLLOWERS_OP = "Followers";
-const FOLLOWING_QUERY_ID = "iSicc7LrzWGBgDPL0tM_TQ";
+const FOLLOWING_QUERY_ID = "lEJDj0bTio9-s0hSukCD9Q";
 const FOLLOWING_OP = "Following";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,6 +72,9 @@ export function createXFollowersListTool(manager: XClientManager): any {
         if (err instanceof Error && err.message === "session_expired") {
           return jsonResult({ error: "session_expired", action: "Call x_auth_setup to re-authenticate." });
         }
+        if (err instanceof Error && (err as Error & { status?: number }).status === 404) {
+          return jsonResult({ followers: [], warning: "Followers list may be unavailable for this account." });
+        }
         return jsonResult({ error: "request_failed", message: err instanceof Error ? err.message : String(err) });
       }
     },
@@ -115,6 +118,9 @@ export function createXFollowingListTool(manager: XClientManager): any {
       } catch (err: unknown) {
         if (err instanceof Error && err.message === "session_expired") {
           return jsonResult({ error: "session_expired", action: "Call x_auth_setup to re-authenticate." });
+        }
+        if (err instanceof Error && (err as Error & { status?: number }).status === 404) {
+          return jsonResult({ following: [], warning: "Following list may be unavailable for this account." });
         }
         return jsonResult({ error: "request_failed", message: err instanceof Error ? err.message : String(err) });
       }

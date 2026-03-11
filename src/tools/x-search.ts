@@ -4,7 +4,7 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("x");
 
-const SEARCH_TIMELINE_QUERY_ID = "gkjsKepM6gl_HmFWoWKfgg";
+const SEARCH_TIMELINE_QUERY_ID = "OFvapAUD5xrCWn9xcD0A6A";
 const SEARCH_TIMELINE_OP = "SearchTimeline";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,6 +78,10 @@ export function createXSearchTool(manager: XClientManager): any {
       } catch (err: unknown) {
         if (err instanceof Error && err.message === "session_expired") {
           return jsonResult({ error: "session_expired", action: "Call x_auth_setup to re-authenticate." });
+        }
+        // 404 may indicate search is unavailable for this account
+        if (err instanceof Error && (err as Error & { status?: number }).status === 404) {
+          return jsonResult({ query: params.query, tweets: [], warning: "Search may be unavailable for this account." });
         }
         return jsonResult({ error: "request_failed", message: err instanceof Error ? err.message : String(err) });
       }

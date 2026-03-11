@@ -28,6 +28,16 @@ export class XSessionClient {
   }
 
   /**
+   * Extract user ID from the twid cookie (format: "u=1234567890").
+   */
+  getUserId(): string | undefined {
+    const twid = this.session?.cookies["twid"];
+    if (!twid) return undefined;
+    const match = twid.replace(/"/g, "").match(/u=(\d+)/);
+    return match?.[1];
+  }
+
+  /**
    * Update the ct0 CSRF token if the response rotates it.
    */
   private updateCsrfFromResponse(res: Response): void {
@@ -98,7 +108,9 @@ export class XSessionClient {
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new Error(`x_api_error: ${res.status} ${text.slice(0, 200)}`);
+      const err = new Error(`x_api_error: ${res.status} ${text.slice(0, 200)}`);
+      (err as Error & { status: number }).status = res.status;
+      throw err;
     }
 
     return res.json() as Promise<T>;

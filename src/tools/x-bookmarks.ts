@@ -4,7 +4,7 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("x");
 
-const BOOKMARKS_QUERY_ID = "tmd4ifV-YMEgVO1VNqg57g";
+const BOOKMARKS_QUERY_ID = "c-7G4ohSLIuTcfa5Mn5qdw";
 const BOOKMARKS_OP = "Bookmarks";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

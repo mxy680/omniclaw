@@ -4,9 +4,9 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("x");
 
-const HOME_TIMELINE_QUERY_ID = "HJFjzBgCs16TqxewQOeLNg";
+const HOME_TIMELINE_QUERY_ID = "gXtpuBkna6SRLFFKaT2OTg";
 const HOME_TIMELINE_OP = "HomeTimeline";
-const USER_TWEETS_QUERY_ID = "E3OpS-WoqCz1I17LVnJFpw";
+const USER_TWEETS_QUERY_ID = "5M8UuGym7_VyIEggQIyjxQ";
 const USER_TWEETS_OP = "UserTweets";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

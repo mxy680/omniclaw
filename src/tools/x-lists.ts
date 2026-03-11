@@ -4,9 +4,9 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("x");
 
-const LISTS_MEMBERSHIPS_QUERY_ID = "PsHNarC3BesOyjqAfatvJg";
+const LISTS_MEMBERSHIPS_QUERY_ID = "3HVC3dmZ7C-zFXkps66_8g";
 const LISTS_MEMBERSHIPS_OP = "ListsManagementPageTimeline";
-const LIST_LATEST_TWEETS_QUERY_ID = "BbGLL1ZfMQ2kp5UKf_1HOw";
+const LIST_LATEST_TWEETS_QUERY_ID = "gNXkRRRV67cSRJkmpgGPnA";
 const LIST_LATEST_TWEETS_OP = "ListLatestTweetsTimeline";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

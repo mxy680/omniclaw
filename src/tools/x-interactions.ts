@@ -4,17 +4,17 @@ import { jsonResult, authRequired } from "./shared.js";
 
 const AUTH_REQUIRED = authRequired("x");
 
-const FAVORITE_TWEET_QUERY_ID = "lI07N6OAbgPnEPe1R2lRZw";
+const FAVORITE_TWEET_QUERY_ID = "lI07N6Otwv1PhnEgXILM7A";
 const FAVORITE_TWEET_OP = "FavoriteTweet";
 const UNFAVORITE_TWEET_QUERY_ID = "ZYKSe-w7KEslx3JhSIk5LA";
 const UNFAVORITE_TWEET_OP = "UnfavoriteTweet";
-const CREATE_RETWEET_QUERY_ID = "ojPdsZsimiJrUGLR1sjUtA";
+const CREATE_RETWEET_QUERY_ID = "mbRO74GrOvSfRcJnlMapnQ";
 const CREATE_RETWEET_OP = "CreateRetweet";
-const DELETE_RETWEET_QUERY_ID = "iQtK4dl5hBmXewYZuEOKVw";
+const DELETE_RETWEET_QUERY_ID = "ZyZigVsNiFO6v1dEks1eWg";
 const DELETE_RETWEET_OP = "DeleteRetweet";
 const CREATE_BOOKMARK_QUERY_ID = "aoDbu3RHznuiSkQ9aNM67Q";
 const CREATE_BOOKMARK_OP = "CreateBookmark";
-const DELETE_BOOKMARK_QUERY_ID = "Wlmlj2-xIS1UJfpAmfNsHA";
+const DELETE_BOOKMARK_QUERY_ID = "Wlmlj2-xzyS1GN3a6cj-mQ";
 const DELETE_BOOKMARK_OP = "DeleteBookmark";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -5,8 +5,10 @@ import { jsonResult, authRequired } from "./shared.js";
 const AUTH_REQUIRED = authRequired("x");
 
 // GraphQL query IDs — these are X's internal operation identifiers
-const USER_BY_SCREEN_NAME_QUERY_ID = "xmU6X_CKVnQ5lSrCbAmJsg";
+const USER_BY_SCREEN_NAME_QUERY_ID = "pLsOiyHJ1eFwPJlNmLp4Bg";
 const USER_BY_SCREEN_NAME_OP = "UserByScreenName";
+const VIEWER_QUERY_ID = "zWQLM9HIVahRSUvzUH4lDw";
+const VIEWER_OP = "Viewer";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createXProfileGetTool(manager: XClientManager): any {
@@ -91,37 +93,35 @@ export function createXProfileMeTool(manager: XClientManager): any {
       const client = manager.getClient(account);
       if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
       try {
-        const settings = await client.v1<Record<string, unknown>>({
-          path: "/account/settings.json",
-        });
-        const screenName = settings?.screen_name as string | undefined;
-        if (!screenName) {
-          return jsonResult({ error: "could_not_get_screen_name" });
-        }
-        // Now fetch full profile via GraphQL
+        // Fetch authenticated user's profile via GraphQL Viewer query
         const result = await client.graphql({
-          queryId: USER_BY_SCREEN_NAME_QUERY_ID,
-          operationName: USER_BY_SCREEN_NAME_OP,
+          queryId: VIEWER_QUERY_ID,
+          operationName: VIEWER_OP,
           variables: {
-            screen_name: screenName,
-            withSafetyModeUserFields: true,
+            withCommunitiesMemberships: true,
+            withSubscribedTab: true,
+            withCommunitiesCreation: true,
           },
           method: "GET",
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const user = (result as any)?.data?.user?.result;
-        const legacy = user?.legacy ?? {};
+        const user = (result as any)?.data?.viewer?.user_results?.result;
+        if (!user) {
+          return jsonResult({ error: "could_not_get_profile" });
+        }
+        const core = user.core ?? {};
+        const legacy = user.legacy ?? {};
         return jsonResult({
-          id: user?.rest_id,
-          username: legacy.screen_name,
-          name: legacy.name,
-          bio: legacy.description,
+          id: user.rest_id,
+          username: core.screen_name,
+          name: core.name,
+          bio: user.profile_bio?.description ?? legacy.description,
           followers_count: legacy.followers_count,
           following_count: legacy.friends_count,
           tweet_count: legacy.statuses_count,
-          verified: user?.is_blue_verified,
-          profile_image_url: legacy.profile_image_url_https,
-          created_at: legacy.created_at,
+          verified: user.is_blue_verified,
+          profile_image_url: user.avatar?.image_url,
+          created_at: core.created_at,
         });
       } catch (err: unknown) {
         if (err instanceof Error && err.message === "session_expired") {

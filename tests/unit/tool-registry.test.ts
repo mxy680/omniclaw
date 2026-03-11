@@ -4,8 +4,8 @@ import { createAllTools } from "../../src/mcp/tool-registry.js";
 describe("createAllTools", () => {
   it("returns non-OAuth tools with no OAuth config", () => {
     const tools = createAllTools({ pluginConfig: {} as any });
-    // Without client_secret_path, only non-OAuth tools: YouTube (2) + Schedule (5) + Soul (2) + Attachment (1) + GitHub (102) + Gemini (3) + Wolfram (2) + LinkedIn (11) + Instagram (14) + Framer (59)
-    expect(tools.length).toBe(201);
+    // Without client_secret_path, only non-OAuth tools: YouTube (2) + Schedule (5) + Soul (2) + Attachment (1) + GitHub (102) + Gemini (3) + Wolfram (2) + LinkedIn (11) + Instagram (14) + Framer (53) + X (26)
+    expect(tools.length).toBe(221);
     for (const tool of tools) {
       expect(tool.name).toBeDefined();
       expect(typeof tool.name).toBe("string");

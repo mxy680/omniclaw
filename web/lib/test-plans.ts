@@ -1484,6 +1484,145 @@ const framerTest: ServiceTestFn = async (execute) => {
   return steps;
 };
 
+const xTest: ServiceTestFn = async (execute) => {
+  const steps: TestStepResult[] = [];
+
+  // Read: profile_me
+  const s1 = await runStep("Get my profile", "x_profile_me", {}, execute);
+  steps.push(s1.result);
+
+  const profileParsed = extractResult(s1.data) as Record<string, unknown> | undefined;
+  const myUserId = profileParsed?.id as string | undefined ?? profileParsed?.user_id as string | undefined;
+
+  // Read: profile_get
+  const s2 = await runStep("Get user profile", "x_profile_get", { username: "elonmusk" }, execute);
+  steps.push(s2.result);
+
+  // Read: timeline_home
+  const s3 = await runStep("Get home timeline", "x_timeline_home", { count: 5 }, execute);
+  steps.push(s3.result);
+
+  // Read: timeline_user (chain from profile_me)
+  if (myUserId) {
+    const s4 = await runStep("Get user timeline", "x_timeline_user", { user_id: myUserId }, execute);
+    steps.push(s4.result);
+  }
+
+  // Extract a tweet ID from home timeline for subsequent steps
+  const timelineParsed = extractResult(s3.data) as Array<{ id?: string; tweet_id?: string }> | undefined;
+  const timelineTweetId = Array.isArray(timelineParsed) && timelineParsed.length > 0
+    ? (timelineParsed[0].id ?? timelineParsed[0].tweet_id) : undefined;
+
+  // Read: tweet_get
+  if (timelineTweetId) {
+    const s5 = await runStep("Get tweet", "x_tweet_get", { tweet_id: timelineTweetId }, execute);
+    steps.push(s5.result);
+  }
+
+  // Read: search
+  const s6 = await runStep("Search tweets", "x_search", { query: "test" }, execute);
+  steps.push(s6.result);
+
+  // Read: bookmarks_list
+  const s7 = await runStep("List bookmarks", "x_bookmarks_list", {}, execute);
+  steps.push(s7.result);
+
+  // Read: followers_list
+  if (myUserId) {
+    const s8 = await runStep("List followers", "x_followers_list", { user_id: myUserId }, execute);
+    steps.push(s8.result);
+  }
+
+  // Read: following_list
+  if (myUserId) {
+    const s9 = await runStep("List following", "x_following_list", { user_id: myUserId }, execute);
+    steps.push(s9.result);
+  }
+
+  // Read: dm_conversations
+  const s10 = await runStep("List DM conversations", "x_dm_conversations", {}, execute);
+  steps.push(s10.result);
+
+  // Read: lists_get
+  const s11 = await runStep("Get lists", "x_lists_get", {}, execute);
+  steps.push(s11.result);
+
+  // Read: list_timeline (chain from lists_get)
+  const listsParsed = extractResult(s11.data) as Array<{ id?: string; list_id?: string }> | undefined;
+  const firstListId = Array.isArray(listsParsed) && listsParsed.length > 0
+    ? (listsParsed[0].id ?? listsParsed[0].list_id) : undefined;
+
+  if (firstListId) {
+    const s12 = await runStep("Get list timeline", "x_list_timeline", { list_id: firstListId }, execute);
+    steps.push(s12.result);
+  }
+
+  // Write round-trip: create tweet → like → unlike → retweet → unretweet → bookmark → unbookmark → reply → delete
+  const s13 = await runStep("Create tweet", "x_tweet_create", {
+    text: "[omniclaw-smoke] test tweet",
+  }, execute);
+  steps.push(s13.result);
+
+  const tweetParsed = extractResult(s13.data) as Record<string, unknown> | undefined;
+  const createdTweetId = tweetParsed?.id as string | undefined ?? tweetParsed?.tweet_id as string | undefined;
+
+  if (createdTweetId) {
+    const s14 = await runStep("Like tweet", "x_tweet_like", { tweet_id: createdTweetId }, execute);
+    steps.push(s14.result);
+
+    const s15 = await runStep("Unlike tweet", "x_tweet_unlike", { tweet_id: createdTweetId }, execute, true);
+    steps.push(s15.result);
+
+    const s16 = await runStep("Retweet", "x_tweet_retweet", { tweet_id: createdTweetId }, execute);
+    steps.push(s16.result);
+
+    const s17 = await runStep("Unretweet", "x_tweet_unretweet", { tweet_id: createdTweetId }, execute, true);
+    steps.push(s17.result);
+
+    const s18 = await runStep("Bookmark tweet", "x_tweet_bookmark", { tweet_id: createdTweetId }, execute);
+    steps.push(s18.result);
+
+    const s19 = await runStep("Unbookmark tweet", "x_tweet_unbookmark", { tweet_id: createdTweetId }, execute, true);
+    steps.push(s19.result);
+
+    const s20 = await runStep("Reply to tweet", "x_tweet_reply", {
+      tweet_id: createdTweetId,
+      text: "[omniclaw-smoke] test reply",
+    }, execute);
+    steps.push(s20.result);
+
+    const s21 = await runStep("Delete tweet", "x_tweet_delete", { tweet_id: createdTweetId }, execute, true);
+    steps.push(s21.result);
+  }
+
+  // Write round-trip: follow + unfollow (use a user from search results)
+  const searchParsed = extractResult(s6.data) as Array<{ id?: string; user_id?: string }> | undefined;
+  const searchUserId = Array.isArray(searchParsed) && searchParsed.length > 0
+    ? (searchParsed[0].id ?? searchParsed[0].user_id) : undefined;
+
+  if (searchUserId) {
+    const s22 = await runStep("Follow user", "x_follow", { user_id: searchUserId }, execute);
+    steps.push(s22.result);
+
+    const s23 = await runStep("Unfollow user", "x_unfollow", { user_id: searchUserId }, execute, true);
+    steps.push(s23.result);
+  }
+
+  // Read: dm_messages (chain from conversations)
+  const convParsed = extractResult(s10.data) as Array<{ id?: string; conversation_id?: string }> | undefined;
+  const firstConvId = Array.isArray(convParsed) && convParsed.length > 0
+    ? (convParsed[0].id ?? convParsed[0].conversation_id) : undefined;
+
+  if (firstConvId) {
+    const s24 = await runStep("Get DM messages", "x_dm_messages", { conversation_id: firstConvId }, execute);
+    steps.push(s24.result);
+  }
+
+  // Skip x_dm_send — too invasive for smoke test
+
+  return steps;
+};
+
 const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   gmail: gmailTest,
   calendar: calendarTest,
@@ -1498,6 +1637,7 @@ const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   linkedin: linkedinTest,
   instagram: instagramTest,
   framer: framerTest,
+  x: xTest,
 };
 
 export async function runServiceTest(

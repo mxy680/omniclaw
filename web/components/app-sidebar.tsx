@@ -7,6 +7,7 @@ import {
   Instagram,
   Sparkles,
   Sigma,
+  Frame,
   Monitor,
   type LucideIcon,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Instagram,
   Sparkles,
   Sigma,
+  Frame,
 };
 
 interface AppSidebarProps {

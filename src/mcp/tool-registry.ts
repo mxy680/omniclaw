@@ -320,7 +320,6 @@ import {
   createFramerNodeCreateFrameTool,
   createFramerNodeAddTextTool,
   createFramerNodeAddImageTool,
-  createFramerNodeAddSvgTool,
   createFramerNodeAddComponentTool,
 } from "../tools/framer-nodes-create.js";
 import {
@@ -354,9 +353,6 @@ import {
 import {
   createFramerCodeFilesListTool,
   createFramerCodeFileGetTool,
-  createFramerCodeFileCreateTool,
-  createFramerCodeFileUpdateTool,
-  createFramerCodeFileRemoveTool,
 } from "../tools/framer-code-files.js";
 import {
   createFramerColorStylesListTool,
@@ -374,8 +370,6 @@ import {
 } from "../tools/framer-custom-code.js";
 import {
   createFramerRedirectsListTool,
-  createFramerRedirectAddTool,
-  createFramerRedirectRemoveTool,
 } from "../tools/framer-redirects.js";
 import {
   createFramerLocalesListTool,
@@ -760,7 +754,6 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createFramerNodeCreateFrameTool(framerManager));
     add(createFramerNodeAddTextTool(framerManager));
     add(createFramerNodeAddImageTool(framerManager));
-    add(createFramerNodeAddSvgTool(framerManager));
     add(createFramerNodeAddComponentTool(framerManager));
 
     // Canvas Nodes — Edit
@@ -794,9 +787,6 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     // Code Files
     add(createFramerCodeFilesListTool(framerManager));
     add(createFramerCodeFileGetTool(framerManager));
-    add(createFramerCodeFileCreateTool(framerManager));
-    add(createFramerCodeFileUpdateTool(framerManager));
-    add(createFramerCodeFileRemoveTool(framerManager));
 
     // Color Styles
     add(createFramerColorStylesListTool(framerManager));
@@ -816,8 +806,6 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
 
     // Redirects
     add(createFramerRedirectsListTool(framerManager));
-    add(createFramerRedirectAddTool(framerManager));
-    add(createFramerRedirectRemoveTool(framerManager));
 
     // Localization
     add(createFramerLocalesListTool(framerManager));

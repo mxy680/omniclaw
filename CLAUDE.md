@@ -18,7 +18,7 @@ This project is an MCP server providing tools for Gmail, Calendar, Drive, Docs, 
 | Wolfram Alpha | 2 | `wolfram` | `docs/wolfram.md` |
 | LinkedIn | 11 | `linkedin` | `skills/linkedin.SKILL.md` |
 | Instagram | 14 | `instagram` | `skills/instagram.SKILL.md` |
-| Framer | 59 | `framer` | `skills/framer.SKILL.md` |
+| Framer | 53 | `framer` | `skills/framer.SKILL.md` |
 
 ## Scheduler
 

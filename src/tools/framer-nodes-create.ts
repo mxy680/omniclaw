@@ -89,32 +89,6 @@ export function createFramerNodeAddImageTool(manager: FramerClientManager): any 
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createFramerNodeAddSvgTool(manager: FramerClientManager): any {
-  return {
-    name: "framer_node_add_svg",
-    label: "Framer Add SVG",
-    description: "Add an SVG element to the canvas from raw SVG markup.",
-    parameters: Type.Object({
-      svg: Type.String({ description: "Raw SVG markup." }),
-      name: Type.Optional(Type.String({ description: "Display name for the SVG." })),
-      account: Type.Optional(Type.String({ description: "Account name. Defaults to 'default'.", default: "default" })),
-    }),
-    async execute(_toolCallId: string, params: { svg: string; name?: string; account?: string }) {
-      const account = params.account ?? "default";
-      const client = manager.getClient(account);
-      if (!client.isAuthenticated()) return jsonResult(AUTH_REQUIRED);
-      try {
-        const conn = await client.getConnection();
-        await conn.addSVG({ svg: params.svg, name: params.name });
-        return jsonResult({ success: true });
-      } catch (err: unknown) {
-        return jsonResult({ error: "operation_failed", message: err instanceof Error ? err.message : String(err) });
-      }
-    },
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createFramerNodeAddComponentTool(manager: FramerClientManager): any {
   return {
     name: "framer_node_add_component",

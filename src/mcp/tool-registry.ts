@@ -297,6 +297,8 @@ import {
   createInstagramMessagesGetTool,
   createInstagramMessageSendTool,
 } from "../tools/instagram-messages.js";
+import { XClientManager } from "../auth/x-client-manager.js";
+import { createXAuthSetupTool } from "../tools/x-auth.js";
 import { FramerClientManager } from "../auth/framer-client-manager.js";
 import { createFramerAuthSetupTool } from "../tools/framer-auth.js";
 import {
@@ -723,6 +725,15 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createInstagramInboxGetTool(instagramManager));
     add(createInstagramMessagesGetTool(instagramManager));
     add(createInstagramMessageSendTool(instagramManager));
+  }
+
+  // X (Twitter) tools — session cookie auth
+  {
+    const sessionsPath = path.join(os.homedir(), ".openclaw", "x-sessions.json");
+    const xSessionStore = new SessionStore(sessionsPath);
+    const xManager = new XClientManager(xSessionStore);
+
+    add(createXAuthSetupTool(xManager));
   }
 
   // Framer tools — API key auth (Server API)

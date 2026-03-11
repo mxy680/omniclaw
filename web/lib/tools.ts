@@ -42,6 +42,7 @@ const SERVICE_NAMES: Record<string, string> = {
   linkedin: "LinkedIn",
   instagram: "Instagram",
   framer: "Framer",
+  x: "X (Twitter)",
 };
 
 let cached: ToolRegistry | null = null;

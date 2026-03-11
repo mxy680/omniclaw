@@ -263,6 +263,48 @@ export function revokeInstagramSession(account: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// X (Twitter)
+// ---------------------------------------------------------------------------
+
+function getXSessionsPath(): string { return join(getDataDir(), "x-sessions.json"); }
+
+function loadXSessions(): Record<string, unknown> {
+  if (!existsSync(getXSessionsPath())) return {};
+  try {
+    return JSON.parse(readFileSync(getXSessionsPath(), "utf-8")) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function getXAccounts(): AccountInfo[] {
+  try {
+    const sessions = loadXSessions();
+    return Object.keys(sessions).map((name) => ({
+      name,
+      email: null,
+      provider: "x" as const,
+      hasTokens: true,
+      isExpired: false,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function revokeXSession(account: string): boolean {
+  try {
+    const sessions = loadXSessions();
+    if (!(account in sessions)) return false;
+    delete sessions[account];
+    writeFileSync(getXSessionsPath(), JSON.stringify(sessions, null, 2), "utf-8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Framer
 // ---------------------------------------------------------------------------
 
@@ -283,7 +325,7 @@ export function revokeFramerCredentials(account: string): boolean {
 export interface AccountInfo {
   name: string;
   email: string | null;
-  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin" | "instagram" | "framer";
+  provider: "google" | "github" | "gemini" | "wolfram" | "linkedin" | "instagram" | "x" | "framer";
   hasTokens: boolean;
   isExpired: boolean;
 }
@@ -365,6 +407,11 @@ export async function listAccounts(provider?: string): Promise<AccountInfo[]> {
   if (!provider || provider === "instagram") {
     const instagramAccounts = getInstagramAccounts();
     accounts.push(...instagramAccounts);
+  }
+
+  if (!provider || provider === "x") {
+    const xAccounts = getXAccounts();
+    accounts.push(...xAccounts);
   }
 
   if (!provider || provider === "framer") {

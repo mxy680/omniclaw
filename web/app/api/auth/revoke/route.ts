@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revokeTokens, revokeGitHubToken, revokeGeminiApiKey, revokeWolframAppId, revokeLinkedinSession, revokeInstagramSession, revokeFramerCredentials } from "@/lib/auth";
+import { revokeTokens, revokeGitHubToken, revokeGeminiApiKey, revokeWolframAppId, revokeLinkedinSession, revokeInstagramSession, revokeXSession, revokeFramerCredentials } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
       deleted = revokeLinkedinSession(account);
     } else if (provider === "instagram") {
       deleted = revokeInstagramSession(account);
+    } else if (provider === "x") {
+      deleted = revokeXSession(account);
     } else if (provider === "framer") {
       deleted = revokeFramerCredentials(account);
     } else {

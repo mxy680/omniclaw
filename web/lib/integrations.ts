@@ -101,6 +101,17 @@ export const PROVIDERS: Provider[] = [
       { id: "framer", name: "Framer", icon: "Frame", color: "#0099FF" },
     ],
   },
+  {
+    id: "x",
+    name: "X (Twitter)",
+    icon: "Twitter",
+    color: "#000000",
+    description: "Post tweets, search, manage timeline, bookmarks, DMs, and social connections.",
+    available: true,
+    services: [
+      { id: "x", name: "X (Twitter)", icon: "Twitter", color: "#000000" },
+    ],
+  },
 ];
 
 // Backward compat for IntegrationCard

@@ -40,6 +40,7 @@ export function ConnectDialog({
   const isLinkedin = providerId === "linkedin";
   const isInstagram = providerId === "instagram";
   const isFramer = providerId === "framer";
+  const isX = providerId === "x";
   const [projectUrl, setProjectUrl] = useState("");
 
   async function handleFramerConnect() {
@@ -197,6 +198,32 @@ export function ConnectDialog({
     }
   }
 
+  async function handleXConnect() {
+    setLoading(true);
+
+    try {
+      toast.info("A browser window will open — log in to X (Twitter) there.");
+      const res = await fetch("/api/auth/x", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account: accountName.trim() || "default" }),
+      });
+
+      if (res.ok) {
+        toast.success("X account connected");
+        setOpen(false);
+        onConnected?.();
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to connect X");
+      }
+    } catch {
+      toast.error("Failed to connect X");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleInstagramConnect() {
     setLoading(true);
 
@@ -245,7 +272,9 @@ export function ConnectDialog({
                     ? "A browser window will open for you to log in to LinkedIn. Your session cookies will be captured automatically."
                     : isInstagram
                       ? "A browser window will open for you to log in to Instagram. Your session cookies will be captured automatically."
-                      : isFramer
+                      : isX
+                        ? "A browser window will open for you to log in to X (Twitter). Your session cookies will be captured automatically."
+                        : isFramer
                         ? "Enter your Framer project URL and API key from the project's site settings."
                         : `Enter a name for this account, then sign in with ${providerName}.`}
           </DialogDescription>
@@ -405,6 +434,26 @@ export function ConnectDialog({
               )}
             </div>
           </div>
+        ) : isX ? (
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="x-account">Account Name</Label>
+              <Input
+                id="x-account"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="e.g. default, work, personal"
+              />
+              <p className="text-xs text-muted-foreground">
+                A browser window will open. Log in with any method (password, SSO, passkey). Session cookies are captured automatically once you land on X.
+              </p>
+              {existingAccounts.includes(accountName.trim()) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  This will replace the existing &ldquo;{accountName.trim()}&rdquo; session.
+                </p>
+              )}
+            </div>
+          </div>
         ) : isFramer ? (
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -465,12 +514,12 @@ export function ConnectDialog({
 
         <DialogFooter>
           <Button
-            onClick={isFramer ? handleFramerConnect : isInstagram ? handleInstagramConnect : isLinkedin ? handleLinkedinConnect : isWolfram ? handleWolframConnect : isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
+            onClick={isFramer ? handleFramerConnect : isX ? handleXConnect : isInstagram ? handleInstagramConnect : isLinkedin ? handleLinkedinConnect : isWolfram ? handleWolframConnect : isGemini ? handleGeminiConnect : isGitHub ? handleGitHubConnect : handleGoogleConnect}
             disabled={isFramer ? !token.trim() || !projectUrl.trim() || !accountName.trim() || loading : isGitHub || isGemini || isWolfram ? !token.trim() || !accountName.trim() || loading : !accountName.trim() || loading}
           >
             {loading
-              ? isFramer ? "Saving..." : isInstagram ? "Waiting for login..." : isLinkedin ? "Waiting for login..." : isGitHub || isGemini || isWolfram ? "Saving..." : "Redirecting..."
-              : isFramer ? "Save Credentials" : isInstagram ? "Open Instagram Login" : isLinkedin ? "Open LinkedIn Login" : isWolfram ? "Save AppID" : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
+              ? isFramer ? "Saving..." : isX ? "Waiting for login..." : isInstagram ? "Waiting for login..." : isLinkedin ? "Waiting for login..." : isGitHub || isGemini || isWolfram ? "Saving..." : "Redirecting..."
+              : isFramer ? "Save Credentials" : isX ? "Open X Login" : isInstagram ? "Open Instagram Login" : isLinkedin ? "Open LinkedIn Login" : isWolfram ? "Save AppID" : isGemini ? "Save API Key" : isGitHub ? "Save Token" : `Sign in with ${providerName}`}
           </Button>
         </DialogFooter>
       </DialogContent>

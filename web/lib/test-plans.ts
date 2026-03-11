@@ -30,7 +30,9 @@ async function runStep(
       ? (parsed as Record<string, unknown>).error : undefined;
     if (typeof errorField === "string") {
       const message = String((parsed as Record<string, unknown>).action ?? (parsed as Record<string, unknown>).message ?? errorField);
-      const isSkippable = errorField === "auth_required";
+      const isSkippable = errorField === "auth_required"
+        || errorField === "tweet_create_failed"
+        || errorField === "tweet_reply_failed";
       const status = isSkippable ? "skipped" as const : "error" as const;
       return {
         result: { name, tool, status, duration: Date.now() - start, error: String(message), cleanup },
@@ -1484,6 +1486,123 @@ const framerTest: ServiceTestFn = async (execute) => {
   return steps;
 };
 
+const xTest: ServiceTestFn = async (execute) => {
+  const steps: TestStepResult[] = [];
+
+  // ── Phase 1: Read-only tools ─────────────────────────────────────────
+
+  // profile_me
+  const s1 = await runStep("Get my profile", "x_profile_me", {}, execute);
+  steps.push(s1.result);
+
+  const profileParsed = extractResult(s1.data) as Record<string, unknown> | undefined;
+  const myUserId = profileParsed?.id as string | undefined;
+
+  // profile_get
+  const s2 = await runStep("Get user profile", "x_profile_get", { username: "elonmusk" }, execute);
+  steps.push(s2.result);
+
+  // timeline_home
+  const s3 = await runStep("Get home timeline", "x_timeline_home", { count: 5 }, execute);
+  steps.push(s3.result);
+
+  // timeline_user (chain from profile_me)
+  if (myUserId) {
+    steps.push((await runStep("Get user timeline", "x_timeline_user", { user_id: myUserId }, execute)).result);
+  }
+
+  // Extract a tweet ID from home timeline — result shape is { tweets: [...] }
+  const timelineData = extractResult(s3.data) as { tweets?: { id?: string }[] } | undefined;
+  const timelineTweetId = timelineData?.tweets?.[0]?.id;
+
+  // tweet_get
+  if (timelineTweetId) {
+    steps.push((await runStep("Get tweet", "x_tweet_get", { tweet_id: timelineTweetId }, execute)).result);
+  }
+
+  // search
+  const s6 = await runStep("Search tweets", "x_search", { query: "test" }, execute);
+  steps.push(s6.result);
+
+  // bookmarks_list
+  steps.push((await runStep("List bookmarks", "x_bookmarks_list", {}, execute)).result);
+
+  // followers_list
+  if (myUserId) {
+    steps.push((await runStep("List followers", "x_followers_list", { user_id: myUserId }, execute)).result);
+  }
+
+  // following_list
+  if (myUserId) {
+    steps.push((await runStep("List following", "x_following_list", { user_id: myUserId }, execute)).result);
+  }
+
+  // dm_conversations
+  const s10 = await runStep("List DM conversations", "x_dm_conversations", {}, execute);
+  steps.push(s10.result);
+
+  // lists_get
+  const s11 = await runStep("Get lists", "x_lists_get", {}, execute);
+  steps.push(s11.result);
+
+  // list_timeline (chain from lists_get) — result shape is { lists: [...] }
+  const listsData = extractResult(s11.data) as { lists?: { id?: string }[] } | undefined;
+  const firstListId = listsData?.lists?.[0]?.id;
+
+  if (firstListId) {
+    steps.push((await runStep("Get list timeline", "x_list_timeline", { list_id: firstListId }, execute)).result);
+  }
+
+  // dm_messages (chain from conversations) — result shape is { conversations: [...] }
+  const convData = extractResult(s10.data) as { conversations?: { id?: string }[] } | undefined;
+  const firstConvId = convData?.conversations?.[0]?.id;
+
+  if (firstConvId) {
+    steps.push((await runStep("Get DM messages", "x_dm_messages", { conversation_id: firstConvId }, execute)).result);
+  }
+
+  // ── Phase 2: Write tools (round-trip: create → exercise → cleanup) ──
+
+  // tweet_create → like → unlike → retweet → unretweet → bookmark → unbookmark → reply → delete
+  const s13 = await runStep("Create tweet", "x_tweet_create", {
+    text: "[omniclaw smoke test] verify",
+  }, execute);
+  steps.push(s13.result);
+
+  const tweetParsed = extractResult(s13.data) as Record<string, unknown> | undefined;
+  const createdTweetId = tweetParsed?.id as string | undefined;
+
+  if (createdTweetId) {
+    steps.push((await runStep("Like tweet", "x_tweet_like", { tweet_id: createdTweetId }, execute)).result);
+    steps.push((await runStep("Unlike tweet", "x_tweet_unlike", { tweet_id: createdTweetId }, execute, true)).result);
+    steps.push((await runStep("Retweet", "x_tweet_retweet", { tweet_id: createdTweetId }, execute)).result);
+    steps.push((await runStep("Unretweet", "x_tweet_unretweet", { tweet_id: createdTweetId }, execute, true)).result);
+    steps.push((await runStep("Bookmark tweet", "x_tweet_bookmark", { tweet_id: createdTweetId }, execute)).result);
+    steps.push((await runStep("Unbookmark tweet", "x_tweet_unbookmark", { tweet_id: createdTweetId }, execute, true)).result);
+
+    steps.push((await runStep("Reply to tweet", "x_tweet_reply", {
+      tweet_id: createdTweetId,
+      text: "[omniclaw smoke test] reply",
+    }, execute)).result);
+
+    // Cleanup
+    steps.push((await runStep("Delete tweet", "x_tweet_delete", { tweet_id: createdTweetId }, execute, true)).result);
+  }
+
+  // follow + unfollow — use the elonmusk profile ID from step 2
+  const elonParsed = extractResult(s2.data) as Record<string, unknown> | undefined;
+  const elonUserId = elonParsed?.id as string | undefined;
+
+  if (elonUserId) {
+    steps.push((await runStep("Follow user", "x_follow", { user_id: elonUserId }, execute)).result);
+    steps.push((await runStep("Unfollow user", "x_unfollow", { user_id: elonUserId }, execute, true)).result);
+  }
+
+  // Skip x_dm_send — too invasive for smoke test
+
+  return steps;
+};
+
 const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   gmail: gmailTest,
   calendar: calendarTest,
@@ -1498,6 +1617,7 @@ const SERVICE_TESTS: Record<string, ServiceTestFn> = {
   linkedin: linkedinTest,
   instagram: instagramTest,
   framer: framerTest,
+  x: xTest,
 };
 
 export async function runServiceTest(

@@ -297,6 +297,38 @@ import {
   createInstagramMessagesGetTool,
   createInstagramMessageSendTool,
 } from "../tools/instagram-messages.js";
+import { XClientManager } from "../auth/x-client-manager.js";
+import { createXAuthSetupTool } from "../tools/x-auth.js";
+import { createXProfileGetTool, createXProfileMeTool } from "../tools/x-profile.js";
+import { createXTimelineHomeTool, createXTimelineUserTool } from "../tools/x-timeline.js";
+import {
+  createXTweetGetTool,
+  createXTweetCreateTool,
+  createXTweetDeleteTool,
+  createXTweetReplyTool,
+} from "../tools/x-tweet.js";
+import { createXSearchTool } from "../tools/x-search.js";
+import {
+  createXTweetLikeTool,
+  createXTweetUnlikeTool,
+  createXTweetRetweetTool,
+  createXTweetUnretweetTool,
+  createXTweetBookmarkTool,
+  createXTweetUnbookmarkTool,
+} from "../tools/x-interactions.js";
+import { createXBookmarksListTool } from "../tools/x-bookmarks.js";
+import {
+  createXFollowersListTool,
+  createXFollowingListTool,
+  createXFollowTool,
+  createXUnfollowTool,
+} from "../tools/x-social.js";
+import {
+  createXDmConversationsTool,
+  createXDmMessagesTool,
+  createXDmSendTool,
+} from "../tools/x-messages.js";
+import { createXListsGetTool, createXListTimelineTool } from "../tools/x-lists.js";
 import { FramerClientManager } from "../auth/framer-client-manager.js";
 import { createFramerAuthSetupTool } from "../tools/framer-auth.js";
 import {
@@ -723,6 +755,58 @@ export function createAllTools(opts: { pluginConfig: PluginConfig }): OmniclawTo
     add(createInstagramInboxGetTool(instagramManager));
     add(createInstagramMessagesGetTool(instagramManager));
     add(createInstagramMessageSendTool(instagramManager));
+  }
+
+  // X (Twitter) tools — session cookie auth
+  {
+    const sessionsPath = path.join(os.homedir(), ".openclaw", "x-sessions.json");
+    const xSessionStore = new SessionStore(sessionsPath);
+    const xManager = new XClientManager(xSessionStore);
+
+    add(createXAuthSetupTool(xManager));
+
+    // Profile
+    add(createXProfileGetTool(xManager));
+    add(createXProfileMeTool(xManager));
+
+    // Timeline
+    add(createXTimelineHomeTool(xManager));
+    add(createXTimelineUserTool(xManager));
+
+    // Tweets
+    add(createXTweetGetTool(xManager));
+    add(createXTweetCreateTool(xManager));
+    add(createXTweetDeleteTool(xManager));
+    add(createXTweetReplyTool(xManager));
+
+    // Search
+    add(createXSearchTool(xManager));
+
+    // Interactions
+    add(createXTweetLikeTool(xManager));
+    add(createXTweetUnlikeTool(xManager));
+    add(createXTweetRetweetTool(xManager));
+    add(createXTweetUnretweetTool(xManager));
+    add(createXTweetBookmarkTool(xManager));
+    add(createXTweetUnbookmarkTool(xManager));
+
+    // Bookmarks
+    add(createXBookmarksListTool(xManager));
+
+    // Social
+    add(createXFollowersListTool(xManager));
+    add(createXFollowingListTool(xManager));
+    add(createXFollowTool(xManager));
+    add(createXUnfollowTool(xManager));
+
+    // DMs
+    add(createXDmConversationsTool(xManager));
+    add(createXDmMessagesTool(xManager));
+    add(createXDmSendTool(xManager));
+
+    // Lists
+    add(createXListsGetTool(xManager));
+    add(createXListTimelineTool(xManager));
   }
 
   // Framer tools — API key auth (Server API)
